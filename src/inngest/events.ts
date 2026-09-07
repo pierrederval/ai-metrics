@@ -1,11 +1,15 @@
 import { z } from 'zod';
-export const eventData=z.object({eventId:z.string().min(1)});
-export const prSyncData=z.object({repositoryId:z.string().min(1),number:z.number().int().positive()});
-export const repositorySyncData=z.object({repositoryId:z.string().min(1)});
-export const recomputeData=z.object({prId:z.string().min(1)});
+export const eventData = z.object({ eventId: z.string().min(1) });
+export const prSyncData = z.object({
+  repositoryId: z.string().min(1),
+  number: z.number().int().positive(),
+  sourceEventId: z.string().min(1).optional(),
+});
+export const repositorySyncData = z.object({ repositoryId: z.string().min(1) });
+export const recomputeData = z.object({ prId: z.string().min(1) });
 export interface ReliabilityEvents {
- 'github/webhook.received':z.infer<typeof eventData>;
- 'github/pr.sync.requested':z.infer<typeof prSyncData>;
- 'github/repository.sync.requested':z.infer<typeof repositorySyncData>;
- 'metrics/pr.recompute.requested':z.infer<typeof recomputeData>;
+  'github/webhook.received': z.infer<typeof eventData>;
+  'github/pr.sync.requested': z.infer<typeof prSyncData>;
+  'github/repository.sync.requested': z.infer<typeof repositorySyncData>;
+  'metrics/pr.recompute.requested': z.infer<typeof recomputeData>;
 }
