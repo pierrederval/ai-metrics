@@ -4,10 +4,12 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../../../db';
 import { sessions } from '../../../../db/schema';
 import { tokenHash } from '../../../../auth/crypto';
+import { env } from '../../../../lib/env';
 export async function POST(request: Request) {
+  // Railway terminates HTTPS before forwarding to the application server.
+  const publicOrigin = new URL(env().integration?.APP_URL ?? request.url).origin;
   const origin = request.headers.get('origin');
-  if (!origin || origin !== new URL(request.url).origin)
-    return new Response('Invalid origin', { status: 403 });
+  if (!origin || origin !== publicOrigin) return new Response('Invalid origin', { status: 403 });
   const jar = await cookies(),
     token = jar.get('reliability-session')?.value;
   if (token)
@@ -15,5 +17,5 @@ export async function POST(request: Request) {
       .delete(sessions)
       .where(eq(sessions.id, tokenHash(token)));
   jar.delete('reliability-session');
-  return NextResponse.redirect(new URL('/signed-out', request.url), 303);
+  return NextResponse.redirect(new URL('/signed-out', publicOrigin), 303);
 }
