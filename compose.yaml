@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: reliability
+      POSTGRES_PASSWORD: reliability
+      POSTGRES_DB: reliability
+    ports:
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - reliability-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U reliability']
+      interval: 2s
+      retries: 20
+volumes:
+  reliability-data:
