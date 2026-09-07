@@ -5,15 +5,21 @@ import { repositories, pullRequests } from '../db/schema';
 import type { StoredEvent } from '../inngest/process-event';
 import { inngest } from '../inngest/client';
 import { reconcileInstallation, repositoryClient } from './repositories';
+import { githubApp } from './app';
+import { resolveWebhookInstallationId } from './resolve-installation';
 const relatedSchema = z.object({
   head_sha: z.string(),
   pull_requests: z.array(z.object({ number: z.number() })).optional(),
 });
 export async function handleGithubEvent(event: StoredEvent): Promise<'processed' | 'unsupported'> {
   if (event.eventName === 'ping') return 'processed';
-  if (!event.installationId) return 'unsupported';
+  const installationId = await resolveWebhookInstallationId(event, async ({ owner, repo }) => {
+    const { data } = await githubApp().octokit.rest.apps.getRepoInstallation({ owner, repo });
+    return data.id;
+  });
+  if (!installationId) return 'unsupported';
   if (['installation', 'installation_repositories'].includes(event.eventName)) {
-    const ids = await reconcileInstallation(event.installationId);
+    const ids = await reconcileInstallation(installationId);
     if (['created', 'added', 'unsuspend', 'new_permissions_accepted'].includes(event.action ?? ''))
       for (const repositoryId of ids)
         await inngest.send({
@@ -33,7 +39,7 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
     .from(repositories)
     .where(eq(repositories.githubRepositoryId, event.repositoryId));
   if (!repo) {
-    await reconcileInstallation(event.installationId);
+    await reconcileInstallation(installationId);
     [repo] = await db()
       .select()
       .from(repositories)
