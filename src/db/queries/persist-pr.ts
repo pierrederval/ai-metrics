@@ -31,8 +31,8 @@ export async function persistPr(input: PrInput){
    await tx.insert(s.revisions).values({id:stableId(input.id,revision.sha,revision.previousSha,revision.observedAt),pullRequestId:input.id,sha:revision.sha,previousSha:revision.previousSha,observedAt:revision.observedAt?new Date(revision.observedAt):null,diffComplete:revision.diffComplete}).onConflictDoUpdate({target:s.revisions.id,set:{diffComplete:revision.diffComplete}});
   }
   for(const check of combined.checks){
-   const runId=stableId(input.repositoryId,check.sha,check.id,check.execution), checkId=stableId(runId,check.id);
-   await tx.insert(s.ciRuns).values({id:runId,repositoryId:input.repositoryId,headSha:check.sha,runAttempt:check.execution,name:check.name,status:check.status,conclusion:check.conclusion}).onConflictDoUpdate({target:s.ciRuns.id,set:{status:check.status,conclusion:check.conclusion,updatedAt:new Date()}});
+   const runId=stableId(input.repositoryId,check.sha,check.workflowRunId??check.id,check.execution), checkId=stableId(runId,check.id);
+   await tx.insert(s.ciRuns).values({id:runId,repositoryId:input.repositoryId,headSha:check.sha,githubRunId:check.workflowRunId??null,runAttempt:check.execution,name:check.workflowName??check.name,status:check.status,conclusion:check.conclusion}).onConflictDoUpdate({target:s.ciRuns.id,set:{status:check.status,conclusion:check.conclusion,updatedAt:new Date()}});
    await tx.insert(s.prRuns).values({pullRequestId:input.id,ciRunId:runId}).onConflictDoNothing();
    const values={id:checkId,ciRunId:runId,githubCheckRunId:check.id,appId:check.appId,name:check.name,status:check.status,conclusion:check.conclusion,startedAt:check.startedAt?new Date(check.startedAt):null,completedAt:check.completedAt?new Date(check.completedAt):null,normalized:check};
    await tx.insert(s.ciChecks).values(values).onConflictDoUpdate({target:s.ciChecks.id,set:{...values,updatedAt:new Date()}});

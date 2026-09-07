@@ -3,7 +3,7 @@ export type Conclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | 'skip
 export interface Gate { appId: string; name: string }
 export interface GatePolicy { version: number; gates: Gate[] }
 export interface CiCheck extends Gate {
-  id: string; sha: string; execution: number;
+  id: string; sha: string; execution: number; workflowRunId?: string; workflowName?: string;
   status: 'queued' | 'in_progress' | 'completed'; conclusion: Conclusion | null;
   queuedAt: string | null; startedAt: string | null; completedAt: string | null;
 }
