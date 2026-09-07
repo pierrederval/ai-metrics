@@ -19,3 +19,9 @@ test('replayed and concurrent facts produce one PR and one projection',async()=>
  const version=await setGatePolicy('test-repo',[{appId:'1',name:'unit'}]);
  const [updated]=await db().select().from(s.prMetrics).where(eq(s.prMetrics.pullRequestId,input.id));expect(updated.gatePolicyVersion).toBe(version);
 });
+test('duplicate delivery IDs persist one raw event',async()=>{
+ const {persistEvent}=await import('./queries/events');
+ const delivery=`duplicate-${Date.now()}`;
+ const [a,b]=await Promise.all([persistEvent(delivery,'ping',{hello:'world'},{}),persistEvent(delivery,'ping',{hello:'world'}, {})]);
+ expect(a.id).toBe(b.id);expect(await db().select().from(s.githubEvents).where(eq(s.githubEvents.deliveryId,delivery))).toHaveLength(1);
+});

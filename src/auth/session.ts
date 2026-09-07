@@ -1,0 +1,28 @@
+import { randomBytes } from 'node:crypto';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { eq, and, gt, sql } from 'drizzle-orm';
+import { Octokit } from 'octokit';
+import { db } from '../db';
+import { users,sessions } from '../db/schema';
+import { integrationEnv } from '../lib/env';
+import { decrypt,encrypt,tokenHash } from './crypto';
+import { credentialsSchema,exchangeToken } from './oauth';
+export const cookieOptions={httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax' as const,path:'/'};
+export async function createSession(userId:string){const token=randomBytes(32).toString('base64url');const expiresAt=new Date(Date.now()+7*86400000);await db().insert(sessions).values({id:tokenHash(token),userId,expiresAt});(await cookies()).set('reliability-session',token,{...cookieOptions,expires:expiresAt});}
+export async function userClient(){
+ const token=(await cookies()).get('reliability-session')?.value;if(!token)redirect('/api/auth/login');
+ const [session]=await db().select().from(sessions).where(and(eq(sessions.id,tokenHash(token)),gt(sessions.expiresAt,new Date())));if(!session)redirect('/api/auth/login');
+ const accessToken=await db().transaction(async tx=>{
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`user:${session.userId}`},0))`);
+  const [user]=await tx.select().from(users).where(eq(users.id,session.userId));if(!user)throw new Error('User unavailable');
+  let credentials=credentialsSchema.parse(JSON.parse(decrypt(user.credentials,integrationEnv().TOKEN_ENCRYPTION_KEY)));
+  if(credentials.expiresAt&&credentials.expiresAt<Date.now()+60000){
+   if(!credentials.refreshToken)throw new Error('GitHub session expired; sign in again');
+   credentials=await exchangeToken({grant_type:'refresh_token',refresh_token:credentials.refreshToken});
+   await tx.update(users).set({credentials:encrypt(JSON.stringify(credentials),integrationEnv().TOKEN_ENCRYPTION_KEY),updatedAt:new Date()}).where(eq(users.id,user.id));
+  }
+  return credentials.accessToken;
+ });
+ return new Octokit({auth:accessToken,request:{timeout:30000}});
+}
