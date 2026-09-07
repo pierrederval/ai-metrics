@@ -10,3 +10,5 @@ export async function saveGates(repositoryId:string,form:FormData){
  const unique=[...new Map(gates.map(g=>[JSON.stringify([g.appId,g.name]),g])).values()];
  await setGatePolicy(repositoryId,unique);revalidatePath('/dashboard');revalidatePath(`/repos/${repositoryId}`);
 }
+
+export async function requestImport(repositoryId:string){await requireRepository(repositoryId,true);const {syncRepository}=await import('../../../github/sync-repository');await syncRepository(repositoryId);revalidatePath(`/repos/${repositoryId}`);}

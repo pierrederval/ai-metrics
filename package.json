@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "github:sync": "tsx scripts/sync-repository.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
