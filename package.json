@@ -1,1 +1,40 @@
-{"name":"agent-analytics","version":"0.1.0","private":true,"type":"module","packageManager":"pnpm@10.27.0","scripts":{"dev":"next dev","build":"next build","start":"next start","test":"vitest run --exclude '**/*.integration.test.ts'","test:integration":"vitest run --include '**/*.integration.test.ts'","lint":"eslint .","typecheck":"tsc --noEmit"},"dependencies":{"dotenv":"^17.4.2","drizzle-orm":"^0.45.2","inngest":"^4.20.0","next":"^16.3.4","octokit":"^5.0.5","postgres":"^3.4.9","react":"^19.2.8","react-dom":"^19.2.8","zod":"^4.5.4"},"devDependencies":{"@types/node":"^26.4.1","@types/react":"^19.2.18","@types/react-dom":"^19.2.7","drizzle-kit":"^0.31.10","eslint":"^10.10.0","tsx":"^4.23.13","typescript":"^6.0.3","typescript-eslint":"^8.69.0","vitest":"^4.1.11"}}
+{
+  "name": "agent-analytics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "inngest": "^4.20.0",
+    "next": "^16.3.4",
+    "octokit": "^5.0.5",
+    "postgres": "^3.4.9",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^10.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^4.1.11"
+  }
+}
