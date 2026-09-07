@@ -8,33 +8,38 @@ export default async function Dashboard() {
     rows = await prRows(repositories.map((r) => r.id));
   return (
     <>
-      <h1>Engineering reliability</h1>
-      <p>Deterministic evidence from pull requests and CI executions.</p>
-      <div className="cards">
-        <section>
-          <small>Repositories</small>
-          <strong>{repositories.length}</strong>
-        </section>
-        <section>
-          <small>PRs analyzed / created</small>
-          <strong>{rows.length}</strong>
-        </section>
-        <section>
-          <small>PRs merged</small>
-          <strong>{rows.filter((r) => r.pr.mergedAt).length}</strong>
-        </section>
+      <div className="eyebrow">Your engineering record</div>
+      <h1>Good work compounds.</h1>
+      <p className="page-intro">
+        Follow the attempts, failures, and fixes behind every green pull request.
+      </p>
+      <div className="summary-strip">
+        <span>
+          <strong>{repositories.length}</strong> repositories
+        </span>
+        <span>
+          <strong>{rows.length}</strong> PRs analyzed
+        </span>
+        <span>
+          <strong>{rows.filter((r) => r.pr.mergedAt).length}</strong> merged
+        </span>
       </div>
       <MetricCards metrics={rows.map((r) => r.metrics.projection)} />
-      <h2>Repositories</h2>
+      <h2 id="repositories">Repositories</h2>
       {repositories.length ? (
         repositories.map((r) => (
-          <section key={r.id}>
-            <Link href={`/repos/${r.id}`}>
-              {r.owner}/{r.name}
-            </Link>
-            <p>
-              Import: {r.syncStatus} · {r.syncProgress} PRs{r.isDemo ? ' · Demo fixtures' : ''}
-            </p>
+          <section key={r.id} className="repository-card">
+            <div>
+              <Link href={`/repos/${r.id}`}>
+                {r.owner}/{r.name}
+              </Link>
+              <p>
+                Import: {r.syncStatus} · {r.syncProgress} PRs{r.isDemo ? ' · Demo fixtures' : ''}
+              </p>
+            </div>
+            <span className="repository-arrow" aria-hidden="true">
+              ↗
+            </span>
           </section>
         ))
       ) : (

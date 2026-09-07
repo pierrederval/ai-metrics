@@ -63,30 +63,32 @@ export default async function Repository({ params }: { params: Promise<{ repoId:
         </form>
       )}
       <h2>Failures by check name</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Gate</th>
-            <th>Failures</th>
-            <th>Affected PRs</th>
-            <th>Failure rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          {failures.map((f) => (
-            <tr key={`${f.appId}:${f.checkName}`}>
-              <td>
-                {f.checkName} <small>app {f.appId}</small>
-              </td>
-              <td>{f.failureCount}</td>
-              <td>{f.affectedPrCount}</td>
-              <td>
-                {(f.failureRate * 100).toFixed(1)}% / {f.total} executions
-              </td>
+      <div className="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Gate</th>
+              <th>Failures</th>
+              <th>Affected PRs</th>
+              <th>Failure rate</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {failures.map((f) => (
+              <tr key={`${f.appId}:${f.checkName}`}>
+                <td>
+                  {f.checkName} <small>app {f.appId}</small>
+                </td>
+                <td>{f.failureCount}</td>
+                <td>{f.affectedPrCount}</td>
+                <td>
+                  {(f.failureRate * 100).toFixed(1)}% / {f.total} executions
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <h2>Pull requests</h2>
       <PrTable rows={rows} />
     </>
