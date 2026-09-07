@@ -25,3 +25,11 @@ test('duplicate delivery IDs persist one raw event',async()=>{
  const [a,b]=await Promise.all([persistEvent(delivery,'ping',{hello:'world'},{}),persistEvent(delivery,'ping',{hello:'world'}, {})]);
  expect(a.id).toBe(b.id);expect(await db().select().from(s.githubEvents).where(eq(s.githubEvents.deliveryId,delivery))).toHaveLength(1);
 });
+test('failed dispatch is recoverable and processing is idempotent',async()=>{
+ const {persistEvent}=await import('./queries/events');const {dispatchEvent}=await import('../inngest/dispatch');const {processEvent}=await import('../inngest/process-event');
+ const event=await persistEvent(`retry-${Date.now()}`,'ping',{},{});
+ await expect(dispatchEvent(event.id,async()=>{throw new Error('network unavailable');})).rejects.toThrow();
+ let sent=0;await dispatchEvent(event.id,async()=>{sent++;});await dispatchEvent(event.id,async()=>{sent++;});expect(sent).toBe(1);
+ let processed=0;const handler=async()=>{processed++;return 'processed' as const;};
+ await processEvent(event.id,handler);await processEvent(event.id,handler);expect(processed).toBe(1);
+});

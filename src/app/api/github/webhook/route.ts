@@ -1,3 +1,4 @@
+import { dispatchEvent } from '../../../../inngest/dispatch';
 import { integrationEnv } from '../../../../lib/env';
 import { verifyWebhook } from '../../../../github/verify-webhook';
 import { webhookPayload } from '../../../../github/types';
@@ -10,5 +11,6 @@ export async function POST(request:Request){
  if(!deliveryId||!name)return Response.json({error:'Missing delivery metadata'},{status:400});
  let payload;try{payload=webhookPayload.parse(JSON.parse(Buffer.from(bytes).toString('utf8')));}catch{return Response.json({error:'Invalid webhook payload'},{status:400});}
  const event=await persistEvent(deliveryId,name,payload,{action:payload.action,installationId:payload.installation?String(payload.installation.id):undefined,repositoryId:payload.repository?String(payload.repository.id):undefined});
+ try{await dispatchEvent(event.id);}catch{console.error('Webhook dispatch failed',{deliveryId,repositoryId:event.repositoryId});return Response.json({error:'Stored; dispatch will retry'},{status:503});}
  return Response.json({id:event.id,stored:true});
 }
