@@ -196,6 +196,23 @@ describe('classifyMergedPr', () => {
       }),
       want: 'first-pass',
     },
+    {
+      name: 'dismissing the latest approval does not reactivate a superseded approval',
+      evidence: evidence({
+        reviewExpected: true,
+        chronologyComplete: true,
+        reviewsComplete: true,
+        reviews: [
+          review('old-approval', 'alice', 'approved', '2026-09-01T08:00:00Z'),
+          review('new-approval', 'alice', 'approved', '2026-09-01T09:00:00Z'),
+          review('dismissal-event', 'alice', 'dismissed', '2026-09-01T10:00:00Z', {
+            kind: 'dismissed',
+            dismissedReviewId: 'new-approval',
+          }),
+        ],
+      }),
+      want: 'not-first-pass',
+    },
     { name: 'neither review nor CI applies', evidence: evidence(), want: 'ineligible' },
     {
       name: 'missing review chronology',
@@ -254,6 +271,23 @@ describe('classifyMergedPr', () => {
         ],
       }),
       want: 'not-first-pass',
+    },
+    {
+      name: 'failure completed after merge on an earlier revision does not spoil first pass',
+      evidence: evidence({
+        ciExpected: true,
+        ciComplete: true,
+        attempts: [
+          attempt(1, 'failure', {
+            runId: 'old-workflow',
+            headSha: 'old-head',
+            startedAt: '2026-09-01T10:00:00Z',
+            completedAt: '2026-09-01T13:00:00Z',
+          }),
+          attempt(1, 'success', { runId: 'merge-workflow', headSha: 'merge-head' }),
+        ],
+      }),
+      want: 'first-pass',
     },
     {
       name: 'unknown attempt history cannot establish first pass',

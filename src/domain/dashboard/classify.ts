@@ -112,7 +112,6 @@ function classifyReview(evidence: PrEvidence, mergedAt: number): DimensionResult
 
   const latestByReviewer = new Map<string, FormalReview>();
   for (const formalReview of formalReviews.values()) {
-    if (dismissed.has(formalReview.id)) continue;
     const current = latestByReviewer.get(formalReview.reviewerId);
     if (
       current === undefined ||
@@ -123,7 +122,7 @@ function classifyReview(evidence: PrEvidence, mergedAt: number): DimensionResult
     }
   }
 
-  const decisions = [...latestByReviewer.values()];
+  const decisions = [...latestByReviewer.values()].filter((review) => !dismissed.has(review.id));
   const hasApproval = decisions.some((decision) => decision.state === 'approved');
   const hasUnresolvedChanges = decisions.some((decision) => decision.state === 'changes_requested');
   if (!hasApproval || hasUnresolvedChanges) return 'not-first-pass';
@@ -158,7 +157,9 @@ function classifyCi(evidence: PrEvidence, mergedAt: string): DimensionResult {
   const earlierRevisionSpoiledFirstPass = historical.some(
     (attempt) =>
       attempt.headSha !== evidence.mergeHeadSha &&
-      (attempt.attempt > 1 || failedConclusions.has(attempt.conclusion?.toLowerCase() ?? '')),
+      (attempt.attempt > 1 ||
+        (!attempt.pendingAtCutoff &&
+          failedConclusions.has(attempt.conclusion?.toLowerCase() ?? ''))),
   );
   return earlierRevisionSpoiledFirstPass ? 'not-first-pass' : 'first-pass';
 }
