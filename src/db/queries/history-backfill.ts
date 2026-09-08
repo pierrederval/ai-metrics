@@ -201,7 +201,8 @@ export async function processHistorySlice(
       sql`select pg_try_advisory_xact_lock(hashtextextended(${`history-installation:${context.installation.id}`},0)) as acquired`,
     );
     if (!lock.acquired) {
-      // Guard the cursor so a concurrent worker's checkpoint cannot be overwritten.
+      // Guard cursor and retry deadline atomically: a concurrent pause must never
+      // be replaced by the shorter contention delay, even if its cursor is unchanged.
       await tx
         .update(runs)
         .set({
@@ -219,6 +220,7 @@ export async function processHistorySlice(
           and(
             eq(runs.id, backfillId),
             inArray(runs.status, active),
+            or(isNull(runs.retryAt), lte(runs.retryAt, now)),
             context.run.cursor === null ? isNull(runs.cursor) : eq(runs.cursor, context.run.cursor),
           ),
         );

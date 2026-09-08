@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { closeDb, db } from './index';
 import {
@@ -323,5 +323,100 @@ test('Retry-After starts when a long hydration returns and recognizes secondary 
   expect(await getHistoryBackfill(id)).toMatchObject({
     errorCategory: 'rate-limit',
     retryAt: '2026-09-13T00:06:00.000Z',
+  });
+});
+
+test('installation contention preserves a future rate-limit deadline and its installation pause', async () => {
+  const repoA = await repository(),
+    repoB = await repository();
+  const idA = await ensureHistoryBackfill(repoA),
+    idB = await ensureHistoryBackfill(repoB);
+  const now = new Date('2030-01-01T00:00:00Z');
+  const retryAt = new Date('2030-01-01T01:00:00Z');
+  await db()
+    .update(historyBackfills)
+    .set({ status: 'retrying', retryAt, errorCategory: 'rate-limit' })
+    .where(eq(historyBackfills.id, idA));
+  const before = await getHistoryBackfill(idA);
+  let release!: () => void,
+    locked = false;
+  const holding = db().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`history-installation:${fixture}`},0))`,
+    );
+    locked = true;
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  });
+  const discover = vi.fn().mockResolvedValue({ numbers: [], nextPage: null });
+  let after;
+  try {
+    await vi.waitFor(() => expect(locked).toBe(true));
+    await processHistorySlice(repoA, idA, { discover, now: () => now });
+    after = await getHistoryBackfill(idA);
+  } finally {
+    release();
+    await holding;
+  }
+  expect(after).toMatchObject({
+    status: 'retrying',
+    errorCategory: 'rate-limit',
+    retryAt: '2030-01-01T01:00:00.000Z',
+    cursor: before!.cursor,
+  });
+  await processHistorySlice(repoB, idB, { discover, now: () => new Date('2030-01-01T00:02:00Z') });
+  expect(discover).not.toHaveBeenCalled();
+  expect(await getHistoryBackfill(idB)).toMatchObject({
+    errorCategory: 'rate-limit',
+    retryAt: '2030-01-01T01:00:00.000Z',
+  });
+});
+
+test('a concurrent future pause wins over a contending worker that read the older cursor', async () => {
+  const repo = await repository(),
+    id = await ensureHistoryBackfill(repo);
+  const now = new Date('2031-01-01T00:00:00Z');
+  let release!: () => void,
+    locked = false;
+  const holding = db().transaction(async (tx) => {
+    await tx.select().from(historyBackfills).where(eq(historyBackfills.id, id)).for('update');
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`history-installation:${fixture}`},0))`,
+    );
+    locked = true;
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    // Preserve the cursor: the retry predicate must guard independently of cursor equality.
+    await tx
+      .update(historyBackfills)
+      .set({
+        status: 'retrying',
+        retryAt: new Date('2031-01-01T01:00:00Z'),
+        errorCategory: 'rate-limit',
+      })
+      .where(eq(historyBackfills.id, id));
+  });
+  let pending: Promise<void> | undefined;
+  try {
+    await vi.waitFor(() => expect(locked).toBe(true));
+    pending = processHistorySlice(repo, id, { now: () => now, discover: vi.fn() });
+    await vi.waitFor(async () => {
+      const [waiting] = await db().execute<{ count: number }>(
+        sql`select count(*)::int as count from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query like 'update "history_backfills"%'`,
+      );
+      expect(waiting.count).toBeGreaterThan(0);
+    });
+  } finally {
+    release();
+    await holding;
+    await pending;
+  }
+  expect(await getHistoryBackfill(id)).toMatchObject({
+    status: 'retrying',
+    errorCategory: 'rate-limit',
+    retryAt: '2031-01-01T01:00:00.000Z',
+    cursor: { revision: 0 },
   });
 });
