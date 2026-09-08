@@ -23,11 +23,18 @@ function historicalAttempts(attempts: WorkflowAttempt[], asOf: string): Historic
   const historical: HistoricalAttempt[] = [];
   for (const attempt of attempts) {
     const startedAt = timestamp(attempt.startedAt);
-    const completedAt = timestamp(attempt.completedAt);
+    let completedAt = timestamp(attempt.completedAt);
 
     if (attempt.startedAt !== null && startedAt === null) return null;
     if (attempt.completedAt !== null && completedAt === null) return null;
     if (startedAt !== null && startedAt > cutoff) continue;
+
+    if (completedAt === null && attempt.status.toLowerCase() === 'completed') {
+      const observedAt = timestamp(attempt.terminalObservedAt ?? null);
+      // An observed terminal snapshot establishes a bound, never exact completion.
+      if (observedAt === null || observedAt > cutoff) return null;
+      completedAt = observedAt;
+    }
 
     if (startedAt === null && completedAt === null) return null;
     if (startedAt === null && completedAt !== null && completedAt > cutoff) return null;
@@ -53,7 +60,9 @@ export function classifyWorkflow(attempts: WorkflowAttempt[], asOf: string): CiO
     if (latest.attempt === 1 && historical.some((item) => item.attempt === 1)) {
       return 'first-pass';
     }
-    if (!historical.some((item) => item.attempt === 1)) return 'unknown';
+    const identities = new Set(historical.map((item) => item.attempt));
+    for (let attempt = 1; attempt <= latest.attempt; attempt++)
+      if (!identities.has(attempt)) return 'unknown';
     return 'recovered';
   }
   if (conclusion !== undefined && failedConclusions.has(conclusion)) return 'failed';

@@ -323,6 +323,7 @@ export const reviewEvents = pgTable(
       .notNull()
       .references(() => pullRequests.id),
     sourceId: text('source_id').notNull(),
+    dismissedReviewId: text('dismissed_review_id'),
     reviewerId: text('reviewer_id').notNull(),
     state: text('state').notNull(),
     commitSha: text('commit_sha'),
@@ -356,6 +357,7 @@ export const workflowAttempts = pgTable(
     conclusion: text('conclusion'),
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    terminalObservedAt: timestamp('terminal_observed_at', { withTimezone: true }),
     sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }),
     collectedAt: timestamp('collected_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: updated(),

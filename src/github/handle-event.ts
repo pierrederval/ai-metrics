@@ -23,7 +23,9 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
     return 'processed';
   }
   if (
-    !['pull_request', 'check_run', 'check_suite', 'workflow_run'].includes(event.eventName) ||
+    !['pull_request', 'pull_request_review', 'check_run', 'check_suite', 'workflow_run'].includes(
+      event.eventName,
+    ) ||
     !event.repositoryId
   )
     return 'unsupported';
@@ -40,7 +42,7 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
   }
   if (!repo || !repo.active || !repo.trackingStartedAt) return 'unsupported';
   const numbers = new Set<number>();
-  if (event.eventName === 'pull_request')
+  if (event.eventName === 'pull_request' || event.eventName === 'pull_request_review')
     numbers.add(
       z.object({ number: z.number().int().positive() }).parse(event.payload.pull_request).number,
     );

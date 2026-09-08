@@ -308,3 +308,18 @@ describe('classifyMergedPr', () => {
     expect(classifyMergedPr(fixture)).toBe(want);
   });
 });
+
+test('terminal snapshots without exact completion remain unknown before observation, not pending', () => {
+  const observed = attempt(1, 'success', {
+    completedAt: null,
+    sourceUpdatedAt: '2026-09-01T01:10:00Z',
+    terminalObservedAt: '2026-09-03T00:00:00Z',
+  });
+  expect(classifyWorkflow([observed], cutoff)).toBe('unknown');
+  expect(classifyWorkflow([observed], '2026-09-03T00:00:00Z')).toBe('first-pass');
+  expect(classifyWorkflow([{ ...observed, terminalObservedAt: null }], cutoff)).toBe('unknown');
+});
+
+test('success with a missing intermediate attempt remains unknown', () => {
+  expect(classifyWorkflow([attempt(1, 'failure'), attempt(3, 'success')], cutoff)).toBe('unknown');
+});

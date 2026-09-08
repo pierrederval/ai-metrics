@@ -21,6 +21,10 @@ export type WorkflowAttempt = {
   conclusion: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  /** Mutable GitHub metadata; never an exact completion timestamp. */
+  sourceUpdatedAt?: string | null;
+  /** Conservative bound: the first time a terminal snapshot was observed. */
+  terminalObservedAt?: string | null;
 };
 
 export type ReviewEvent = {
@@ -46,6 +50,8 @@ export type PrEvidence = {
   ciComplete: boolean;
   reviews: ReviewEvent[];
   attempts: WorkflowAttempt[];
+  sourceUpdatedAt?: string | null;
+  provenance?: { chronology?: string[]; reviews?: string[]; ci?: string[] };
 };
 
 export type Rate = {

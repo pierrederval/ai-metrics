@@ -6,6 +6,8 @@ import { db, closeDb } from '../db';
 import * as s from '../db/schema';
 import { persistEvent } from '../db/queries/events';
 import { syncPullRequest } from './sync-pull-request';
+import { loadDashboardEvidence } from '../db/queries/dashboard-evidence';
+let reviewStatus = 200;
 vi.mock('./repositories', () => ({
   assertTrackedRepository: async () => {},
   repositoryClient: async () => ({
@@ -17,7 +19,23 @@ const t = (n: number) => new Date(Date.UTC(2026, 0, 1, 0, n)).toISOString();
 async function fakeFetch(input: RequestInfo | URL) {
   const url = String(input);
   let data: unknown;
-  if (url.includes('/check-runs')) {
+  if (url.includes('/reviews') || url.includes('/timeline')) {
+    return new Response(JSON.stringify(reviewStatus === 200 ? [] : { message: 'Unavailable' }), {
+      status: reviewStatus,
+      headers: { 'content-type': 'application/json' },
+    });
+  } else if (url.includes('/actions/runs/300/attempts/1/jobs')) data = { total_count: 0, jobs: [] };
+  else if (url.includes('/actions/runs/300/attempts/1'))
+    data = {
+      id: 300,
+      run_attempt: 1,
+      head_sha: 'b',
+      status: 'completed',
+      conclusion: 'success',
+      run_started_at: t(5),
+      updated_at: t(6),
+    };
+  else if (url.includes('/check-runs')) {
     const sha = url.includes('/a/') ? 'a' : 'b';
     data = {
       total_count: 1,
@@ -34,7 +52,10 @@ async function fakeFetch(input: RequestInfo | URL) {
         },
       ],
     };
-  } else if (url.includes('/actions/runs')) data = { total_count: 0, workflow_runs: [] };
+  } else if (url.includes('/actions/runs'))
+    data = url.includes('head_sha=b')
+      ? { total_count: 1, workflow_runs: [{ id: 300, run_attempt: 1, head_sha: 'b' }] }
+      : { total_count: 0, workflow_runs: [] };
   else if (url.includes('/compare/'))
     data = {
       merge_base_commit: { sha: 'a' },
@@ -124,8 +145,35 @@ test('REST hydration and repeat import preserve facts and demonstrate harness re
     harnessChangedAfterFailure: true,
     cleanGreen: false,
   });
+  const dashboard = await loadDashboardEvidence(id);
+  expect(dashboard?.attempts).toHaveLength(1);
+  expect(dashboard?.reviewsComplete).toBe(true);
   await syncPullRequest('hydrate-repo', 1);
+  expect(await loadDashboardEvidence(id)).toEqual(dashboard);
   const [second] = await db().select().from(s.prMetrics).where(eq(s.prMetrics.pullRequestId, id));
   expect(second.projection).toEqual(first.projection);
   expect(await db().select().from(s.pullRequests).where(eq(s.pullRequests.id, id))).toHaveLength(1);
+});
+
+test('review permission failure persists independent CI evidence then retries', async () => {
+  await db()
+    .delete(s.dashboardPrEvidence)
+    .where(eq(s.dashboardPrEvidence.pullRequestId, 'pr:4242:1'));
+  await db()
+    .delete(s.prWorkflowAttempts)
+    .where(eq(s.prWorkflowAttempts.pullRequestId, 'pr:4242:1'));
+  await db().delete(s.workflowAttempts).where(eq(s.workflowAttempts.repositoryId, 'hydrate-repo'));
+  reviewStatus = 403;
+  try {
+    await expect(syncPullRequest('hydrate-repo', 1)).rejects.toMatchObject({ status: 403 });
+    const evidence = await loadDashboardEvidence('pr:4242:1');
+    expect(evidence?.attempts).toHaveLength(1);
+    expect(evidence).toMatchObject({
+      reviewsComplete: false,
+      reviewExpected: null,
+      ciExpected: true,
+    });
+  } finally {
+    reviewStatus = 200;
+  }
 });
