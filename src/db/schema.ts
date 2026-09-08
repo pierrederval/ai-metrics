@@ -9,6 +9,7 @@ import {
   primaryKey,
   check,
   index,
+  foreignKey,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -20,6 +21,7 @@ import type {
   CiCheck,
   ChangedFile,
 } from '../domain/pull-request/types';
+import type { ReviewEvent } from '../domain/dashboard/types';
 const id = () => text('id').primaryKey();
 const created = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 const updated = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
@@ -287,5 +289,167 @@ export const repositoryImportItems = pgTable(
     primaryKey({ columns: [t.runId, t.number] }),
     check('repository_import_items_number', sql`${t.number} > 0`),
     check('repository_import_items_state', sql`${t.state} IN ('pending','complete','failed')`),
+  ],
+);
+
+export const dashboardPrEvidence = pgTable('dashboard_pr_evidence', {
+  pullRequestId: text('pull_request_id')
+    .primaryKey()
+    .references(() => pullRequests.id),
+  mergeHeadSha: text('merge_head_sha'),
+  reviewExpected: boolean('review_expected'),
+  ciExpected: boolean('ci_expected'),
+  chronologyComplete: boolean('chronology_complete').notNull().default(false),
+  reviewsComplete: boolean('reviews_complete').notNull().default(false),
+  ciComplete: boolean('ci_complete').notNull().default(false),
+  provenance: jsonb('provenance')
+    .$type<{ chronology?: string[]; reviews?: string[]; ci?: string[] }>()
+    .notNull()
+    .default(sql`'{}'::jsonb`),
+  sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }),
+  collectedAt: timestamp('collected_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: updated(),
+});
+
+export const reviewEvents = pgTable(
+  'review_events',
+  {
+    id: id(),
+    pullRequestId: text('pull_request_id')
+      .notNull()
+      .references(() => pullRequests.id),
+    sourceId: text('source_id').notNull(),
+    reviewerId: text('reviewer_id').notNull(),
+    state: text('state').notNull(),
+    commitSha: text('commit_sha'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    kind: text('kind').$type<ReviewEvent['kind']>().notNull(),
+    source: text('source').notNull(),
+    sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    uniqueIndex('review_events_source_identity').on(t.pullRequestId, t.source, t.sourceId),
+    index('review_events_pr_time').on(t.pullRequestId, t.occurredAt),
+    check(
+      'review_events_kind',
+      sql`${t.kind} IN ('review','requested','dismissed','request-removed')`,
+    ),
+  ],
+);
+
+export const workflowAttempts = pgTable(
+  'workflow_attempts',
+  {
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    runId: text('run_id').notNull(),
+    attempt: integer('attempt').notNull(),
+    headSha: text('head_sha').notNull(),
+    status: text('status').notNull(),
+    conclusion: text('conclusion'),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }),
+    collectedAt: timestamp('collected_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.repositoryId, t.runId, t.attempt] }),
+    check('workflow_attempts_attempt', sql`${t.attempt} > 0`),
+    index('workflow_attempts_sha').on(t.repositoryId, t.headSha),
+  ],
+);
+
+export const prWorkflowAttempts = pgTable(
+  'pr_workflow_attempts',
+  {
+    pullRequestId: text('pull_request_id')
+      .notNull()
+      .references(() => pullRequests.id),
+    repositoryId: text('repository_id').notNull(),
+    runId: text('run_id').notNull(),
+    attempt: integer('attempt').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.pullRequestId, t.repositoryId, t.runId, t.attempt] }),
+    foreignKey({
+      columns: [t.repositoryId, t.runId, t.attempt],
+      foreignColumns: [
+        workflowAttempts.repositoryId,
+        workflowAttempts.runId,
+        workflowAttempts.attempt,
+      ],
+    }),
+  ],
+);
+
+export const userInterests = pgTable(
+  'user_interests',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    feature: text('feature').notNull(),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.feature] })],
+);
+
+export const historyBackfills = pgTable(
+  'history_backfills',
+  {
+    id: id(),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    cutoff: timestamp('cutoff', { withTimezone: true }).notNull(),
+    cursor: text('cursor'),
+    status: text('status').notNull(),
+    retryAt: timestamp('retry_at', { withTimezone: true }),
+    errorCategory: text('error_category'),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    check(
+      'history_backfills_status',
+      sql`${t.status} IN ('queued','discovering','importing','retrying','complete','partial','failed')`,
+    ),
+    uniqueIndex('history_backfills_one_active')
+      .on(t.repositoryId)
+      .where(sql`${t.status} IN ('queued','discovering','importing','retrying')`),
+    index('history_backfills_retry').on(t.status, t.retryAt),
+  ],
+);
+
+export const historyBackfillItems = pgTable(
+  'history_backfill_items',
+  {
+    backfillId: text('backfill_id')
+      .notNull()
+      .references(() => historyBackfills.id),
+    number: integer('number').notNull(),
+    status: text('status').notNull().default('pending'),
+    retryAt: timestamp('retry_at', { withTimezone: true }),
+    errorCategory: text('error_category'),
+    sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.backfillId, t.number] }),
+    check('history_backfill_items_number', sql`${t.number} > 0`),
+    check(
+      'history_backfill_items_status',
+      sql`${t.status} IN ('pending','importing','retrying','complete','failed')`,
+    ),
+    index('history_backfill_items_retry').on(t.status, t.retryAt),
   ],
 );

@@ -3,17 +3,26 @@ import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import { db } from '../../../db';
 import { pullRequests, prMetrics } from '../../../db/schema';
-import { requireTrackedRepository } from '../../../auth/access';
+import { accessibleRepositories } from '../../../auth/access';
 import { currentPolicy } from '../../../db/queries/dashboard';
+import { visiblePrIds } from '../../../db/queries/history-access';
 import { analyzePullRequest } from '../../../domain/pull-request/analyzer';
 import { yesNo, duration } from '../../../components/metrics';
 export const dynamic = 'force-dynamic';
 export default async function Pr({ params }: { params: Promise<{ prId: string }> }) {
-  const { prId } = await params,
-    [pr] = await db().select().from(pullRequests).where(eq(pullRequests.id, prId));
+  const { prId } = await params;
+  const repositories = (await accessibleRepositories()).filter(
+    (repo) =>
+      repo.trackingStartedAt !== null || (process.env.NODE_ENV === 'development' && repo.isDemo),
+  );
+  const visibleIds = await visiblePrIds(repositories.map((repository) => repository.id));
+  if (!visibleIds.includes(prId)) notFound();
+
+  const [pr] = await db().select().from(pullRequests).where(eq(pullRequests.id, prId));
   if (!pr) notFound();
-  const repo = await requireTrackedRepository(pr.repositoryId),
-    [row] = await db().select().from(prMetrics).where(eq(prMetrics.pullRequestId, pr.id));
+  const repo = repositories.find((repository) => repository.id === pr.repositoryId);
+  if (!repo) notFound();
+  const [row] = await db().select().from(prMetrics).where(eq(prMetrics.pullRequestId, pr.id));
   const policy = await currentPolicy(repo.id),
     analysis = analyzePullRequest(pr.facts, policy),
     m = row?.projection ?? analysis.metrics;

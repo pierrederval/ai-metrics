@@ -1,13 +1,16 @@
 import { eq, inArray, desc } from 'drizzle-orm';
 import { db } from '..';
 import { pullRequests, prMetrics, gatePolicies } from '../schema';
+import { visiblePrIds } from './history-access';
 export async function prRows(repositoryIds: string[]) {
   if (!repositoryIds.length) return [];
+  const visibleIds = await visiblePrIds(repositoryIds);
+  if (!visibleIds.length) return [];
   return db()
     .select({ pr: pullRequests, metrics: prMetrics })
     .from(pullRequests)
     .innerJoin(prMetrics, eq(prMetrics.pullRequestId, pullRequests.id))
-    .where(inArray(pullRequests.repositoryId, repositoryIds))
+    .where(inArray(pullRequests.id, visibleIds))
     .orderBy(desc(pullRequests.openedAt));
 }
 export async function currentPolicy(repositoryId: string) {
