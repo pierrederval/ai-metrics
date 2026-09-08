@@ -30,7 +30,7 @@ export function Menu({
   function focusItem(last = false) {
     requestAnimationFrame(() => {
       const items = root.current?.querySelectorAll<HTMLElement>(
-        '[role="menu"] a, [role="menu"] button',
+        '[role="menu"] a:not([aria-disabled="true"]), [role="menu"] button:not(:disabled)',
       );
       items?.[last ? items.length - 1 : 0]?.focus();
     });
@@ -52,8 +52,9 @@ export function Menu({
             return;
           }
           const items = Array.from(
-            root.current?.querySelectorAll<HTMLElement>('[role="menu"] a, [role="menu"] button') ??
-              [],
+            root.current?.querySelectorAll<HTMLElement>(
+              '[role="menu"] a:not([aria-disabled="true"]), [role="menu"] button:not(:disabled)',
+            ) ?? [],
           );
           const current = items.indexOf(document.activeElement as HTMLElement);
           const index =
@@ -90,7 +91,9 @@ export function Menu({
           role="menu"
           className="shell-menu-options"
           onClick={(event) => {
-            if ((event.target as HTMLElement).closest('a,button')) close();
+            // Native submit buttons must remain mounted for the browser's default
+            // form submission. Navigation will dispose of the menu after sign-out.
+            if ((event.target as HTMLElement).closest('a,button[type="button"]')) close();
           }}
         >
           {children}
