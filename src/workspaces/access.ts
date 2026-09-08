@@ -12,7 +12,7 @@ import {
 } from '../db/schema';
 import { env } from '../lib/env';
 import { cookieOptions } from '../auth/session';
-import type { Role, Workspace } from './store';
+import { ensureDefaultWorkspace, type Role, type Workspace } from './store';
 
 const workspaceCookie = 'fieldnote-workspace';
 const demoWorkspace = { id: 'demo', name: 'Demo workspace', role: 'member' as const };
@@ -27,6 +27,7 @@ export async function requireWorkspace(
     return demoWorkspace;
   }
   const user = await currentUser();
+  await ensureDefaultWorkspace(user.id);
   const explicit = workspaceId !== undefined;
   const preferred = explicit ? workspaceId : (await cookies()).get(workspaceCookie)?.value;
   const memberships = await db()

@@ -111,10 +111,14 @@ afterAll(async () => {
   await db()
     .delete(workspaceRepositories)
     .where(inArray(workspaceRepositories.workspaceId, workspaceIds));
+  const generated = await db()
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(inArray(workspaces.defaultForUserId, userIds));
+  await db().delete(workspaceMemberships).where(inArray(workspaceMemberships.userId, userIds));
   await db()
-    .delete(workspaceMemberships)
-    .where(inArray(workspaceMemberships.workspaceId, workspaceIds));
-  await db().delete(workspaces).where(inArray(workspaces.id, workspaceIds));
+    .delete(workspaces)
+    .where(inArray(workspaces.id, [...workspaceIds, ...generated.map(({ id }) => id)]));
   await db().delete(repositories).where(eq(repositories.id, repositoryId));
   await db().delete(installations).where(eq(installations.id, installationId));
   await db().delete(users).where(inArray(users.id, userIds));
@@ -153,6 +157,36 @@ test('an explicit empty workspace id is rejected instead of falling back', async
 test('the demo workspace rejects an explicit empty workspace id', async () => {
   fixture.demoMode = true;
   await expect(requireWorkspace('')).rejects.toThrow('not found');
+});
+
+test('concurrent first visits provision one default workspace for an existing session user', async () => {
+  fixture.userId = userIds[2];
+  fixture.cookieWorkspaceId = undefined;
+
+  const [first, second] = await Promise.all([requireWorkspace(), requireWorkspace()]);
+
+  expect(first).toEqual(second);
+  expect(first).toMatchObject({ name: 'Personal workspace', role: 'owner' });
+  expect(
+    await db()
+      .select()
+      .from(workspaceMemberships)
+      .where(eq(workspaceMemberships.userId, userIds[2])),
+  ).toHaveLength(1);
+});
+
+test('a user who left an existing default workspace is not re-added', async () => {
+  fixture.userId = userIds[2];
+  fixture.cookieWorkspaceId = undefined;
+  await db().delete(workspaceMemberships).where(eq(workspaceMemberships.userId, userIds[2]));
+
+  await expect(requireWorkspace()).rejects.toThrow('not found');
+  expect(
+    await db()
+      .select()
+      .from(workspaceMemberships)
+      .where(eq(workspaceMemberships.userId, userIds[2])),
+  ).toEqual([]);
 });
 
 test('an outsider cannot read a linked repository', async () => {
