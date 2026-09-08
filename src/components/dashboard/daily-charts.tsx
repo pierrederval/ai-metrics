@@ -109,7 +109,11 @@ function Chart({ days, metric }: { days: Day[]; metric: Metric }) {
         </div>
         <div
           className="dated-columns"
-          style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+            // Keep all gaps below 25% of the plot even for a long custom range.
+            columnGap: `min(2px, ${25 / Math.max(1, days.length)}%)`,
+          }}
         >
           {days.map((day, i) => (
             <div className="dated-column" key={day.date}>

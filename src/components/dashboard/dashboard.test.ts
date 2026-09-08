@@ -86,3 +86,17 @@ test('custom picker uses collection bounds; unknown horizon withholds custom dat
   expect(unknown).toContain('Last 90 days');
   expect(unknown).toContain('Custom dates become available');
 });
+test('a full-year custom timeline budgets gaps within chart width and retains every inspectable date', () => {
+  const range = resolveRange({ from: '2025-09-08', to: '2026-09-08' }, now);
+  const days = aggregatePeriod([], range).days;
+  const html = renderToStaticMarkup(createElement(DailyCharts, { days }));
+  for (const metric of ['merged', 'first-pass', 'ci']) {
+    expect(html.match(new RegExp(`data-metric="${metric}"`, 'g'))).toHaveLength(366);
+  }
+  expect(html.match(/<option /g)).toHaveLength(1098);
+  // The emitted gap may be at most 2px, and all inter-day gaps together
+  // must occupy less than a quarter of the available plot at any width.
+  const gaps = [...html.matchAll(/column-gap:min\(2px,\s*([\d.]+)%\)/g)];
+  expect(gaps).toHaveLength(3);
+  for (const [, percent] of gaps) expect(Number(percent) * 365).toBeLessThan(25);
+});
