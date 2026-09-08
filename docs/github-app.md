@@ -53,3 +53,56 @@ Reviews and PR timeline events are paginated. Dismissals retain the target revie
 [Workflow run attempt responses](https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run-attempt) supply run-level outcomes and mutable `updated_at` metadata. The collector never derives outcomes from job totals or treats `updated_at` as exact completion. `source_updated_at` preserves that metadata; `terminal_observed_at` records a conservative terminal observation bound from REST receipt or a stored workflow webhook receipt. Repeated identical terminal snapshots retain the earliest observation; a changed conclusion gets a new bound. Historical cutoffs before that bound remain unknown without exact completion evidence. Operational charts may use a completion-day fallback only when start and terminal observation fall on the same UTC day; otherwise the completion day is unknown. Keep partial coverage visible. Existing provider checks remain in advanced gate analysis; unsupported provider-to-workflow mappings are explicitly incomplete for basic CI.
 
 Apply `0003_review_dismissal_observation.sql` after the dashboard evidence migration before deploying these collectors. No source checkout, review/CI configuration changes, or additional write permissions are required.
+
+## Dashboard release and background operations
+
+Apply migrations in journal order with `pnpm db:migrate`, after the existing `0000` and onboarding `0001` migrations:
+
+| Migration | Purpose |
+| --- | --- |
+| `0002_dashboard_evidence.sql` | Review and workflow-attempt evidence, PR links/completeness, retained backfill runs/items, and unique user interests |
+| `0003_review_dismissal_observation.sql` | Dismissed review target identity and conservative workflow terminal observation time |
+| `0004_foreground_hydration_lifecycle.sql` | Durable foreground hydration jobs and execution ownership |
+| `0005_foreground_retry_deadlines.sql` | Persisted foreground retry time and error category |
+
+Drain active old worker executions before the coordinated application/worker release, and apply all four migrations before starting the new collectors. Preserve raw evidence and import history. The current route `/api/inngest` must register all eight functions below; registration in source does not prove that a production scheduler is serving them.
+
+| Function ID | Trigger and responsibility |
+| --- | --- |
+| `sync-repository` | `github/repository.sync.requested`, `{ repositoryId, runId }`: foreground latest-100 import |
+| `sync-pull-request` | `github/pr.sync.requested`, `{ repositoryId, number, hydrationId?, sourceEventId? }`: foreground hydration; five retries, persisted deadline, terminal failure bookkeeping |
+| `backfill-history` | `github/history.sync.requested`, `{ repositoryId, backfillId }`: one background discovery/hydration slice and next dispatch |
+| `process-github-event` | `github/webhook.received`, `{ eventId }`: normalize a stored delivery and dispatch tracked activity |
+| `recompute-pr` | `metrics/pr.recompute.requested`, `{ prId }`: advanced projection recomputation |
+| `reconcile-repository-imports` | Every minute: recover foreground import dispatch |
+| `reconcile-history-backfills` | Every minute: create missing post-import backfills and dispatch due/stale history work |
+| `reconcile-github-events` | Every five minutes: recover raw delivery processing and durable foreground hydration |
+
+A complete or partial first import starts history collection independently of its result. Existing tracked repositories with a completed/partial import and no backfill are picked up by reconciliation. A repository with older evidence but no import run needs a normal administrator refresh or `pnpm github:sync <repository-id>` first. The backfill fixes one calendar year at creation, discovers all-state PRs ordered by update time, and includes PRs opened before the cutoff if recently active. It checkpoints a page, sweep, and revision; a final discovery sweep detects source changes without repeating unchanged completed work. Refreshing the foreground import reuses the existing backfill rather than restarting it.
+
+Inspect background status separately from `repository_imports`:
+
+```sql
+SELECT id, repository_id, cutoff, cursor, status, retry_at, error_category,
+       dispatched_at, started_at, finished_at
+FROM history_backfills
+WHERE repository_id = '<repository-id>';
+
+SELECT number, status, source_updated_at, retry_at, error_category
+FROM history_backfill_items
+WHERE backfill_id = '<backfill-id>'
+ORDER BY number;
+
+SELECT id, number, status, execution_id, retry_at, error_category,
+       dispatched_at, updated_at
+FROM foreground_hydrations
+WHERE repository_id = '<repository-id>';
+```
+
+History event IDs contain the backfill ID and cursor revision; stale recovery adds a time slot. Undispatched work is recoverable, and dispatched history slices become eligible for recovery after 15 minutes. Foreground recovery waits at least one minute for an undispatched job, or 15 minutes since both dispatch and update for stale work, and never runs before `retry_at`. Its reconciler runs every five minutes. Do not clear deadlines or fabricate new run IDs to force retries.
+
+Background slices yield to active imports, unprocessed webhook events, and queued/importing/retrying foreground jobs for the installation. Installation lock contention waits 30 seconds without shortening an existing retry deadline; foreground activity waits one minute. Rate-limit handling preserves GitHub retry/reset deadlines and propagates an installation pause to other background work. Inactive installations/repositories are excluded from recovery, and access is checked again before collection. A terminal unavailable PR item can leave a partial backfill; no automatic terminal-backfill restart action is exposed. Diagnose retained statuses rather than promising that a latest-100 refresh restarts historical failures.
+
+Allow up to **13 PostgreSQL connections per application process** (ten data plus three PR-lock coordination connections), in addition to migration/operator connections. Background concurrency is bounded to three functions overall and one per repository, with an installation lock. These local integration checks are not a production capacity or scheduler test.
+
+The read-only live App check on 2026-09-08 found **`pull_request_review` not subscribed**. Enable that subscription during rollout before relying on new review webhooks. This implementation did not change App configuration or permissions. REST hydration can still read available reviews, but the local smoke repository had no review or workflow histories. See [dashboard validation](validation-dashboard-metrics.md) for the exact evidence and limitations.

@@ -44,6 +44,8 @@ pnpm build
 
 `pnpm test` has no database dependency. `pnpm test:integration` refuses any database whose name does not end in `_test`. `pnpm check` runs the complete suite and production build.
 
+The production build requires `DEMO_MODE=false`, an HTTPS `APP_URL`, and the GitHub/encryption/Inngest configuration described in [GitHub App setup](docs/github-app.md). Do not use the development demo configuration for a production build. The [dashboard validation report](docs/validation-dashboard-metrics.md) records a build with synthetic, non-secret configuration; it is not a deployment check.
+
 ## Enable GitHub integration
 
 Follow [docs/github-app.md](docs/github-app.md), set `DEMO_MODE=false`, and fill every GitHub and encryption variable in `.env`. Apply migrations, start the application, then start the durable worker UI:
@@ -55,6 +57,8 @@ pnpm inngest:dev
 ```
 
 Configure the GitHub App webhook as `APP_URL/api/github/webhook`, install the app, and sign in through `/api/auth/login`. Installation grants repository availability. In onboarding, a repository administrator chooses a repository and starts its latest-100-PR analysis. Administrators can retry partial imports, request a fresh batch, and select required gates from the repository page. Set `GITHUB_APP_SLUG` for the access-management link.
+
+Overview and repository dashboards share UTC date ranges, merged-PR counts, review-aware first-pass outcomes, and workflow success including reruns. Basic metrics do not require an advanced gate policy. Missing historical evidence stays unknown. Free access shows the latest 100 PRs per repository by creation time; background collection retains one year of PR activity independently of that visibility limit. Expanded-history interest registration does not unlock access or send notifications. Apply the dashboard migrations and register the background and recovery workers together; see [release operations](docs/github-app.md#dashboard-release-and-background-operations).
 
 Operators can also request a fresh import for an already tracked repository by internal repository ID:
 
@@ -81,5 +85,6 @@ pnpm github:sync repository:123456789
 - [Domain model](docs/domain-model.md)
 - [GitHub App setup](docs/github-app.md)
 - [Validation and limitations](docs/validation.md)
+- [Dashboard verification and release handoff](docs/validation-dashboard-metrics.md)
 - [Deferred work](docs/future.md)
 - [Execution plan](docs/superpowers/plans/2026-09-07-ai-engineering-reliability-mvp.md)
