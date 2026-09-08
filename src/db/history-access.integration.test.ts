@@ -3,15 +3,24 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import { count, inArray } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { closeDb, db } from './index';
-import { prMetrics, pullRequests, repositories, installations } from './schema';
+import {
+  prMetrics,
+  pullRequests,
+  repositories,
+  installations,
+  users,
+  userInterests,
+} from './schema';
 import { prRows } from './queries/dashboard';
 import { visiblePrIds } from './queries/history-access';
+import { persistHistoryInterest } from './queries/history-interest';
 
 const fixture = `history-${randomUUID()}`;
 const repositoryIds = [`${fixture}-repo-a`, `${fixture}-repo-b`];
 
 beforeAll(async () => {
   await migrate(db(), { migrationsFolder: 'drizzle' });
+  await db().insert(users).values({ id: fixture, login: fixture, credentials: 'synthetic-unused' });
   await db()
     .insert(installations)
     .values({
@@ -129,6 +138,12 @@ afterAll(async () => {
   await db()
     .delete(installations)
     .where(inArray(installations.id, [`${fixture}-installation`]));
+  await db()
+    .delete(userInterests)
+    .where(inArray(userInterests.userId, [fixture]));
+  await db()
+    .delete(users)
+    .where(inArray(users.id, [fixture]));
   await closeDb();
 });
 
@@ -152,4 +167,14 @@ test('Free history exposes IDs 1 through 100 per repository and retains all 202 
       .from(pullRequests)
       .where(inArray(pullRequests.repositoryId, repositoryIds)),
   ).toEqual([{ count: 202 }]);
+});
+
+test('registering expanded-history interest never grants access to older PRs', async () => {
+  const before = await visiblePrIds(repositoryIds);
+  await persistHistoryInterest(fixture);
+  expect((await visiblePrIds(repositoryIds)).sort()).toEqual(before.sort());
+  const rows = await prRows(repositoryIds);
+  expect(rows).toHaveLength(200);
+  expect(rows.map(({ pr }) => pr.id)).not.toContain(`${repositoryIds[0]}-pr-000`);
+  expect(rows.map(({ pr }) => pr.id)).not.toContain(`${repositoryIds[1]}-pr-000`);
 });

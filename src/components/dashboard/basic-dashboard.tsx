@@ -1,6 +1,7 @@
 import type { CoverageReason, DashboardData } from '../../domain/dashboard/types';
 import { DailyCharts } from './daily-charts';
 import { DateRange } from './date-range';
+import { HistoryInterest } from './history-interest';
 const coverageLabels: Record<CoverageReason, string> = {
   'import-incomplete': 'Initial import is still incomplete.',
   'history-undiscovered': 'Background history discovery is incomplete.',
@@ -67,15 +68,7 @@ export function BasicDashboard({ data }: { data: DashboardData }) {
             {data.visiblePrCount} accessible PRs · {data.coverage} coverage
           </p>
         </div>
-        <details className="expand-history">
-          <summary>Expand history ↗</summary>
-          <h3>Good work has a history.</h3>
-          <p>
-            Expanded history is coming soon. Older collected records stay stored; Free access
-            continues to show your latest 100 PRs per repository.
-          </p>
-          <p>Interest registration will be available here when it is ready.</p>
-        </details>
+        <HistoryInterest />
         {data.coverageReasons.length > 0 && (
           <ul>
             {data.coverageReasons.map((reason) => (

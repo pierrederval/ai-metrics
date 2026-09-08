@@ -100,3 +100,13 @@ test('a full-year custom timeline budgets gaps within chart width and retains ev
   expect(gaps).toHaveLength(3);
   for (const [, percent] of gaps) expect(Number(percent) * 365).toBeLessThan(25);
 });
+
+test('coverage offers a named, closed history dialog with explicit close and no premature success', () => {
+  const html = renderToStaticMarkup(createElement(BasicDashboard, { data: data() }));
+  expect(html).toContain('aria-haspopup="dialog"');
+  expect(html).toContain('<dialog');
+  expect(html).toContain('aria-labelledby=');
+  expect(html).toContain('aria-describedby=');
+  expect(html).toContain('Close');
+  expect(html).not.toContain('Your interest is registered');
+});
