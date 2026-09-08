@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { accessibleRepositories, requireTrackedRepository } from '../../auth/access';
+import { githubAccessibleRepositories } from '../../auth/access';
+import {
+  accessibleRepositories,
+  requireTrackedRepository,
+  requireWorkspace,
+} from '../../workspaces/access';
 import { env } from '../../lib/env';
 import { getImport, latestImport } from '../../db/queries/repository-imports';
 import { RepositoryPicker } from '../../components/onboarding/repository-picker';
@@ -12,12 +17,18 @@ export default async function Onboarding({
   searchParams: Promise<{ repo?: string; run?: string }>;
 }) {
   const query = await searchParams;
-  const available = await accessibleRepositories();
+  const workspace = await requireWorkspace();
+  const connected = await accessibleRepositories(workspace.id);
+  const discovered = workspace.role === 'owner' ? await githubAccessibleRepositories() : [];
+  const available = [
+    ...connected,
+    ...discovered.filter((candidate) => !connected.some(({ id }) => id === candidate.id)),
+  ];
   const config = env().integration;
   const installUrl = config
     ? `https://github.com/apps/${config.GITHUB_APP_SLUG}/installations/new`
     : '';
-  const hasTracked = available.some((repo) => repo.trackingStartedAt !== null);
+  const hasTracked = connected.some((repo) => repo.trackingStartedAt !== null);
   let resumed = null;
   if (query.run && !query.repo) notFound();
   if (query.repo) {
@@ -28,7 +39,10 @@ export default async function Onboarding({
     if (query.run && (!snapshot || snapshot.repositoryId !== repository.id)) notFound();
     if (snapshot) resumed = { repository, snapshot };
   }
-  const choices = available.filter((repo) => repo.trackingStartedAt === null);
+  const choices = available.filter(
+    (repo) =>
+      repo.trackingStartedAt === null || !connected.some((candidate) => candidate.id === repo.id),
+  );
   return (
     <>
       <div className="eyebrow">Connect your work</div>

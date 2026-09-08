@@ -2,7 +2,7 @@ import { latestImport } from '../../../db/queries/repository-imports';
 import { ImportProgress } from '../../../components/onboarding/import-progress';
 import { saveGates, refreshImport } from './actions';
 import { gateKey } from '../../../domain/pull-request/types';
-import { requireTrackedRepository } from '../../../auth/access';
+import { requireTrackedRepository } from '../../../workspaces/access';
 import { currentPolicy, prRows } from '../../../db/queries/dashboard';
 import { MetricCards } from '../../../components/metrics';
 import { PrTable } from '../../../components/pr-table';

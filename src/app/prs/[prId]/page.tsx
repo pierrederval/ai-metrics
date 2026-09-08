@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import { db } from '../../../db';
 import { pullRequests, prMetrics } from '../../../db/schema';
-import { requireTrackedRepository } from '../../../auth/access';
+import { requireTrackedRepository } from '../../../workspaces/access';
 import { currentPolicy } from '../../../db/queries/dashboard';
 import { analyzePullRequest } from '../../../domain/pull-request/analyzer';
 import { yesNo, duration } from '../../../components/metrics';

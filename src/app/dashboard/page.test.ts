@@ -5,7 +5,7 @@ const deps = vi.hoisted(() => ({
   latest: vi.fn(),
   demo: false,
 }));
-vi.mock('../../auth/access', () => ({ accessibleRepositories: deps.available }));
+vi.mock('../../workspaces/access', () => ({ accessibleRepositories: deps.available }));
 vi.mock('../../db/queries/dashboard', () => ({ prRows: deps.rows }));
 vi.mock('../../db/queries/repository-imports', () => ({ latestImport: deps.latest }));
 vi.mock('../../lib/env', () => ({ env: () => ({ DEMO_MODE: deps.demo ? 'true' : 'false' }) }));

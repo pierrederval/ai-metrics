@@ -6,7 +6,7 @@ const { session, authorize, getImport } = vi.hoisted(() => ({
   getImport: vi.fn(),
 }));
 vi.mock('../../../../../../auth/session', () => ({ hasCurrentSession: session }));
-vi.mock('../../../../../../auth/access', () => ({ requireRepository: authorize }));
+vi.mock('../../../../../../workspaces/access', () => ({ requireRepository: authorize }));
 vi.mock('../../../../../../db/queries/repository-imports', () => ({ getImport }));
 import { GET } from './route';
 const snapshot = {

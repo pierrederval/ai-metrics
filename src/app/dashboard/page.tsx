@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { env } from '../../lib/env';
 import { needsOnboarding } from '../../domain/import/onboarding';
 import { latestImport } from '../../db/queries/repository-imports';
-import { accessibleRepositories } from '../../auth/access';
+import { accessibleRepositories } from '../../workspaces/access';
 import { prRows } from '../../db/queries/dashboard';
 import { MetricCards } from '../../components/metrics';
 export const dynamic = 'force-dynamic';

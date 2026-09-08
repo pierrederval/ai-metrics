@@ -1,6 +1,6 @@
 import { unstable_rethrow } from 'next/navigation';
 import { hasCurrentSession } from '../../../../../../auth/session';
-import { requireRepository } from '../../../../../../auth/access';
+import { requireRepository } from '../../../../../../workspaces/access';
 import { getImport } from '../../../../../../db/queries/repository-imports';
 const headers = { 'Cache-Control': 'private, no-store' };
 export async function GET(

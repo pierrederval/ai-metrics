@@ -7,6 +7,7 @@ import { exchangeToken } from '../../../../auth/oauth';
 import { createSession } from '../../../../auth/session';
 import { db } from '../../../../db';
 import { users } from '../../../../db/schema';
+import { ensureDefaultWorkspace } from '../../../../workspaces/store';
 export async function GET(request: Request) {
   const url = new URL(request.url),
     jar = await cookies(),
@@ -26,12 +27,23 @@ export async function GET(request: Request) {
   const values = {
     id: String(user.id),
     login: user.login,
+    displayName: user.name,
+    avatarUrl: user.avatar_url,
     credentials: encrypt(JSON.stringify(credentials), integrationEnv().TOKEN_ENCRYPTION_KEY),
   };
   await db()
     .insert(users)
     .values(values)
-    .onConflictDoUpdate({ target: users.id, set: { ...values, updatedAt: new Date() } });
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        login: values.login,
+        avatarUrl: values.avatarUrl,
+        credentials: values.credentials,
+        updatedAt: new Date(),
+      },
+    });
+  await ensureDefaultWorkspace(values.id);
   await createSession(values.id);
   return NextResponse.redirect(new URL('/dashboard', integrationEnv().APP_URL));
 }

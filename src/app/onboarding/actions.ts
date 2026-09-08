@@ -1,7 +1,8 @@
 'use server';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireRepository, accessibleRepositories } from '../../auth/access';
+import { githubAccessibleRepositories } from '../../auth/access';
+import { linkRepository, requireRepository, requireWorkspace } from '../../workspaces/access';
 import { requestRepositoryImport } from '../../db/queries/repository-imports';
 import { dispatchImport } from '../../inngest/dispatch-import';
 import { ImportRequestError, type StartResult } from '../../domain/import/types';
@@ -35,6 +36,8 @@ export async function startFirstAnalysis(
 ): Promise<StartResult> {
   const parsed = idSchema.safeParse(form.get('repositoryId'));
   if (!parsed.success) return { error: 'Choose a repository to continue.' };
+  const workspace = await requireWorkspace(undefined, 'owner');
+  await linkRepository(workspace.id, parsed.data);
   return requestAnalysis(parsed.data, 'start');
 }
 export async function retryAnalysis(repositoryId: string, runId: string): Promise<StartResult> {
@@ -50,5 +53,6 @@ export async function refreshAnalysis(repositoryId: string): Promise<StartResult
 }
 
 export async function refreshRepositoryAccess(): Promise<void> {
-  await accessibleRepositories(true);
+  await requireWorkspace(undefined, 'owner');
+  await githubAccessibleRepositories(true);
 }

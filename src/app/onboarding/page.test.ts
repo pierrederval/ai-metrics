@@ -5,8 +5,10 @@ const deps = vi.hoisted(() => ({
   get: vi.fn(),
   latest: vi.fn(),
 }));
-vi.mock('../../auth/access', () => ({
-  accessibleRepositories: deps.available,
+vi.mock('../../auth/access', () => ({ githubAccessibleRepositories: deps.available }));
+vi.mock('../../workspaces/access', () => ({
+  accessibleRepositories: async () => [],
+  requireWorkspace: async () => ({ id: 'workspace', role: 'owner' }),
   requireTrackedRepository: deps.tracked,
 }));
 vi.mock('../../lib/env', () => ({
