@@ -74,7 +74,7 @@ export default async function WorkspaceSettings() {
         </Link>
         <span className={owner ? 'owner-badge' : 'member-badge'}>{owner ? 'Owner' : 'Member'}</span>
       </div>
-      <div className="settings-grid">
+      <div className="settings-grid" key={workspace.id}>
         <div>
           <section className="settings-panel">
             <h2>Workspace name</h2>
