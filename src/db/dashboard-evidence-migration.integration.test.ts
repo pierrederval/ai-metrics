@@ -21,6 +21,7 @@ test('migration preserves attempt identities and durable evidence checkpoints', 
 
       await tx`INSERT INTO github_installations (id, github_installation_id, account_login, account_type) VALUES ('install', 'install', 'test', 'Organization')`;
       await tx`INSERT INTO repositories (id, installation_id, github_repository_id, owner, name, default_branch, is_private) VALUES ('repo', 'install', 'repo', 'test', 'repo', 'main', true)`;
+      await tx`INSERT INTO repositories (id, installation_id, github_repository_id, owner, name, default_branch, is_private) VALUES ('other-repo', 'install', 'other-repo', 'test', 'other', 'main', true)`;
       await tx`INSERT INTO users (id, login, credentials) VALUES ('user', 'test', 'encrypted')`;
       await tx`INSERT INTO pull_requests (id, repository_id, github_pr_id, github_pr_number, title, state, author_login, head_sha, base_sha, opened_at, facts, source_updated_at) VALUES ('pr', 'repo', 'pr', 1, 'test', 'closed', 'test', 'head', 'base', '2026-01-01T00:00:00Z', '{}', '2026-01-02T00:00:00Z')`;
 
@@ -42,11 +43,18 @@ test('migration preserves attempt identities and durable evidence checkpoints', 
       });
 
       await tx`INSERT INTO workflow_attempts (repository_id, run_id, attempt, head_sha, status, conclusion, completed_at, source_updated_at) VALUES ('repo', 'run', 1, 'head', 'completed', 'failure', '2026-01-02T10:00:00Z', '2026-01-02T11:00:00Z'), ('repo', 'run', 2, 'head', 'completed', 'success', '2026-01-02T12:00:00Z', '2026-01-02T13:00:00Z')`;
+      await tx`INSERT INTO workflow_attempts (repository_id, run_id, attempt, head_sha, status) VALUES ('other-repo', 'other-run', 1, 'head', 'completed')`;
+      await expect(
+        tx.savepoint(
+          async (savepoint) =>
+            savepoint`INSERT INTO pr_workflow_attempts (pull_request_id, repository_id, run_id, attempt) VALUES ('pr', 'other-repo', 'other-run', 1)`,
+        ),
+      ).rejects.toMatchObject({ code: '23503' });
       const duplicateAttempt =
         await tx`INSERT INTO workflow_attempts (repository_id, run_id, attempt, head_sha, status) VALUES ('repo', 'run', 1, 'other', 'queued') ON CONFLICT DO NOTHING RETURNING attempt`;
       expect(duplicateAttempt).toHaveLength(0);
       const attempts =
-        await tx`SELECT attempt, conclusion, completed_at, source_updated_at FROM workflow_attempts ORDER BY attempt`;
+        await tx`SELECT attempt, conclusion, completed_at, source_updated_at FROM workflow_attempts WHERE repository_id = 'repo' ORDER BY attempt`;
       expect(
         attempts.map((attempt) => ({
           ...attempt,

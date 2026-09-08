@@ -47,7 +47,7 @@ CREATE TABLE "pr_workflow_attempts" (
 	"repository_id" text NOT NULL,
 	"run_id" text NOT NULL,
 	"attempt" integer NOT NULL,
-	CONSTRAINT "pr_workflow_attempts_pull_request_id_repository_id_run_id_attempt_pk" PRIMARY KEY("pull_request_id","repository_id","run_id","attempt")
+	CONSTRAINT "pr_workflow_attempts_pk" PRIMARY KEY("pull_request_id","repository_id","run_id","attempt")
 );
 --> statement-breakpoint
 CREATE TABLE "review_events" (
@@ -93,8 +93,10 @@ CREATE TABLE "workflow_attempts" (
 ALTER TABLE "dashboard_pr_evidence" ADD CONSTRAINT "dashboard_pr_evidence_pull_request_id_pull_requests_id_fk" FOREIGN KEY ("pull_request_id") REFERENCES "public"."pull_requests"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "history_backfill_items" ADD CONSTRAINT "history_backfill_items_backfill_id_history_backfills_id_fk" FOREIGN KEY ("backfill_id") REFERENCES "public"."history_backfills"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "history_backfills" ADD CONSTRAINT "history_backfills_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_id_repository_unique" UNIQUE("id","repository_id");--> statement-breakpoint
 ALTER TABLE "pr_workflow_attempts" ADD CONSTRAINT "pr_workflow_attempts_pull_request_id_pull_requests_id_fk" FOREIGN KEY ("pull_request_id") REFERENCES "public"."pull_requests"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pr_workflow_attempts" ADD CONSTRAINT "pr_workflow_attempts_repository_id_run_id_attempt_workflow_attempts_repository_id_run_id_attempt_fk" FOREIGN KEY ("repository_id","run_id","attempt") REFERENCES "public"."workflow_attempts"("repository_id","run_id","attempt") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pr_workflow_attempts" ADD CONSTRAINT "pr_workflow_attempts_workflow_attempt_fk" FOREIGN KEY ("repository_id","run_id","attempt") REFERENCES "public"."workflow_attempts"("repository_id","run_id","attempt") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pr_workflow_attempts" ADD CONSTRAINT "pr_workflow_attempts_pr_repository_fk" FOREIGN KEY ("pull_request_id","repository_id") REFERENCES "public"."pull_requests"("id","repository_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "review_events" ADD CONSTRAINT "review_events_pull_request_id_pull_requests_id_fk" FOREIGN KEY ("pull_request_id") REFERENCES "public"."pull_requests"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_interests" ADD CONSTRAINT "user_interests_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "workflow_attempts" ADD CONSTRAINT "workflow_attempts_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

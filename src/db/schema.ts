@@ -10,6 +10,7 @@ import {
   check,
   index,
   foreignKey,
+  unique,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -76,7 +77,10 @@ export const pullRequests = pgTable(
     createdAt: created(),
     updatedAt: updated(),
   },
-  (t) => [uniqueIndex('pr_repo_number').on(t.repositoryId, t.githubPrNumber)],
+  (t) => [
+    uniqueIndex('pr_repo_number').on(t.repositoryId, t.githubPrNumber),
+    unique('pull_requests_id_repository_unique').on(t.id, t.repositoryId),
+  ],
 );
 export const commits = pgTable(
   'commits',
@@ -374,14 +378,23 @@ export const prWorkflowAttempts = pgTable(
     attempt: integer('attempt').notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.pullRequestId, t.repositoryId, t.runId, t.attempt] }),
+    primaryKey({
+      name: 'pr_workflow_attempts_pk',
+      columns: [t.pullRequestId, t.repositoryId, t.runId, t.attempt],
+    }),
     foreignKey({
+      name: 'pr_workflow_attempts_workflow_attempt_fk',
       columns: [t.repositoryId, t.runId, t.attempt],
       foreignColumns: [
         workflowAttempts.repositoryId,
         workflowAttempts.runId,
         workflowAttempts.attempt,
       ],
+    }),
+    foreignKey({
+      name: 'pr_workflow_attempts_pr_repository_fk',
+      columns: [t.pullRequestId, t.repositoryId],
+      foreignColumns: [pullRequests.id, pullRequests.repositoryId],
     }),
   ],
 );

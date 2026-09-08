@@ -1,5 +1,5 @@
 {
-  "id": "6875d326-b99c-4e6a-9bee-1475e9ef7737",
+  "id": "5ad71b04-219c-45e6-b429-0ba7a3aa2b21",
   "prevId": "ca4a418a-28c5-47b1-a5a2-a2f6fc919d8f",
   "version": "7",
   "dialect": "postgresql",
@@ -1279,8 +1279,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "pr_workflow_attempts_repository_id_run_id_attempt_workflow_attempts_repository_id_run_id_attempt_fk": {
-          "name": "pr_workflow_attempts_repository_id_run_id_attempt_workflow_attempts_repository_id_run_id_attempt_fk",
+        "pr_workflow_attempts_workflow_attempt_fk": {
+          "name": "pr_workflow_attempts_workflow_attempt_fk",
           "tableFrom": "pr_workflow_attempts",
           "tableTo": "workflow_attempts",
           "columnsFrom": [
@@ -1295,11 +1295,26 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "pr_workflow_attempts_pr_repository_fk": {
+          "name": "pr_workflow_attempts_pr_repository_fk",
+          "tableFrom": "pr_workflow_attempts",
+          "tableTo": "pull_requests",
+          "columnsFrom": [
+            "pull_request_id",
+            "repository_id"
+          ],
+          "columnsTo": [
+            "id",
+            "repository_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "pr_workflow_attempts_pull_request_id_repository_id_run_id_attempt_pk": {
-          "name": "pr_workflow_attempts_pull_request_id_repository_id_run_id_attempt_pk",
+        "pr_workflow_attempts_pk": {
+          "name": "pr_workflow_attempts_pk",
           "columns": [
             "pull_request_id",
             "repository_id",
@@ -1468,6 +1483,14 @@
           "nullsNotDistinct": false,
           "columns": [
             "github_pr_id"
+          ]
+        },
+        "pull_requests_id_repository_unique": {
+          "name": "pull_requests_id_repository_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "repository_id"
           ]
         }
       },
