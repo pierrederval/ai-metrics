@@ -4,14 +4,14 @@ Validation date: 2026-09-08. Scope: [issue #5](https://github.com/pierrederval/a
 
 ## Automated verification
 
-Phase 8 reran the complete checks against the implemented Phases 1–7, after the browser fixes:
+Phase 8 reran the complete checks against the implemented Phases 1–7, after the browser fixes. The final review fix reran them after correcting custom-date bounds:
 
 | Command | Observed result |
 | --- | --- |
 | `pnpm lint` | Passed, exit 0 |
 | `pnpm typecheck` | Passed, exit 0 |
 | `pnpm test` | 217 tests in 38 files passed, exit 0 |
-| `TEST_DATABASE_URL=postgres://reliability:reliability@localhost:55432/reliability_test pnpm test:integration` | 64 tests in 14 files passed, exit 0 |
+| `TEST_DATABASE_URL=postgres://reliability:reliability@localhost:55432/reliability_test pnpm test:integration` | 67 tests in 14 files passed, exit 0 |
 | `pnpm build` with synthetic production configuration | Next.js 16.3.4 compiled, checked types, generated pages, and finished successfully, exit 0 |
 
 Integration tests used the dedicated local `_test` PostgreSQL database, including migration/schema, Free access, hydration persistence, backfill recovery, foreground lifecycle/deadlines, aggregation, and interest persistence cases. Unit tests cover review/CI classifications, endpoint normalization, UTC ranges, weighted rates and exclusions, rendering, authorized callers, and interest action failures. Passing mocked and database tests does not establish production scheduler or GitHub retention behavior.
@@ -59,6 +59,8 @@ App permissions already included Actions, Pull requests, and Checks read. A read
 ## Interpretation and remaining release work
 
 Free means latest 100 PRs per repository by creation time with stable ID tie-breaking, selected before dates. It limits visibility, not collection. A completed/partial first import starts independent one-year activity backfill; old active PRs can qualify, and collected records are retained. See [migration order, worker registration, recovery, and the 13-connection per-process budget](github-app.md#dashboard-release-and-background-operations).
+
+Custom dates require a finished complete/partial two-sweep discovery. Its cutoff establishes the lower bound; later persisted `dashboard_pr_evidence.collected_at` for visible PRs in a discovered, authorized repository can extend the upper bound beyond the initial backfill completion, capped at today. Hidden PRs, unselected/revoked repositories, and mutable provider timestamps cannot extend it. Without established discovery the bounds remain unknown. This selectable range does not establish continuous collection: coverage still uses the scan's original completion time, later empty days remain gaps, and unsupported comparisons remain suppressed. The final query regressions cover a September 8 backfill followed by September 15 collection, visibility/access isolation, and the today clamp; component coverage verifies the advanced input maximum and defaults.
 
 PR outcomes are evaluated as of merge. Workflow outcomes use run-attempt conclusions, never job totals. GitHub's mutable `updated_at` is stored as source metadata rather than exact completion. An observed terminal snapshot gives a conservative upper bound; earlier historical cutoffs stay unknown. Operational day attribution can fall back to that observation only when start and observation share one UTC day. Missing chronology, deleted/dismissed review transitions, unresolved team history, unsupported provider mappings, retention gaps, or truncated workflow results can reduce coverage and suppress comparisons. Pending, cancelled, skipped, neutral, and unknown results stay outside the CI rate denominator.
 

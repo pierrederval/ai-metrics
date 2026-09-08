@@ -86,7 +86,8 @@ export type DashboardData = {
   undatedCi: Record<CiOutcome, number>;
   previousUndatedCi: Record<CiOutcome, number>;
   timezone: 'UTC';
-  /** Inclusive picker bounds, not a completeness claim. Unknown disables custom history choice. */
+  /** Inclusive discovered picker bounds, extended by visible evidence collection;
+   * not a completeness claim. Unknown disables custom history choice. */
   collectionBounds: {
     from: string | null;
     to: string | null;

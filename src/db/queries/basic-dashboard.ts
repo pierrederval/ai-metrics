@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, max, or, sql } from 'drizzle-orm';
 import { db } from '..';
 import * as s from '../schema';
 import { visiblePrIds } from './history-access';
@@ -80,7 +80,7 @@ export async function loadBasicDashboard(
           .from(s.pullRequests)
           .where(eq(s.pullRequests.repositoryId, id)),
       ]);
-      return { history, import: imports[0], hidden: counts[0].count > 100 };
+      return { id, history, import: imports[0], hidden: counts[0].count > 100 };
     }),
   );
   const current = aggregatePeriod(evidence, range);
@@ -90,22 +90,40 @@ export async function loadBasicDashboard(
   const today = now.toISOString().slice(0, 10);
   // A finished two-sweep discovery establishes a selectable horizon even when
   // some hydration failed. It does not establish metric or Free completeness.
-  const horizons = contexts.flatMap(({ history }) =>
+  const horizons = contexts.flatMap(({ id, history }) =>
     history &&
     ['complete', 'partial'].includes(history.status) &&
     history.cursor.page === null &&
     history.cursor.sweep === 1 &&
     history.finishedAt
-      ? [{ from: history.cutoff.slice(0, 10), to: history.finishedAt.toISOString().slice(0, 10) }]
+      ? [
+          {
+            id,
+            from: history.cutoff.slice(0, 10),
+            to: history.finishedAt.toISOString().slice(0, 10),
+          },
+        ]
       : [],
   );
+  // Later visible collection extends the picker, not the scan's coverage claim.
+  // Use actual observation time, never mutable provider dates or hidden PRs.
+  const discovered = new Set(horizons.map((h) => h.id));
+  const collectedVisibleIds = rows
+    .filter((row) => discovered.has(row.repositoryId))
+    .map((row) => row.id);
+  const [collection] = collectedVisibleIds.length
+    ? await db()
+        .select({ latest: max(s.dashboardPrEvidence.collectedAt) })
+        .from(s.dashboardPrEvidence)
+        .where(inArray(s.dashboardPrEvidence.pullRequestId, collectedVisibleIds))
+    : [];
+  const latestCollection = collection?.latest?.toISOString().slice(0, 10);
   const collectionBounds: DashboardData['collectionBounds'] = horizons.length
     ? {
         from: horizons.map((h) => h.from).sort()[0],
         to: [
           today,
-          horizons
-            .map((h) => h.to)
+          [...horizons.map((h) => h.to), ...(latestCollection ? [latestCollection] : [])]
             .sort()
             .at(-1)!,
         ].sort()[0],

@@ -76,6 +76,15 @@ test('custom picker uses collection bounds; unknown horizon withholds custom dat
   );
   expect(html).toContain('min="2025-09-08"');
   expect(html).toContain('max="2026-09-08"');
+  const advanced = renderToStaticMarkup(
+    createElement(DateRange, {
+      range: resolveRange({ days: 7 }, new Date('2026-09-15T12:00:00Z')),
+      bounds: { ...d.collectionBounds, to: '2026-09-15' },
+    }),
+  );
+  expect(advanced).toContain('max="2026-09-15"');
+  expect(advanced).toContain('value="2026-09-09"');
+  expect(advanced).toContain('value="2026-09-15"');
   const unknown = renderToStaticMarkup(
     createElement(DateRange, {
       range: d.range,

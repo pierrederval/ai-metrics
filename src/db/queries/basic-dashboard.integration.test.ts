@@ -42,6 +42,7 @@ beforeAll(async () => {
     .onConflictDoNothing();
 });
 beforeEach(async () => {
+  vi.setSystemTime(new Date('2026-09-10T12:00:00Z'));
   const prs = await db()
     .select({ id: s.pullRequests.id })
     .from(s.pullRequests)
@@ -132,7 +133,7 @@ async function insertPr(
     });
   return id;
 }
-async function completeHistory(repo: string) {
+async function completeHistory(repo: string, finishedAt = '2026-09-10') {
   await db()
     .insert(s.repositoryImports)
     .values({
@@ -141,7 +142,7 @@ async function completeHistory(repo: string) {
       state: 'complete',
       total: 1,
       completed: 1,
-      finishedAt: new Date('2026-09-10'),
+      finishedAt: new Date(finishedAt),
     });
   await db()
     .insert(s.historyBackfills)
@@ -151,7 +152,7 @@ async function completeHistory(repo: string) {
       status: 'complete',
       cutoff: new Date('2025-09-10'),
       cursor: JSON.stringify({ page: null, sweep: 1, revision: 1, failures: 0 }),
-      finishedAt: new Date('2026-09-10'),
+      finishedAt: new Date(finishedAt),
     });
 }
 test('authorized repository aggregate weights counts and shares daily numerators with totals', async () => {
@@ -278,4 +279,59 @@ test('custom picker bounds require discovered backfill metadata, not old PR crea
     .set({ cursor: JSON.stringify({ page: 2, sweep: 1, revision: 2, failures: 0 }) })
     .where(eq(s.historyBackfills.repositoryId, repos[0]));
   expect((await loadBasicDashboard([repos[0]], range)).collectionBounds.source).toBe('unknown');
+});
+
+test('visible collection advances custom dates after the initial backfill without certifying later coverage', async () => {
+  await completeHistory(repos[0], '2026-09-08');
+  vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
+  const recent = resolveRange({ days: 7 }, new Date());
+  expect((await loadBasicDashboard([repos[0]], recent)).collectionBounds.to).toBe('2026-09-08');
+  await insertPr(repos[0], 1, { mergedAt: '2026-09-14T12:00:00Z' });
+  const data = await loadBasicDashboard([repos[0]], recent);
+  expect(data.collectionBounds).toEqual({
+    from: '2025-09-10',
+    to: '2026-09-15',
+    source: 'backfill-discovery',
+  });
+  expect(data.totals.merged).toBe(1);
+  expect(data.coverage).toBe('partial');
+  expect(data.coverageReasons).toContain('outside-collected-history');
+  expect(data.comparisons).toEqual({
+    mergedPercent: null,
+    firstPassPoints: null,
+    ciSuccessPoints: null,
+  });
+  expect(data.days.find((day) => day.date === '2026-09-13')?.mergedValue).toBeNull();
+});
+
+test('hidden and unselected repository collection timestamps cannot extend custom bounds', async () => {
+  await completeHistory(repos[0], '2026-09-08');
+  for (let n = 1; n <= 100; n++) await insertPr(repos[0], n);
+  vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
+  await insertPr(repos[0], 101, { openedAt: '2020-01-01T00:00:00Z' });
+  await insertPr(repos[1], 1);
+  await completeHistory(repos[1], '2026-09-15');
+  await db()
+    .update(s.dashboardPrEvidence)
+    .set({ sourceUpdatedAt: new Date('2026-09-20') })
+    .where(eq(s.dashboardPrEvidence.pullRequestId, `${repos[0]}-1`));
+  const data = await loadBasicDashboard([repos[0]], range);
+  expect(data.collectionBounds.to).toBe('2026-09-10');
+  expect(data.visiblePrCount).toBe(100);
+  await db().update(s.repositories).set({ active: false }).where(eq(s.repositories.id, repos[1]));
+  expect((await loadBasicDashboard(repos, range)).collectionBounds.to).toBe('2026-09-10');
+});
+
+test('visible collection bounds clamp to today and remain unknown without finished discovery', async () => {
+  await completeHistory(repos[0], '2026-09-08');
+  vi.setSystemTime(new Date('2026-09-16T12:00:00Z'));
+  await insertPr(repos[0], 1);
+  vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
+  expect((await loadBasicDashboard([repos[0]], range)).collectionBounds.to).toBe('2026-09-15');
+  await db().delete(s.historyBackfills).where(eq(s.historyBackfills.repositoryId, repos[0]));
+  expect((await loadBasicDashboard([repos[0]], range)).collectionBounds).toEqual({
+    from: null,
+    to: null,
+    source: 'unknown',
+  });
 });
