@@ -468,3 +468,30 @@ export const historyBackfillItems = pgTable(
     index('history_backfill_items_retry').on(t.status, t.retryAt),
   ],
 );
+
+export const foregroundHydrations = pgTable(
+  'foreground_hydrations',
+  {
+    id: id(),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    number: integer('number').notNull(),
+    sourceEventId: text('source_event_id'),
+    status: text('status').notNull().default('queued'),
+    executionId: text('execution_id'),
+    retryAt: timestamp('retry_at', { withTimezone: true }),
+    errorCategory: text('error_category'),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    check('foreground_hydrations_number', sql`${t.number} > 0`),
+    check(
+      'foreground_hydrations_status',
+      sql`${t.status} IN ('queued','importing','retrying','complete','failed')`,
+    ),
+    index('foreground_hydrations_active').on(t.repositoryId, t.status, t.updatedAt),
+  ],
+);

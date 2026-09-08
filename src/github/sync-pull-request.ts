@@ -1,5 +1,10 @@
+import {
+  captureGithubRetry,
+  GithubCollectionRetryError,
+  type GithubRetryFailure,
+} from './retry-errors';
 import { eq, and, sql } from 'drizzle-orm';
-import { db } from '../db';
+import { db, withPullRequestLock } from '../db';
 import { githubEvents, commits } from '../db/schema';
 import { persistPr, stableId } from '../db/queries/persist-pr';
 import { assertTrackedRepository, repositoryClient } from './repositories';
@@ -21,6 +26,9 @@ const edgeSchema = z.object({
   }),
 });
 export async function syncPullRequest(repositoryId: string, number: number) {
+  return withPullRequestLock(repositoryId, number, () => hydratePullRequest(repositoryId, number));
+}
+async function hydratePullRequest(repositoryId: string, number: number) {
   await assertTrackedRepository(repositoryId);
   const { repo, client } = await repositoryClient(repositoryId),
     args = { owner: repo.owner, repo: repo.name, pull_number: number };
@@ -97,12 +105,12 @@ export async function syncPullRequest(repositoryId: string, number: number) {
     }
   }
   const checks = [];
-  const retryErrors: unknown[] = [];
+  const retryErrors: GithubRetryFailure[] = [];
   for (const sha of shas) {
     try {
       checks.push(...(await collectChecks(client, repo.owner, repo.name, sha, issues)));
     } catch (error) {
-      retryErrors.push(error);
+      retryErrors.push(captureGithubRetry(error));
       issues.push(`Check collection failed for ${sha}`);
     }
   }
@@ -119,8 +127,8 @@ export async function syncPullRequest(repositoryId: string, number: number) {
     ciResult.status === 'fulfilled'
       ? ciResult.value
       : { attempts: [], complete: false, issues: ['Workflow collection failed; retry required'] };
-  if (reviewResult.status === 'rejected') retryErrors.push(reviewResult.reason);
-  if (ciResult.status === 'rejected') retryErrors.push(ciResult.reason);
+  if (reviewResult.status === 'rejected') retryErrors.push(captureGithubRetry(reviewResult.reason));
+  if (ciResult.status === 'rejected') retryErrors.push(captureGithubRetry(ciResult.reason));
   const checkEvents = await db()
     .select()
     .from(githubEvents)
@@ -260,6 +268,6 @@ export async function syncPullRequest(repositoryId: string, number: number) {
         committedAt: commit.commit.committer?.date ? new Date(commit.commit.committer.date) : null,
       })
       .where(eq(commits.id, stableId(id, commit.sha)));
-  if (retryErrors.length) throw retryErrors[0];
+  if (retryErrors.length) throw new GithubCollectionRetryError(retryErrors);
   return id;
 }

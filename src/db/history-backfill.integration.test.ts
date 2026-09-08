@@ -201,8 +201,11 @@ test('bounds concurrent background collection across repositories in one install
   const discoverB = vi.fn();
   await processHistorySlice(repoB, idB, { discover: discoverB, hydrate: vi.fn() });
   expect(discoverB).not.toHaveBeenCalled();
+  const contended = await getHistoryBackfill(idB);
   finish({ numbers: [], nextPage: null });
   await running;
+  expect(contended).toMatchObject({ status: 'retrying', errorCategory: 'contention' });
+  expect(Date.parse(contended!.retryAt!) - Date.now()).toBeLessThan(61000);
 });
 test('dispatch acknowledgement gaps reuse identity, and stale dispatched work is recoverable', async () => {
   const repo = await repository(),

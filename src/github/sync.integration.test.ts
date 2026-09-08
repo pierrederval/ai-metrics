@@ -7,20 +7,57 @@ import * as s from '../db/schema';
 import { persistEvent } from '../db/queries/events';
 import { syncPullRequest } from './sync-pull-request';
 import { loadDashboardEvidence } from '../db/queries/dashboard-evidence';
+import {
+  ensureHistoryBackfill,
+  processHistorySlice,
+  getHistoryBackfill,
+} from '../db/queries/history-backfill';
 import { classifyMergedPr, classifyWorkflow } from '../domain/dashboard/classify';
 let reviewStatus = 200;
+let mixedErrors = false;
+let blockHydration: Promise<void> | undefined;
+let blockedRequests = 0;
+const limitReset = Math.floor(Date.now() / 1000) + 3600;
 let includeProviderChecks = true;
 vi.mock('./repositories', () => ({
   assertTrackedRepository: async () => {},
   repositoryClient: async () => ({
     repo: { id: 'hydrate-repo', owner: 'owner', name: 'repo', githubRepositoryId: '4242' },
-    client: new Octokit({ request: { fetch: fakeFetch } }),
+    client: new Octokit({
+      request: { fetch: fakeFetch },
+      retry: { enabled: false },
+      throttle: { enabled: false },
+    }),
   }),
 }));
 const t = (n: number) => new Date(Date.UTC(2026, 0, 1, 0, n)).toISOString();
 async function fakeFetch(input: RequestInfo | URL) {
   const url = String(input);
+  if (blockHydration && /\/pulls\/1$/.test(url)) {
+    blockedRequests++;
+    await blockHydration;
+  }
   let data: unknown;
+  if (mixedErrors && (url.includes('/check-runs') || url.includes('/reviews'))) {
+    const limited = url.includes('/reviews');
+    return new Response(
+      JSON.stringify({
+        message: limited ? 'API rate limit exceeded' : 'Server error',
+        authorization: 'must-not-retain',
+      }),
+      {
+        status: limited ? 403 : 500,
+        headers: {
+          'content-type': 'application/json',
+          ...(limited
+            ? { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': String(limitReset) }
+            : {}),
+          authorization: 'must-not-retain',
+        },
+      },
+    );
+  }
+
   if (url.includes('/reviews') || url.includes('/timeline')) {
     return new Response(JSON.stringify(reviewStatus === 200 ? [] : { message: 'Unavailable' }), {
       status: reviewStatus,
@@ -223,5 +260,57 @@ test('hydration keeps CI operational evidence when merge first-pass chronology i
     await db()
       .delete(s.githubEvents)
       .where(eq(s.githubEvents.deliveryId, 'hydrate-workflow-completed'));
+  }
+});
+
+test('mixed collector errors preserve the most restrictive rate-limit deadline through background hydration', async () => {
+  // Clear raw fixture webhooks so only this background collector is under test.
+  await db()
+    .update(s.githubEvents)
+    .set({ processedAt: new Date() })
+    .where(eq(s.githubEvents.repositoryId, '4242'));
+  const oldRuns = await db()
+    .select()
+    .from(s.historyBackfills)
+    .where(eq(s.historyBackfills.repositoryId, 'hydrate-repo'));
+  for (const run of oldRuns)
+    await db().delete(s.historyBackfillItems).where(eq(s.historyBackfillItems.backfillId, run.id));
+  await db().delete(s.historyBackfills).where(eq(s.historyBackfills.repositoryId, 'hydrate-repo'));
+  const id = await ensureHistoryBackfill('hydrate-repo');
+  await processHistorySlice('hydrate-repo', id, {
+    discover: async () => ({ numbers: [1], nextPage: null }),
+  });
+  mixedErrors = true;
+  try {
+    await processHistorySlice('hydrate-repo', id);
+    const run = await getHistoryBackfill(id);
+    expect(run).toMatchObject({ status: 'retrying', errorCategory: 'rate-limit' });
+    expect(Date.parse(run!.retryAt!)).toBeGreaterThanOrEqual(limitReset * 1000);
+    expect(JSON.stringify(run)).not.toContain('must-not-retain');
+    await expect(syncPullRequest('hydrate-repo', 1)).rejects.toMatchObject({
+      retryFailures: expect.arrayContaining([
+        expect.objectContaining({ status: 500 }),
+        expect.objectContaining({ status: 403, errorCategory: 'rate-limit' }),
+      ]),
+    });
+  } finally {
+    mixedErrors = false;
+  }
+});
+
+test('the shared collector excludes concurrent foreground and background hydration of the same PR', async () => {
+  let release!: () => void;
+  blockHydration = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const first = syncPullRequest('hydrate-repo', 1);
+  try {
+    await vi.waitFor(() => expect(blockedRequests).toBe(1));
+    await expect(syncPullRequest('hydrate-repo', 1)).rejects.toThrow('already running');
+    expect(blockedRequests).toBe(1);
+  } finally {
+    release();
+    blockHydration = undefined;
+    await first;
   }
 });

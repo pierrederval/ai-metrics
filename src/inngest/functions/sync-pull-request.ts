@@ -1,13 +1,20 @@
+import { RetryAfterError } from 'inngest';
+import { GithubCollectionRetryError } from '../../github/retry-errors';
 import { inngest } from '../client';
 import { prSyncData } from '../events';
-import { syncPullRequest } from '../../github/sync-pull-request';
+import {
+  finishForegroundHydration,
+  runForegroundHydration,
+} from '../../db/queries/foreground-hydration';
 export const syncPullRequestFunction = inngest.createFunction(
   {
     id: 'sync-pull-request',
     triggers: [{ event: 'github/pr.sync.requested' }],
     retries: 5,
     onFailure: async ({ event, error }) => {
-      const { repositoryId, number, sourceEventId } = prSyncData.parse(event.data.event.data);
+      const data = prSyncData.parse(event.data.event.data);
+      const { repositoryId, number, sourceEventId } = data;
+      await finishForegroundHydration(data, 'failed', event.data.run_id);
       console.error('Pull request synchronization failed', {
         repositoryId,
         pullRequestNumber: number,
@@ -17,8 +24,16 @@ export const syncPullRequestFunction = inngest.createFunction(
     },
     concurrency: { limit: 1, key: 'event.data.repositoryId + ":" + event.data.number' },
   },
-  async ({ event, step }) => {
-    const { repositoryId, number } = prSyncData.parse(event.data);
-    return step.run('hydrate-and-project-pr', () => syncPullRequest(repositoryId, number));
+  async ({ event, step, runId }) => {
+    const data = prSyncData.parse(event.data);
+    return step.run('hydrate-and-project-pr', async () => {
+      try {
+        return await runForegroundHydration(data, runId);
+      } catch (error) {
+        if (error instanceof GithubCollectionRetryError)
+          throw new RetryAfterError(error.message, new Date(error.retryAt));
+        throw error;
+      }
+    });
   },
 );

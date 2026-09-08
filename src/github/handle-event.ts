@@ -1,3 +1,7 @@
+import {
+  queueForegroundHydration,
+  markForegroundDispatched,
+} from '../db/queries/foreground-hydration';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -64,11 +68,18 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
       for (const pr of associated) numbers.add(pr.number);
     }
   }
-  for (const number of numbers)
+  for (const number of numbers) {
+    const data = await queueForegroundHydration({
+      repositoryId: repo.id,
+      number,
+      sourceEventId: event.id,
+    });
     await inngest.send({
       id: `${event.deliveryId}:pr:${number}`,
       name: 'github/pr.sync.requested',
-      data: { repositoryId: repo.id, number, sourceEventId: event.id },
+      data,
     });
+    await markForegroundDispatched(data.hydrationId);
+  }
   return numbers.size ? 'processed' : 'unsupported';
 }

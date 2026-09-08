@@ -3,6 +3,7 @@ export const eventData = z.object({ eventId: z.string().min(1) });
 export const prSyncData = z.object({
   repositoryId: z.string().min(1),
   number: z.number().int().positive(),
+  hydrationId: z.string().min(1).optional(),
   sourceEventId: z.string().min(1).optional(),
 });
 export const repositorySyncData = z.object({

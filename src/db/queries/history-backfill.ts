@@ -10,6 +10,7 @@ import {
   repositories,
   repositoryImports,
   githubEvents,
+  foregroundHydrations,
 } from '../schema';
 import { assertTrackedRepository } from '../../github/repositories';
 import { discoverHistoryPage } from '../../github/discover-history';
@@ -141,6 +142,8 @@ export async function repositoriesMissingHistory(): Promise<string[]> {
 const errorSchema = z.object({
   status: z.number().optional(),
   message: z.string().optional(),
+  errorCategory: z.string().optional(),
+  retryAt: z.string().datetime().optional(),
   response: z.object({ headers: z.record(z.string(), z.unknown()).optional() }).optional(),
 });
 function retry(error: unknown, now: Date, failures: number) {
@@ -148,6 +151,7 @@ function retry(error: unknown, now: Date, failures: number) {
   const status = parsed.success ? parsed.data.status : undefined;
   const headers = parsed.success ? (parsed.data.response?.headers ?? {}) : {};
   const limited =
+    (parsed.success && parsed.data.errorCategory === 'rate-limit') ||
     status === 429 ||
     (status === 403 &&
       (headers['retry-after'] !== undefined ||
@@ -160,6 +164,8 @@ function retry(error: unknown, now: Date, failures: number) {
   if (limited && Number.isFinite(after) && after > 0) delay = Math.max(delay, after * 1000);
   if (limited && Number.isFinite(reset) && reset > 0)
     delay = Math.max(delay, reset * 1000 - now.getTime() + 1000);
+  if (parsed.success && parsed.data.retryAt)
+    delay = Math.max(delay, Date.parse(parsed.data.retryAt) - now.getTime());
   return {
     retryAt: new Date(now.getTime() + delay),
     errorCategory: limited
@@ -194,7 +200,30 @@ export async function processHistorySlice(
     const [lock] = await tx.execute<{ acquired: boolean }>(
       sql`select pg_try_advisory_xact_lock(hashtextextended(${`history-installation:${context.installation.id}`},0)) as acquired`,
     );
-    if (!lock.acquired) return;
+    if (!lock.acquired) {
+      // Guard the cursor so a concurrent worker's checkpoint cannot be overwritten.
+      await tx
+        .update(runs)
+        .set({
+          status: 'retrying',
+          retryAt: new Date(now.getTime() + 30000),
+          errorCategory: 'contention',
+          dispatchedAt: null,
+          updatedAt: now,
+          cursor: JSON.stringify({
+            ...historyCursor(context.run.cursor),
+            revision: historyCursor(context.run.cursor).revision + 1,
+          }),
+        })
+        .where(
+          and(
+            eq(runs.id, backfillId),
+            inArray(runs.status, active),
+            context.run.cursor === null ? isNull(runs.cursor) : eq(runs.cursor, context.run.cursor),
+          ),
+        );
+      return;
+    }
     const [run] = await tx.select().from(runs).where(eq(runs.id, backfillId));
     if (!active.includes(run.status) || (run.retryAt && run.retryAt > now)) return;
     const cursor = historyCursor(run.cursor);
@@ -262,7 +291,20 @@ export async function processHistorySlice(
         ),
       )
       .limit(1);
-    if (foregroundImport || freshEvent) {
+    const [foregroundHydration] = await tx
+      .select({ id: foregroundHydrations.id })
+      .from(foregroundHydrations)
+      .innerJoin(repositories, eq(repositories.id, foregroundHydrations.repositoryId))
+      .where(
+        and(
+          eq(repositories.installationId, context.installation.id),
+          eq(repositories.active, true),
+          isNotNull(repositories.trackingStartedAt),
+          inArray(foregroundHydrations.status, ['queued', 'importing', 'retrying']),
+        ),
+      )
+      .limit(1);
+    if (foregroundImport || freshEvent || foregroundHydration) {
       await update({
         status: 'retrying',
         retryAt: new Date(now.getTime() + 60000),

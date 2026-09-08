@@ -8,6 +8,10 @@ const { send, reconcile, select } = vi.hoisted(() => ({
 vi.mock('../inngest/client', () => ({ inngest: { send } }));
 vi.mock('./repositories', () => ({ reconcileInstallation: reconcile, repositoryClient: vi.fn() }));
 vi.mock('./resolve-installation', () => ({ resolveWebhookInstallationId: async () => '123' }));
+vi.mock('../db/queries/foreground-hydration', () => ({
+  queueForegroundHydration: async (data: unknown) => data,
+  markForegroundDispatched: async () => {},
+}));
 vi.mock('../db', () => ({ db: () => ({ select }) }));
 
 import { handleGithubEvent } from './handle-event';
