@@ -432,3 +432,111 @@ code {
     background: #f0f4ed;
   }
 }
+
+.onboarding-workspace {
+  max-width: 760px;
+  margin-top: 32px;
+}
+.onboarding-repository-heading {
+  overflow-wrap: anywhere;
+}
+.onboarding-panel {
+  animation: onboarding-enter 250ms ease-out both;
+}
+.onboarding-panel h2 {
+  margin-top: 12px;
+}
+.onboarding-panel input[type='search'] {
+  width: 100%;
+}
+.onboarding-panel button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.repository-choices {
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+.repository-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.repository-choice input {
+  margin: 5px 0 0;
+  flex-shrink: 0;
+}
+.repository-choice span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.repository-choice small {
+  display: block;
+}
+.repository-access {
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+  margin-top: 28px;
+  font-size: 13px;
+}
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 24px;
+  font-size: 14px;
+}
+.import-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--line);
+  margin: 24px 0 12px;
+}
+.import-progress-fill {
+  height: 100%;
+  transition: width 250ms ease-out;
+  background: var(--ink);
+}
+.import-complete-mark {
+  display: inline-block;
+  animation: onboarding-enter 200ms ease-out both;
+  color: var(--accent);
+  font-size: 32px;
+}
+.onboarding-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@keyframes onboarding-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-panel,
+  .import-complete-mark {
+    animation: none;
+  }
+  .import-progress-fill {
+    transition: none;
+  }
+}

@@ -1,3 +1,4 @@
+import { reconcileImports } from '../../../inngest/functions/reconcile-imports';
 import { syncRepositoryFunction } from '../../../inngest/functions/sync-repository';
 import { syncPullRequestFunction } from '../../../inngest/functions/sync-pull-request';
 import { serve } from 'inngest/next';
@@ -13,6 +14,7 @@ export const { GET, POST, PUT } = serve({
     syncPullRequestFunction,
     processGithubEvent,
     reconcileEvents,
+    reconcileImports,
     recomputePrFunction,
   ],
 });

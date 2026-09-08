@@ -19,14 +19,7 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
   });
   if (!installationId) return 'unsupported';
   if (['installation', 'installation_repositories'].includes(event.eventName)) {
-    const ids = await reconcileInstallation(installationId);
-    if (['created', 'added', 'unsuspend', 'new_permissions_accepted'].includes(event.action ?? ''))
-      for (const repositoryId of ids)
-        await inngest.send({
-          id: `${event.deliveryId}:${repositoryId}`,
-          name: 'github/repository.sync.requested',
-          data: { repositoryId },
-        });
+    await reconcileInstallation(installationId);
     return 'processed';
   }
   if (
@@ -45,7 +38,7 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
       .from(repositories)
       .where(eq(repositories.githubRepositoryId, event.repositoryId));
   }
-  if (!repo || !repo.active) return 'unsupported';
+  if (!repo || !repo.active || !repo.trackingStartedAt) return 'unsupported';
   const numbers = new Set<number>();
   if (event.eventName === 'pull_request')
     numbers.add(

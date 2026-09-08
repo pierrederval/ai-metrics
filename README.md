@@ -54,9 +54,9 @@ pnpm dev
 pnpm inngest:dev
 ```
 
-Configure the GitHub App webhook as `APP_URL/api/github/webhook`, install the app, and sign in through `/api/auth/login`. Installation events enqueue a latest-100-PR import. Repository administrators can retry an import and select required gates from the repository page.
+Configure the GitHub App webhook as `APP_URL/api/github/webhook`, install the app, and sign in through `/api/auth/login`. Installation grants repository availability. In onboarding, a repository administrator chooses a repository and starts its latest-100-PR analysis. Administrators can retry partial imports, request a fresh batch, and select required gates from the repository page. Set `GITHUB_APP_SLUG` for the access-management link.
 
-You can also request an import by internal repository ID:
+Operators can also request a fresh import for an already tracked repository by internal repository ID:
 
 ```bash
 pnpm github:sync repository:123456789

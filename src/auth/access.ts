@@ -5,7 +5,23 @@ import { env } from '../lib/env';
 import { notFound } from 'next/navigation';
 import { userClient } from './session';
 import { authorizeRepository, type RepositoryGrant } from './authorization';
-export async function accessibleRepositories() {
+import { reconcileInstallation } from '../github/repositories';
+
+async function availableRepositories() {
+  return db()
+    .select({ repo: repositories, installation: installations })
+    .from(repositories)
+    .innerJoin(installations, eq(installations.id, repositories.installationId))
+    .where(
+      and(
+        eq(repositories.active, true),
+        eq(installations.active, true),
+        eq(repositories.isDemo, false),
+      ),
+    );
+}
+
+export async function accessibleRepositories(refresh = false) {
   if (env().DEMO_MODE === 'true')
     return (
       await db()
@@ -31,17 +47,31 @@ export async function accessibleRepositories() {
         admin: repo.permissions?.admin === true,
       });
   }
-  const available = await db()
-    .select({ repo: repositories, installation: installations })
-    .from(repositories)
-    .innerJoin(installations, eq(installations.id, repositories.installationId))
-    .where(
-      and(
-        eq(repositories.active, true),
-        eq(installations.active, true),
-        eq(repositories.isDemo, false),
-      ),
-    );
+  const localInstallations = await db().select().from(installations);
+  let available = await availableRepositories();
+  const missing = new Set(
+    installs
+      .filter((installation) => !installation.suspended_at)
+      .filter((installation) => {
+        const installationId = String(installation.id);
+        return (
+          refresh ||
+          !localInstallations.some((local) => local.githubInstallationId === installationId) ||
+          grants.some(
+            (grant) =>
+              grant.installationId === installationId &&
+              !available.some(
+                ({ repo, installation: local }) =>
+                  local.githubInstallationId === grant.installationId &&
+                  repo.githubRepositoryId === grant.githubRepositoryId,
+              ),
+          )
+        );
+      })
+      .map((installation) => String(installation.id)),
+  );
+  for (const installationId of missing) await reconcileInstallation(installationId);
+  if (missing.size) available = await availableRepositories();
   return available
     .filter(({ repo, installation }) =>
       authorizeRepository({ ...repo, installationId: installation.githubInstallationId }, grants),
@@ -58,5 +88,12 @@ export async function accessibleRepositories() {
 export async function requireRepository(id: string, admin = false) {
   const repo = (await accessibleRepositories()).find((r) => r.id === id);
   if (!repo || (admin && !repo.canAdmin)) notFound();
+  return repo;
+}
+
+export async function requireTrackedRepository(id: string, admin = false) {
+  const repo = await requireRepository(id, admin);
+  if (!repo.trackingStartedAt && !(process.env.NODE_ENV === 'development' && repo.isDemo && !admin))
+    notFound();
   return repo;
 }

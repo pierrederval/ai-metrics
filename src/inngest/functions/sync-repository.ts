@@ -1,62 +1,68 @@
-import { eq } from 'drizzle-orm';
 import { inngest } from '../client';
 import { repositorySyncData } from '../events';
 import { latestPullRequests } from '../../github/sync-repository';
+import { assertTrackedRepository } from '../../github/repositories';
 import { syncPullRequestFunction } from './sync-pull-request';
-import { db } from '../../db';
-import { repositories } from '../../db/schema';
+import {
+  getImport,
+  beginImport,
+  saveImportBatch,
+  recordImportItem,
+  finishImport,
+  failImport,
+} from '../../db/queries/repository-imports';
+import { isActiveImport } from '../../domain/import/progress';
 export const syncRepositoryFunction = inngest.createFunction(
   {
     id: 'sync-repository',
     triggers: [{ event: 'github/repository.sync.requested' }],
     retries: 5,
-    singleton: { key: 'event.data.repositoryId', mode: 'skip' },
+    singleton: { key: 'event.data.runId', mode: 'skip' },
     onFailure: async ({ event, error }) => {
-      const { repositoryId } = repositorySyncData.parse(event.data.event.data);
-      await db()
-        .update(repositories)
-        .set({ syncStatus: 'failed', syncError: error.message, updatedAt: new Date() })
-        .where(eq(repositories.id, repositoryId));
+      const { repositoryId, runId } = repositorySyncData.parse(event.data.event.data);
+      console.error('Repository import failed', { repositoryId, runId, error });
+      const current = await getImport(runId);
+      if (current?.snapshot.repositoryId !== repositoryId) return;
+      await failImport(runId, 'We couldn’t finish the import. Please retry.');
     },
   },
   async ({ event, step }) => {
-    const { repositoryId } = repositorySyncData.parse(event.data);
-    const numbers = await step.run('list-latest-100', async () => {
-      await db()
-        .update(repositories)
-        .set({ syncStatus: 'running', syncProgress: 0, syncError: null, updatedAt: new Date() })
-        .where(eq(repositories.id, repositoryId));
-      return latestPullRequests(repositoryId);
+    const { repositoryId, runId } = repositorySyncData.parse(event.data);
+    const run = await step.run('begin', async () => {
+      const current = await getImport(runId);
+      if (!current || current.snapshot.repositoryId !== repositoryId)
+        throw new Error('Import unavailable');
+      if (!isActiveImport(current.snapshot.state)) return current;
+      await assertTrackedRepository(repositoryId);
+      return beginImport(runId);
     });
-    const failures: string[] = [];
-    let completed = 0;
-    for (const number of numbers) {
+    if (!isActiveImport(run.snapshot.state)) return run.snapshot;
+    const batch =
+      run.snapshot.total === null
+        ? await step.run('discover', async () => {
+            // A previous attempt may have committed discovery before step acknowledgement.
+            const current = await getImport(runId);
+            if (!current || current.snapshot.repositoryId !== repositoryId)
+              throw new Error('Import unavailable');
+            if (current.snapshot.total !== null || !isActiveImport(current.snapshot.state))
+              return current;
+            return saveImportBatch(runId, await latestPullRequests(repositoryId));
+          })
+        : run;
+    if (!isActiveImport(batch.snapshot.state)) return batch.snapshot;
+    for (const item of batch.items) {
+      if (item.state !== 'pending') continue;
+      let outcome: 'complete' | 'failed' = 'complete';
       try {
-        await step.invoke(`sync-pr-${number}`, {
+        await step.invoke(`pr-${item.number}`, {
           function: syncPullRequestFunction,
-          data: { repositoryId, number },
+          data: { repositoryId, number: item.number },
         });
-        completed++;
       } catch {
-        failures.push(`#${number}: synchronization failed; inspect Inngest run and retry import`);
+        outcome = 'failed';
       }
-      await step.run(`progress-${number}`, () =>
-        db()
-          .update(repositories)
-          .set({ syncProgress: completed, updatedAt: new Date() })
-          .where(eq(repositories.id, repositoryId)),
-      );
+      await step.run(`record-${item.number}`, () => recordImportItem(runId, item.number, outcome));
     }
-    await step.run('finish-import', () =>
-      db()
-        .update(repositories)
-        .set({
-          syncStatus: failures.length ? 'partial' : 'complete',
-          syncError: failures.length ? failures.join('\n') : null,
-          updatedAt: new Date(),
-        })
-        .where(eq(repositories.id, repositoryId)),
-    );
-    return { completed, total: numbers.length, failures };
+    return step.run('finish', () => finishImport(runId));
   },
 );

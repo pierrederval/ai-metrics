@@ -2,7 +2,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { githubEvents, commits } from '../db/schema';
 import { persistPr, stableId } from '../db/queries/persist-pr';
-import { repositoryClient } from './repositories';
+import { assertTrackedRepository, repositoryClient } from './repositories';
 import { prSchema, normalizeFile, normalizeCheck, errorStatus } from './normalize';
 import { collectChecks } from './collect-checks';
 import type { Revision, PullRequestFacts } from '../domain/pull-request/types';
@@ -17,6 +17,7 @@ const edgeSchema = z.object({
   }),
 });
 export async function syncPullRequest(repositoryId: string, number: number) {
+  await assertTrackedRepository(repositoryId);
   const { repo, client } = await repositoryClient(repositoryId),
     args = { owner: repo.owner, repo: repo.name, pull_number: number };
   const pr = prSchema.parse((await client.rest.pulls.get(args)).data),

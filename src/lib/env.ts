@@ -5,6 +5,7 @@ const base = z.object({
   NODE_ENV: z.string().default('development'),
 });
 const integration = z.object({
+  GITHUB_APP_SLUG: z.string().regex(/^[a-z0-9-]+$/),
   GITHUB_APP_ID: z.string().min(1),
   GITHUB_PRIVATE_KEY: z.string().min(1),
   GITHUB_WEBHOOK_SECRET: z.string().min(16),
