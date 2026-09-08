@@ -1,3 +1,5 @@
+import { gradeRepositoryFunction } from '../../../inngest/functions/grade-repository';
+import { reconcileGrades } from '../../../inngest/functions/reconcile-grades';
 import { sendInvitationFunction } from '../../../inngest/functions/send-invitation';
 import { reconcileInvitations } from '../../../inngest/functions/reconcile-invitations';
 import { reconcileImports } from '../../../inngest/functions/reconcile-imports';
@@ -12,6 +14,8 @@ export const runtime = 'nodejs';
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
+    gradeRepositoryFunction,
+    reconcileGrades,
     sendInvitationFunction,
     reconcileInvitations,
     syncRepositoryFunction,

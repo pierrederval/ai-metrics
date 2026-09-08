@@ -397,3 +397,54 @@ export const invitationDeliveries = pgTable(
     ),
   ],
 );
+
+export const gradingRubrics = pgTable(
+  'grading_rubrics',
+  {
+    family: text('family').notNull(),
+    version: text('version').notNull(),
+    evaluatorVersion: text('evaluator_version').notNull(),
+    definition: jsonb('definition').$type<Record<string, unknown>>().notNull(),
+    createdAt: created(),
+  },
+  (t) => [primaryKey({ columns: [t.family, t.version] })],
+);
+export const gradeRuns = pgTable(
+  'grade_runs',
+  {
+    id: id(),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    family: text('family').notNull(),
+    rubricVersion: text('rubric_version').notNull(),
+    evaluatorVersion: text('evaluator_version').notNull(),
+    requestedBy: text('requested_by')
+      .notNull()
+      .references(() => users.id),
+    requestedWorkspaceId: text('requested_workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    retryOf: text('retry_of').references((): AnyPgColumn => gradeRuns.id),
+    state: text('state').$type<'queued' | 'running' | 'complete' | 'failed'>().notNull(),
+    sha: text('sha'),
+    result: jsonb('result').$type<import('../domain/grading/types').GradeResult>(),
+    errorCode: text('error_code'),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    createdAt: created(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (t) => [
+    check('grade_runs_state', sql`${t.state} IN ('queued','running','complete','failed')`),
+    check('grade_runs_score', sql`(${t.result}->>'score')::integer BETWEEN 0 AND 100`),
+    check(
+      'grade_runs_result',
+      sql`(${t.state} = 'complete' AND ${t.sha} IS NOT NULL AND ${t.completedAt} IS NOT NULL AND ${t.result} IS NOT NULL AND ${t.result}->>'score' IS NOT NULL) OR (${t.state} <> 'complete' AND ${t.result} IS NULL)`,
+    ),
+    uniqueIndex('grade_runs_one_active')
+      .on(t.repositoryId, t.family)
+      .where(sql`${t.state} IN ('queued','running')`),
+    index('grade_runs_latest').on(t.repositoryId, t.createdAt.desc()),
+  ],
+);
