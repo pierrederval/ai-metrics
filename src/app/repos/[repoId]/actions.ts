@@ -13,7 +13,7 @@ export async function saveGates(repositoryId: string, form: FormData) {
   const unique = [...new Map(gates.map((g) => [JSON.stringify([g.appId, g.name]), g])).values()];
   await setGatePolicy(repositoryId, unique);
   revalidatePath('/dashboard');
-  revalidatePath(`/repos/${repositoryId}`);
+  revalidatePath(`/repos/${encodeURIComponent(repositoryId)}`);
 }
 
 export async function refreshImport(repositoryId: string) {

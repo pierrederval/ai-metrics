@@ -39,7 +39,7 @@ export default async function Directory({ searchParams }: RangePageProps = {}) {
         <section className="directory-repository" key={repo.id}>
           <div className="repository-heading">
             <h2>
-              <Link href={`/repos/${repo.id}${query}`}>
+              <Link href={`/repos/${encodeURIComponent(repo.id)}${query}`}>
                 {repo.owner}/{repo.name} ↗
               </Link>
             </h2>

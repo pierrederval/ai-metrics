@@ -33,7 +33,12 @@ export default async function Repository({
   try {
     range = readRange(search);
   } catch (error) {
-    return <InvalidRange message={(error as Error).message} href={`/repos/${repoId}`} />;
+    return (
+      <InvalidRange
+        message={(error as Error).message}
+        href={`/repos/${encodeURIComponent(repoId)}`}
+      />
+    );
   }
   const data = await loadBasicDashboard([repo.id], range);
   const [record] = await repositoryRecords([repo.id]);
@@ -87,7 +92,7 @@ export default async function Repository({
               {record.prs.map((pr) => (
                 <tr key={pr.id}>
                   <td>
-                    <Link href={`/prs/${pr.id}`}>
+                    <Link href={`/prs/${encodeURIComponent(pr.id)}`}>
                       #{pr.number} {pr.title}
                     </Link>
                   </td>
