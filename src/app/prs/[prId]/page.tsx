@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import { db } from '../../../db';
 import { pullRequests, prMetrics } from '../../../db/schema';
-import { requireRepository } from '../../../auth/access';
+import { requireTrackedRepository } from '../../../auth/access';
 import { currentPolicy } from '../../../db/queries/dashboard';
 import { analyzePullRequest } from '../../../domain/pull-request/analyzer';
 import { yesNo, duration } from '../../../components/metrics';
@@ -12,7 +12,7 @@ export default async function Pr({ params }: { params: Promise<{ prId: string }>
   const { prId } = await params,
     [pr] = await db().select().from(pullRequests).where(eq(pullRequests.id, prId));
   if (!pr) notFound();
-  const repo = await requireRepository(pr.repositoryId),
+  const repo = await requireTrackedRepository(pr.repositoryId),
     [row] = await db().select().from(prMetrics).where(eq(prMetrics.pullRequestId, pr.id));
   const policy = await currentPolicy(repo.id),
     analysis = analyzePullRequest(pr.facts, policy),

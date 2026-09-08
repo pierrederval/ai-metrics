@@ -22,3 +22,10 @@ export interface ImportExecution {
 }
 export type StartResult = { run?: ImportSnapshot; error?: string };
 export class ImportRequestError extends Error {}
+export type RepositoryChoice = {
+  id: string;
+  owner: string;
+  name: string;
+  isPrivate: boolean;
+  canAdmin: boolean;
+};

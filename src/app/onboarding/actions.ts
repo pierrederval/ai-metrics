@@ -1,7 +1,7 @@
 'use server';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireRepository } from '../../auth/access';
+import { requireRepository, accessibleRepositories } from '../../auth/access';
 import { requestRepositoryImport } from '../../db/queries/repository-imports';
 import { dispatchImport } from '../../inngest/dispatch-import';
 import { ImportRequestError, type StartResult } from '../../domain/import/types';
@@ -47,4 +47,8 @@ export async function refreshAnalysis(repositoryId: string): Promise<StartResult
   const parsed = idSchema.safeParse(repositoryId);
   if (!parsed.success) return { error: 'Choose a repository to continue.' };
   return requestAnalysis(parsed.data, 'refresh');
+}
+
+export async function refreshRepositoryAccess(): Promise<void> {
+  await accessibleRepositories(true);
 }

@@ -1,16 +1,25 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { redirect } from 'next/navigation';
-const { authorize, request, dispatch, revalidate } = vi.hoisted(() => ({
+const { authorize, request, dispatch, revalidate, available } = vi.hoisted(() => ({
   authorize: vi.fn(),
+  available: vi.fn(),
   request: vi.fn(),
   dispatch: vi.fn(),
   revalidate: vi.fn(),
 }));
-vi.mock('../../auth/access', () => ({ requireRepository: authorize }));
+vi.mock('../../auth/access', () => ({
+  requireRepository: authorize,
+  accessibleRepositories: available,
+}));
 vi.mock('../../db/queries/repository-imports', () => ({ requestRepositoryImport: request }));
 vi.mock('../../inngest/dispatch-import', () => ({ dispatchImport: dispatch }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidate }));
-import { startFirstAnalysis, retryAnalysis, refreshAnalysis } from './actions';
+import {
+  startFirstAnalysis,
+  retryAnalysis,
+  refreshAnalysis,
+  refreshRepositoryAccess,
+} from './actions';
 import { ImportRequestError } from '../../domain/import/types';
 const run = {
   id: 'run',
@@ -90,6 +99,13 @@ test('unexpected persistence failures propagate without dispatching', async () =
 test('retry authorization failure cannot create or dispatch a run', async () => {
   authorize.mockRejectedValueOnce(new Error('denied'));
   await expect(retryAnalysis('repo:1', 'previous')).rejects.toThrow('denied');
+  expect(request).not.toHaveBeenCalled();
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test('explicit access refresh reconciles GitHub repositories without starting analysis', async () => {
+  await refreshRepositoryAccess();
+  expect(available).toHaveBeenCalledWith(true);
   expect(request).not.toHaveBeenCalled();
   expect(dispatch).not.toHaveBeenCalled();
 });
