@@ -3,6 +3,7 @@ const deps = vi.hoisted(() => ({
   available: vi.fn(),
   rows: vi.fn(),
   latest: vi.fn(),
+  grades: vi.fn(),
   demo: false,
   role: 'owner',
 }));
@@ -10,6 +11,7 @@ vi.mock('../../workspaces/access', () => ({
   accessibleRepositories: deps.available,
   requireWorkspace: async () => ({ id: 'w', role: deps.role }),
 }));
+vi.mock('../../db/queries/grade-runs', () => ({ gradeSummaries: deps.grades }));
 vi.mock('../../db/queries/dashboard', () => ({ prRows: deps.rows }));
 vi.mock('../../db/queries/repository-imports', () => ({ latestImport: deps.latest }));
 vi.mock('../../lib/env', () => ({ env: () => ({ DEMO_MODE: deps.demo ? 'true' : 'false' }) }));
@@ -25,6 +27,7 @@ beforeEach(() => {
   deps.role = 'owner';
   deps.rows.mockResolvedValue([]);
   deps.latest.mockResolvedValue(null);
+  deps.grades.mockResolvedValue([]);
 });
 test('untracked installations redirect before metrics are fetched', async () => {
   deps.available.mockResolvedValue([{ id: 'untracked', trackingStartedAt: null }]);
@@ -38,6 +41,7 @@ test('overview only fetches tracked repository evidence', async () => {
   ]);
   await Dashboard();
   expect(deps.rows).toHaveBeenCalledWith(['tracked']);
+  expect(deps.grades).toHaveBeenCalledExactlyOnceWith(['tracked']);
   expect(deps.latest).toHaveBeenCalledTimes(1);
   expect(deps.latest).toHaveBeenCalledWith('tracked');
 });
@@ -52,4 +56,13 @@ test('members with no repositories stay in the overview', async () => {
   deps.role = 'member';
   deps.available.mockResolvedValue([]);
   await expect(Dashboard()).resolves.toBeDefined();
+});
+
+test('grade KPIs fetch all visible repositories in one batch', async () => {
+  deps.available.mockResolvedValue([
+    { id: 'one', trackingStartedAt: new Date() },
+    { id: 'two', trackingStartedAt: new Date() },
+  ]);
+  await Dashboard();
+  expect(deps.grades).toHaveBeenCalledExactlyOnceWith(['one', 'two']);
 });

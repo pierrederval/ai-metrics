@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { latestImport } from '../../../db/queries/repository-imports';
 import { ImportProgress } from '../../../components/onboarding/import-progress';
 import { saveGates, refreshImport } from './actions';
@@ -31,6 +32,11 @@ export default async function Repository({ params }: { params: Promise<{ repoId:
       <h1>
         {repo.owner}/{repo.name}
       </h1>
+      <p>
+        <Link href={`/repos/${encodeURIComponent(repoId)}/grading`}>
+          Agent readiness → Open report
+        </Link>
+      </p>
       <p>
         {rows.length} PRs analyzed · Gate policy v{policy.version}
       </p>

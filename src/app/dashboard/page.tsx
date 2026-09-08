@@ -1,3 +1,5 @@
+import { gradeSummaries } from '../../db/queries/grade-runs';
+import { gradePresentation } from '../../domain/grading/presentation';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { env } from '../../lib/env';
@@ -17,6 +19,12 @@ export default async function Dashboard() {
     ? available
     : available.filter((repo) => repo.trackingStartedAt !== null);
   const rows = await prRows(repositories.map((repo) => repo.id));
+  const grades = new Map(
+    (await gradeSummaries(repositories.map((repo) => repo.id))).map((summary) => [
+      summary.repositoryId,
+      summary,
+    ]),
+  );
   const imports = new Map(
     await Promise.all(
       repositories.map(async (repo) => [repo.id, await latestImport(repo.id)] as const),
@@ -59,6 +67,21 @@ export default async function Dashboard() {
                   ? `Import ${imports.get(r.id)!.state} · ${imports.get(r.id)!.completed} PRs imported${imports.get(r.id)!.failed ? ` · ${imports.get(r.id)!.failed} failed` : ''}`
                   : 'Existing imported history'}
                 {r.isDemo ? ' · Demo fixtures' : ''}
+              </p>
+              <p className="grading-kpi">
+                <Link href={`/repos/${encodeURIComponent(r.id)}/grading`}>
+                  Agent readiness:{' '}
+                  {grades.get(r.id)?.latest?.score != null
+                    ? `${grades.get(r.id)!.latest!.score} / 100 · ${gradePresentation(grades.get(r.id)!.latest!.score!).label}`
+                    : 'Not graded'}{' '}
+                  →
+                </Link>
+                {grades.get(r.id)?.status?.state === 'queued' ||
+                grades.get(r.id)?.status?.state === 'running'
+                  ? ' · Grader in progress'
+                  : grades.get(r.id)?.status?.state === 'failed'
+                    ? ' · Latest attempt failed'
+                    : ''}
               </p>
             </div>
             <span className="repository-arrow" aria-hidden="true">
