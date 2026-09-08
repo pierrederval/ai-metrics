@@ -121,7 +121,12 @@ describe('classifyMergedPr', () => {
     },
     {
       name: 'CI-only first success',
-      evidence: evidence({ ciExpected: true, ciComplete: true, attempts: [attempt(1, 'success')] }),
+      evidence: evidence({
+        ciExpected: true,
+        ciComplete: true,
+        chronologyComplete: true,
+        attempts: [attempt(1, 'success')],
+      }),
       want: 'first-pass',
     },
     {
@@ -275,6 +280,7 @@ describe('classifyMergedPr', () => {
     {
       name: 'failure completed after merge on an earlier revision does not spoil first pass',
       evidence: evidence({
+        chronologyComplete: true,
         ciExpected: true,
         ciComplete: true,
         attempts: [
@@ -322,4 +328,29 @@ test('terminal snapshots without exact completion remain unknown before observat
 
 test('success with a missing intermediate attempt remains unknown', () => {
   expect(classifyWorkflow([attempt(1, 'failure'), attempt(3, 'success')], cutoff)).toBe('unknown');
+});
+
+test('CI-only successful surviving head cannot establish first pass without revision chronology', () => {
+  const attempts = [
+    attempt(1, 'success', { completedAt: null, terminalObservedAt: '2026-09-01T01:10:00Z' }),
+  ];
+  expect(
+    classifyMergedPr(
+      evidence({ ciExpected: true, ciComplete: true, chronologyComplete: false, attempts }),
+    ),
+  ).toBe('unknown');
+  expect(classifyWorkflow(attempts, cutoff)).toBe('first-pass');
+});
+
+test('known CI failure still prevents first pass without revision chronology', () => {
+  expect(
+    classifyMergedPr(
+      evidence({
+        ciExpected: true,
+        ciComplete: true,
+        chronologyComplete: false,
+        attempts: [attempt(1, 'failure')],
+      }),
+    ),
+  ).toBe('not-first-pass');
 });

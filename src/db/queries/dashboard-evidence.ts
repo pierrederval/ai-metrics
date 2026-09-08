@@ -30,13 +30,53 @@ export async function persistDashboardEvidence(evidence: PrEvidence): Promise<vo
         [...new Set([...(existing?.provenance[key] ?? []), ...(evidence.provenance?.[key] ?? [])])],
       ]),
     );
+    const retainedReviews = await tx
+      .select()
+      .from(s.reviewEvents)
+      .where(eq(s.reviewEvents.pullRequestId, evidence.id));
+    const retainedAttempts = await tx
+      .select({ startedAt: s.workflowAttempts.startedAt })
+      .from(s.prWorkflowAttempts)
+      .innerJoin(
+        s.workflowAttempts,
+        and(
+          eq(s.workflowAttempts.repositoryId, s.prWorkflowAttempts.repositoryId),
+          eq(s.workflowAttempts.runId, s.prWorkflowAttempts.runId),
+          eq(s.workflowAttempts.attempt, s.prWorkflowAttempts.attempt),
+        ),
+      )
+      .where(eq(s.prWorkflowAttempts.pullRequestId, evidence.id));
+    const cutoff = evidence.mergedAt ? Date.parse(evidence.mergedAt) : Infinity;
+    const knownReview = [
+      ...retainedReviews.map((r) => ({ ...r, occurredAt: r.occurredAt.toISOString() })),
+      ...evidence.reviews,
+    ].some(
+      (r) =>
+        Date.parse(r.occurredAt) <= cutoff &&
+        (r.kind !== 'review' ||
+          ['approved', 'changes_requested', 'dismissed'].includes(r.state.toLowerCase())),
+    );
+    const knownCi = [
+      ...retainedAttempts.map((a) => ({ startedAt: iso(a.startedAt) })),
+      ...evidence.attempts,
+    ].some((a) => !a.startedAt || Date.parse(a.startedAt) <= cutoff);
+    const applicability = (
+      incoming: boolean | null,
+      previous: boolean | null | undefined,
+      retained: boolean,
+    ) => {
+      // Absence from a response cannot erase positive evidence retained for this PR.
+      if (retained || previous === true) return true;
+      if (older) return previous ?? null;
+      return incoming;
+    };
     const row = {
       pullRequestId: evidence.id,
       mergeHeadSha: older
         ? (existing?.mergeHeadSha ?? null)
         : (evidence.mergeHeadSha ?? existing?.mergeHeadSha ?? null),
-      reviewExpected: evidence.reviewExpected ?? (existing?.reviewExpected === true ? true : null),
-      ciExpected: evidence.ciExpected ?? (existing?.ciExpected === true ? true : null),
+      reviewExpected: applicability(evidence.reviewExpected, existing?.reviewExpected, knownReview),
+      ciExpected: applicability(evidence.ciExpected, existing?.ciExpected, knownCi),
       chronologyComplete: coverage(evidence.chronologyComplete, existing?.chronologyComplete),
       // Review/workflow activity can change without changing the PR source timestamp.
       // Retain raw history below, but never use a PR version to promote their coverage.

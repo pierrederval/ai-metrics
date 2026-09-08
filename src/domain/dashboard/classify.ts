@@ -170,7 +170,9 @@ function classifyCi(evidence: PrEvidence, mergedAt: string): DimensionResult {
         (!attempt.pendingAtCutoff &&
           failedConclusions.has(attempt.conclusion?.toLowerCase() ?? ''))),
   );
-  return earlierRevisionSpoiledFirstPass ? 'not-first-pass' : 'first-pass';
+  if (earlierRevisionSpoiledFirstPass) return 'not-first-pass';
+  // Missing earlier heads can hide failures even when the surviving head passed.
+  return evidence.chronologyComplete ? 'first-pass' : 'unknown';
 }
 
 export function classifyMergedPr(evidence: PrEvidence): PrOutcome {

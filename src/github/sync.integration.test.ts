@@ -7,7 +7,9 @@ import * as s from '../db/schema';
 import { persistEvent } from '../db/queries/events';
 import { syncPullRequest } from './sync-pull-request';
 import { loadDashboardEvidence } from '../db/queries/dashboard-evidence';
+import { classifyMergedPr, classifyWorkflow } from '../domain/dashboard/classify';
 let reviewStatus = 200;
+let includeProviderChecks = true;
 vi.mock('./repositories', () => ({
   assertTrackedRepository: async () => {},
   repositoryClient: async () => ({
@@ -52,6 +54,7 @@ async function fakeFetch(input: RequestInfo | URL) {
         },
       ],
     };
+    if (!includeProviderChecks) data = { total_count: 0, check_runs: [] };
   } else if (url.includes('/actions/runs'))
     data = url.includes('head_sha=b')
       ? { total_count: 1, workflow_runs: [{ id: 300, run_attempt: 1, head_sha: 'b' }] }
@@ -175,5 +178,50 @@ test('review permission failure persists independent CI evidence then retries', 
     });
   } finally {
     reviewStatus = 200;
+  }
+});
+
+test('hydration keeps CI operational evidence when merge first-pass chronology is unavailable', async () => {
+  await db()
+    .delete(s.dashboardPrEvidence)
+    .where(eq(s.dashboardPrEvidence.pullRequestId, 'pr:4242:1'));
+  await db().delete(s.githubEvents).where(eq(s.githubEvents.deliveryId, 'hydrate-opened'));
+  await persistEvent(
+    'hydrate-workflow-completed',
+    'workflow_run',
+    {
+      workflow_run: {
+        id: 300,
+        run_attempt: 1,
+        head_sha: 'b',
+        status: 'completed',
+        conclusion: 'success',
+        run_started_at: t(5),
+        updated_at: t(6),
+      },
+    },
+    { repositoryId: '4242', installationId: '4242', action: 'completed' },
+  );
+  await db()
+    .update(s.githubEvents)
+    .set({ receivedAt: new Date(t(7)) })
+    .where(eq(s.githubEvents.deliveryId, 'hydrate-workflow-completed'));
+  includeProviderChecks = false;
+  try {
+    const id = await syncPullRequest('hydrate-repo', 1);
+    const loaded = await loadDashboardEvidence(id);
+    expect(loaded).toMatchObject({
+      ciExpected: true,
+      ciComplete: true,
+      reviewExpected: false,
+      chronologyComplete: false,
+    });
+    expect(classifyMergedPr(loaded!)).toBe('unknown');
+    expect(classifyWorkflow(loaded!.attempts, t(10))).toBe('first-pass');
+  } finally {
+    includeProviderChecks = true;
+    await db()
+      .delete(s.githubEvents)
+      .where(eq(s.githubEvents.deliveryId, 'hydrate-workflow-completed'));
   }
 });

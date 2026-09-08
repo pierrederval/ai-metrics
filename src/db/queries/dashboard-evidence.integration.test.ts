@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, expect, test } from 'vitest';
+import { beforeAll, beforeEach, afterAll, expect, test } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { db, closeDb } from '..';
@@ -104,6 +104,8 @@ beforeAll(async () => {
       },
     })
     .onConflictDoNothing();
+});
+beforeEach(async () => {
   await db()
     .delete(s.prWorkflowAttempts)
     .where(eq(s.prWorkflowAttempts.pullRequestId, evidence.id));
@@ -141,6 +143,7 @@ test('duplicate hydration retains identical histories and original terminal obse
   ).toHaveLength(1);
 });
 test('same PR source with newly incomplete collections retains rows and downgrades independent completeness', async () => {
+  await persistDashboardEvidence(evidence);
   await persistDashboardEvidence({
     ...evidence,
     reviewsComplete: false,
@@ -162,6 +165,7 @@ test('same PR source with newly incomplete collections retains rows and downgrad
   expect(classifyMergedPr(loaded!)).toBe('unknown');
 });
 test('revised provider conclusion cannot inherit old terminal observation', async () => {
+  await persistDashboardEvidence(evidence);
   await persistDashboardEvidence({
     ...evidence,
     attempts: [
@@ -182,6 +186,17 @@ test('revised provider conclusion cannot inherit old terminal observation', asyn
 });
 
 test('an incomplete nonterminal snapshot cannot erase a richer terminal attempt at the same source version', async () => {
+  await persistDashboardEvidence({
+    ...evidence,
+    attempts: [
+      {
+        ...evidence.attempts[0],
+        conclusion: 'failure',
+        sourceUpdatedAt: '2026-01-05T00:00:00Z',
+        terminalObservedAt: '2026-01-05T00:10:00Z',
+      },
+    ],
+  });
   await persistDashboardEvidence({
     ...evidence,
     attempts: [
@@ -224,3 +239,25 @@ test('an unavailable refresh cannot retain an earlier no-evidence inference as c
     ciExpected: null,
   });
 });
+
+test.each(['2026-01-01T00:00:00Z', '2026-01-03T00:00:00Z', '2026-01-04T00:00:00Z'])(
+  'empty snapshot at %s cannot erase applicability established by retained historical evidence',
+  async (sourceUpdatedAt) => {
+    await persistDashboardEvidence(evidence);
+    const before = await loadDashboardEvidence(evidence.id);
+    expect(classifyMergedPr(before!)).toBe('first-pass');
+    await persistDashboardEvidence({
+      ...evidence,
+      sourceUpdatedAt,
+      reviews: [],
+      attempts: [],
+      reviewExpected: false,
+      ciExpected: false,
+    });
+    const after = await loadDashboardEvidence(evidence.id);
+    expect(after).toMatchObject({ reviewExpected: true, ciExpected: true });
+    expect(after?.reviews).toEqual(before?.reviews);
+    expect(after?.attempts).toEqual(before?.attempts);
+    expect(classifyMergedPr(after!)).toBe('first-pass');
+  },
+);
