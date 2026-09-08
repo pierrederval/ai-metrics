@@ -7,7 +7,22 @@ const limits = {
   fileBytes: 128 * 1024,
   totalBytes: 2 * 1024 * 1024,
 };
-const request = { timeout: 30_000 };
+/** Race the entire hook/auth chain as well as cancelling the endpoint transport. */
+async function withDeadline<T>(operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new ReadinessCollectionError('collection_failed', true));
+      controller.abort();
+    }, 30_000);
+  });
+  try {
+    return await Promise.race([operation(controller.signal), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 export type ReadinessCollectionErrorCode =
   | 'repository_unavailable'
   | 'installation_unavailable'
@@ -40,7 +55,8 @@ function safeError(error: unknown): ReadinessCollectionError {
     typeof error === 'object' &&
     error !== null &&
     'message' in error &&
-    error.message === 'Resource not accessible by integration';
+    typeof error.message === 'string' &&
+    /^Resource not accessible by integration(?:$| - )/.test(error.message);
   if (status === 401 || permissionDenied)
     return new ReadinessCollectionError('installation_unavailable', false);
   if (status === 404 || status === 410)
@@ -53,7 +69,7 @@ function safeError(error: unknown): ReadinessCollectionError {
 }
 async function context(repositoryId: string) {
   try {
-    return await repositoryClient(repositoryId);
+    return await withDeadline(() => repositoryClient(repositoryId));
   } catch (error) {
     // The existing lookup uses this fixed prefix for missing/inactive/demo records.
     if (error instanceof Error && error.message.startsWith('Repository unavailable:'))
@@ -65,9 +81,13 @@ async function context(repositoryId: string) {
 export async function resolveReadinessSha(repositoryId: string): Promise<string> {
   try {
     const { repo, client } = await context(repositoryId);
-    const identity = { owner: repo.owner, repo: repo.name, request };
-    const { data } = await client.rest.repos.get(identity);
-    const commit = await client.rest.repos.getCommit({ ...identity, ref: data.default_branch });
+    const identity = { owner: repo.owner, repo: repo.name };
+    const { data } = await withDeadline((signal) =>
+      client.rest.repos.get({ ...identity, request: { signal } }),
+    );
+    const commit = await withDeadline((signal) =>
+      client.rest.repos.getCommit({ ...identity, ref: data.default_branch, request: { signal } }),
+    );
     return commit.data.sha;
   } catch (error) {
     throw safeError(error);
@@ -90,16 +110,22 @@ export async function collectReadiness(
   try {
     const pinnedSha = sha ?? (await resolveReadinessSha(repositoryId));
     const { repo, client } = await context(repositoryId);
-    const identity = { owner: repo.owner, repo: repo.name, request };
-    const { data: commit } = await client.rest.git.getCommit({
-      ...identity,
-      commit_sha: pinnedSha,
-    });
-    const { data: recursive } = await client.rest.git.getTree({
-      ...identity,
-      tree_sha: commit.tree.sha,
-      recursive: '1',
-    });
+    const identity = { owner: repo.owner, repo: repo.name };
+    const { data: commit } = await withDeadline((signal) =>
+      client.rest.git.getCommit({
+        request: { signal },
+        ...identity,
+        commit_sha: pinnedSha,
+      }),
+    );
+    const { data: recursive } = await withDeadline((signal) =>
+      client.rest.git.getTree({
+        request: { signal },
+        ...identity,
+        tree_sha: commit.tree.sha,
+        recursive: '1',
+      }),
+    );
     let complete = true;
     let entries = 0;
     const candidates: { path: string; sha: string }[] = [];
@@ -145,10 +171,13 @@ export async function collectReadiness(
           break;
         }
         const current = queue[index];
-        const { data: tree } = await client.rest.git.getTree({
-          ...identity,
-          tree_sha: current.sha,
-        });
+        const { data: tree } = await withDeadline((signal) =>
+          client.rest.git.getTree({
+            request: { signal },
+            ...identity,
+            tree_sha: current.sha,
+          }),
+        );
         if (tree.truncated) complete = false;
         for (const entry of tree.tree) {
           if (++entries > limits.entries) {
@@ -170,7 +199,11 @@ export async function collectReadiness(
     for (let index = 0; index < candidates.length; index += 4) {
       const batch = candidates.slice(index, index + 4);
       const blobs = await Promise.all(
-        batch.map((candidate) => client.rest.git.getBlob({ ...identity, file_sha: candidate.sha })),
+        batch.map((candidate) =>
+          withDeadline((signal) =>
+            client.rest.git.getBlob({ ...identity, file_sha: candidate.sha, request: { signal } }),
+          ),
+        ),
       );
       for (let offset = 0; offset < blobs.length; offset++) {
         const { data } = blobs[offset];

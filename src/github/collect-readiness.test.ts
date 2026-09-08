@@ -1,3 +1,4 @@
+import { Octokit } from 'octokit';
 import { beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   repositoryClient: vi.fn(),
@@ -206,7 +207,11 @@ test('blob concurrency is at most four and every request has a timeout', async (
   await collectReadiness('fixture-repo', 'abc');
   expect(peak).toBe(4);
   for (const mock of [mocks.getCommit, mocks.getTree, mocks.getBlob])
-    for (const [p] of mock.mock.calls) expect(p.request.timeout).toBe(30000);
+    for (const [p] of mock.mock.calls) expect(p.request.signal).toBeInstanceOf(AbortSignal);
+  const signals = [mocks.getCommit, mocks.getTree, mocks.getBlob].flatMap((mock) =>
+    mock.mock.calls.map(([p]) => p.request.signal),
+  );
+  expect(new Set(signals).size).toBe(signals.length);
 });
 test('actual aggregate bytes cap marks incomplete', async () => {
   mocks.getTree.mockResolvedValue({
@@ -262,4 +267,90 @@ test('does not fetch README formats outside the Markdown rubric', async () => {
     documents: [],
   });
   expect(mocks.getBlob).not.toHaveBeenCalled();
+});
+
+test('decorated Octokit integration denial remains a safe terminal error', async () => {
+  mocks.getTree.mockRejectedValue({
+    status: 403,
+    message: 'Resource not accessible by integration - https://docs.github.com/private-info',
+    response: {
+      data: {
+        message: 'Resource not accessible by integration',
+        documentation_url: 'https://docs.github.com/private-info',
+      },
+    },
+  });
+  await expect(collectReadiness('fixture-repo', 'abc')).rejects.toMatchObject({
+    code: 'installation_unavailable',
+    retryable: false,
+    message: 'GitHub installation access is unavailable.',
+  });
+});
+test('deadline aborts the installed Octokit fetch transport', async () => {
+  vi.useFakeTimers();
+  try {
+    let transportSignal: AbortSignal | undefined;
+    const fetch = vi.fn(
+      (_url: unknown, options?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          transportSignal = options?.signal ?? undefined;
+          transportSignal?.addEventListener('abort', () => reject(transportSignal?.reason), {
+            once: true,
+          });
+        }),
+    );
+    const client = new Octokit({
+      request: { fetch },
+      retry: { enabled: false },
+      throttle: { enabled: false },
+    });
+    mocks.repositoryClient.mockResolvedValue({ repo: { owner: 'owner', name: 'repo' }, client });
+    const pending = expect(collectReadiness('fixture-repo', 'abc')).rejects.toMatchObject({
+      retryable: true,
+      code: 'collection_failed',
+    });
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(transportSignal?.aborted).toBe(true);
+    await pending;
+  } finally {
+    vi.useRealTimers();
+  }
+});
+test('deadline bounds a stalled authentication hook before fetch', async () => {
+  vi.useFakeTimers();
+  try {
+    const fetch = vi.fn();
+    const client = new Octokit({
+      request: { fetch },
+      retry: { enabled: false },
+      throttle: { enabled: false },
+    });
+    client.hook.wrap('request', () => new Promise(() => {}));
+    mocks.repositoryClient.mockResolvedValue({ repo: { owner: 'owner', name: 'repo' }, client });
+    const pending = expect(collectReadiness('fixture-repo', 'abc')).rejects.toMatchObject({
+      retryable: true,
+      code: 'collection_failed',
+    });
+    await vi.advanceTimersByTimeAsync(30000);
+    await pending;
+    expect(fetch).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+test('deadline also bounds installation client acquisition', async () => {
+  vi.useFakeTimers();
+  try {
+    mocks.repositoryClient.mockImplementation(() => new Promise(() => {}));
+    const pending = expect(resolveReadinessSha('fixture-repo')).rejects.toMatchObject({
+      retryable: true,
+      code: 'collection_failed',
+    });
+    await vi.advanceTimersByTimeAsync(30000);
+    await pending;
+    expect(mocks.get).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
 });
