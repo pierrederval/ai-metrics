@@ -9,7 +9,11 @@ import {
   repositoryImportItems as items,
 } from '../schema';
 import { isActiveImport, summarizeImport } from '../../domain/import/progress';
-import type { ImportExecution, ImportSnapshot } from '../../domain/import/types';
+import {
+  ImportRequestError,
+  type ImportExecution,
+  type ImportSnapshot,
+} from '../../domain/import/types';
 
 const importingMessage = 'Importing PR and CI history. GitHub requests may retry automatically.';
 
@@ -72,7 +76,7 @@ export async function requestRepositoryImport(
           eq(installations.active, true),
         ),
       );
-    if (!available) throw new Error('Repository unavailable');
+    if (!available) throw new ImportRequestError('Repository unavailable');
     const [latest] = await tx
       .select()
       .from(runs)
@@ -81,19 +85,20 @@ export async function requestRepositoryImport(
       .limit(1);
     let source: Run | undefined;
     if (intent === 'retry') {
-      if (!previousRunId) throw new Error('Previous import required');
+      if (!previousRunId) throw new ImportRequestError('Previous import required');
       [source] = await tx
         .select()
         .from(runs)
         .where(and(eq(runs.id, previousRunId), eq(runs.repositoryId, repositoryId)));
       if (!source || !['failed', 'partial'].includes(source.state))
-        throw new Error('Import cannot be retried');
+        throw new ImportRequestError('Import cannot be retried');
       const [existing] = await tx.select().from(runs).where(eq(runs.retryOf, source.id));
       if (existing) return snapshot(existing);
-      if (latest?.id !== source.id) throw new Error('Only the latest import can be retried');
+      if (latest?.id !== source.id)
+        throw new ImportRequestError('Only the latest import can be retried');
     }
     if (intent === 'refresh' && !available.repository.trackingStartedAt)
-      throw new Error('Repository is not tracked');
+      throw new ImportRequestError('Repository is not tracked');
     const [active] = await tx
       .select()
       .from(runs)

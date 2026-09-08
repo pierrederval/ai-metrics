@@ -16,9 +16,14 @@ export async function saveGates(repositoryId: string, form: FormData) {
   revalidatePath(`/repos/${repositoryId}`);
 }
 
-export async function requestImport(repositoryId: string) {
-  await requireRepository(repositoryId, true);
-  const { syncRepository } = await import('../../../github/sync-repository');
-  await syncRepository(repositoryId);
-  revalidatePath(`/repos/${repositoryId}`);
+export async function refreshImport(repositoryId: string) {
+  const { refreshAnalysis } = await import('../../onboarding/actions');
+  const result = await refreshAnalysis(repositoryId);
+  if (result.error) throw new Error(result.error);
+}
+
+export async function retryImport(repositoryId: string, runId: string) {
+  const { retryAnalysis } = await import('../../onboarding/actions');
+  const result = await retryAnalysis(repositoryId, runId);
+  if (result.error) throw new Error(result.error);
 }

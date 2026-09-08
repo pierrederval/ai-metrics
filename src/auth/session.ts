@@ -22,6 +22,15 @@ export async function createSession(userId: string) {
     .values({ id: tokenHash(token), userId, expiresAt });
   (await cookies()).set('reliability-session', token, { ...cookieOptions, expires: expiresAt });
 }
+export async function hasCurrentSession(): Promise<boolean> {
+  const token = (await cookies()).get('reliability-session')?.value;
+  if (!token) return false;
+  const [session] = await db()
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
+  return Boolean(session);
+}
 export async function userClient() {
   const token = (await cookies()).get('reliability-session')?.value;
   if (!token) redirect('/api/auth/login');

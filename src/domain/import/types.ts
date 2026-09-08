@@ -20,3 +20,5 @@ export interface ImportExecution {
   snapshot: ImportSnapshot;
   items: ImportItem[];
 }
+export type StartResult = { run?: ImportSnapshot; error?: string };
+export class ImportRequestError extends Error {}

@@ -1,4 +1,4 @@
-import { saveGates, requestImport } from './actions';
+import { saveGates, refreshImport } from './actions';
 import { gateKey } from '../../../domain/pull-request/types';
 import { requireRepository } from '../../../auth/access';
 import { currentPolicy, prRows } from '../../../db/queries/dashboard';
@@ -35,8 +35,8 @@ export default async function Repository({ params }: { params: Promise<{ repoId:
       {repo.syncError && <p role="alert">{repo.syncError}</p>}
       <div>
         {repo.canAdmin && (
-          <form action={requestImport.bind(null, repoId)}>
-            <button>Import latest 100 PRs / retry</button>
+          <form action={refreshImport.bind(null, repoId)}>
+            <button>Refresh latest 100 PRs</button>
           </form>
         )}
       </div>
