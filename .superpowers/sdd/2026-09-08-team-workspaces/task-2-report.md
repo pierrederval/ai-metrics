@@ -78,3 +78,32 @@ git diff --check
 - Personal GitHub APIs are limited to owner discovery and fresh admin authorization for mutations.
 - Repository and installation active flags are enforced for workspace reads; historical repository rows and imports remain intact when a link is removed.
 - No credentials, tokens, repository source, or invitation data are returned to client callers or logged.
+
+## Review fix round 1
+
+- Corrected explicit workspace selection so every supplied ID is looked up exactly, including the empty string. Only cookie-mode selection may fall back to the default membership.
+- Applied the same explicit empty-ID rejection to the fixed demo workspace.
+- Added a regression proving an owner whose fresh GitHub grant has `admin: false` is denied and no workspace link is written.
+
+Red evidence:
+
+```text
+pnpm exec vitest run --config vitest.integration.config.ts src/workspaces/access.integration.test.ts
+Tests 4 failed | 9 passed (13)
+```
+
+The two new empty-ID regressions resolved to the fallback workspace before the fix. The first run also exposed a forced-reconciliation mock boundary; the test now isolates reconciliation while exercising the real database and grant filtering.
+
+Green and static-check evidence:
+
+```text
+pnpm exec vitest run --config vitest.integration.config.ts src/workspaces/access.integration.test.ts
+Test Files 1 passed (1)
+Tests 13 passed (13)
+
+pnpm typecheck
+tsc --noEmit (exit 0)
+
+git diff --check
+(exit 0, no output)
+```

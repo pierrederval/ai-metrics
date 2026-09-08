@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 const fixture = vi.hoisted(() => ({
@@ -7,6 +7,7 @@ const fixture = vi.hoisted(() => ({
   cookieWorkspaceId: undefined as string | undefined,
   paginate: vi.fn(),
   setCookie: vi.fn(),
+  demoMode: false,
 }));
 
 vi.mock('../auth/session', () => ({
@@ -30,6 +31,10 @@ vi.mock('next/navigation', () => ({
     throw new Error('not found');
   },
 }));
+vi.mock('../lib/env', () => ({
+  env: () => ({ DEMO_MODE: fixture.demoMode ? 'true' : 'false' }),
+}));
+vi.mock('../github/repositories', () => ({ reconcileInstallation: async () => [] }));
 
 import { closeDb, db } from '../db';
 import {
@@ -99,6 +104,7 @@ beforeEach(() => {
   fixture.cookieWorkspaceId = workspaceIds[0];
   fixture.paginate.mockReset();
   fixture.setCookie.mockReset();
+  fixture.demoMode = false;
 });
 
 afterAll(async () => {
@@ -138,6 +144,15 @@ test('an explicit workspace id never falls back to another membership', async ()
   fixture.cookieWorkspaceId = workspaceIds[1];
 
   await expect(requireWorkspace(workspaceIds[0])).rejects.toThrow('not found');
+});
+
+test('an explicit empty workspace id is rejected instead of falling back', async () => {
+  await expect(requireWorkspace('')).rejects.toThrow('not found');
+});
+
+test('the demo workspace rejects an explicit empty workspace id', async () => {
+  fixture.demoMode = true;
+  await expect(requireWorkspace('')).rejects.toThrow('not found');
 });
 
 test('an outsider cannot read a linked repository', async () => {
@@ -199,6 +214,26 @@ test('an owner can link only a repository with a fresh GitHub admin grant', asyn
     .mockResolvedValueOnce([{ id: 456789, permissions: { admin: true } }]);
   await linkRepository(workspaceIds[0], repositoryId);
   expect(await requireRepository(repositoryId)).toMatchObject({ id: repositoryId });
+  await unlinkRepository(workspaceIds[0], repositoryId);
+});
+
+test('an owner without a fresh GitHub admin grant cannot create a link', async () => {
+  fixture.paginate
+    .mockResolvedValueOnce([{ id: 987654, suspended_at: null }])
+    .mockResolvedValueOnce([{ id: 456789, permissions: { admin: false } }]);
+
+  await expect(linkRepository(workspaceIds[0], repositoryId)).rejects.toThrow('not found');
+  expect(
+    await db()
+      .select()
+      .from(workspaceRepositories)
+      .where(
+        and(
+          eq(workspaceRepositories.workspaceId, workspaceIds[0]),
+          eq(workspaceRepositories.repositoryId, repositoryId),
+        ),
+      ),
+  ).toEqual([]);
 });
 
 test('the active workspace cookie uses the shared HTTP-only options', async () => {

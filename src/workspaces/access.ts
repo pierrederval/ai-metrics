@@ -22,7 +22,8 @@ export async function requireWorkspace(
   role?: Role,
 ): Promise<Workspace & { role: Role }> {
   if (env().DEMO_MODE === 'true') {
-    if ((workspaceId && workspaceId !== demoWorkspace.id) || role === 'owner') notFound();
+    if ((workspaceId !== undefined && workspaceId !== demoWorkspace.id) || role === 'owner')
+      notFound();
     return demoWorkspace;
   }
   const user = await currentUser();
@@ -41,7 +42,11 @@ export async function requireWorkspace(
     .orderBy(asc(workspaces.createdAt), asc(workspaces.id));
   const fallback =
     memberships.find(({ defaultForUserId }) => defaultForUserId === user.id) ?? memberships[0];
-  const membership = preferred ? memberships.find(({ id }) => id === preferred) : fallback;
+  const membership = explicit
+    ? memberships.find(({ id }) => id === workspaceId)
+    : preferred
+      ? memberships.find(({ id }) => id === preferred)
+      : fallback;
   if (!membership && explicit) notFound();
   const selected = membership ?? fallback;
   if (!selected || (role === 'owner' && selected.role !== 'owner')) notFound();
