@@ -129,6 +129,14 @@ export async function deliverInvitation(deliveryId: string): Promise<void> {
     }
     try {
       const payload = JSON.parse(decrypt(row.encryptedPayload!, key)) as InvitationEmail;
+      // Claiming precedes lock acquisition; lock waits must not extend the retry window.
+      if (Date.now() - row.createdAt.getTime() >= 86400000) {
+        await tx
+          .update(deliveries)
+          .set({ ...cleared, state: 'failed', errorCode: 'email_failed' })
+          .where(eq(deliveries.id, deliveryId));
+        return;
+      }
       const sent = await sendInvitationEmail(payload);
       await tx
         .update(deliveries)

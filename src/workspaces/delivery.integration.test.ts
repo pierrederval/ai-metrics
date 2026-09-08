@@ -148,3 +148,59 @@ test('permanent provider failure ends delivery immediately', async () => {
   expect(saved.attempts).toBe(1);
   expect(sendEmail).toHaveBeenCalledTimes(1);
 });
+test('delivery expiring while waiting for workspace lock fails before provider send', async () => {
+  sendEmail.mockReset().mockResolvedValue({ id: 'provider' });
+  const row = await delivery();
+  const deadline = row.createdAt.getTime() + 86400000;
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(deadline - 1);
+  const { lockWorkspace } = await import('./members');
+  let release!: () => void;
+  let locked!: () => void;
+  const lockReady = new Promise<void>((resolve) => {
+    locked = resolve;
+  });
+  const releaseLock = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const blocker = db().transaction(async (tx) => {
+    await lockWorkspace(tx, wid);
+    locked();
+    await releaseLock;
+  });
+  await lockReady;
+  const pending = deliverInvitation(row.id);
+  try {
+    let claimed = false;
+    for (let i = 0; i < 100; i++) {
+      const [current] = await db()
+        .select()
+        .from(invitationDeliveries)
+        .where(eq(invitationDeliveries.id, row.id));
+      if (current.state === 'sending' && current.attempts === 1 && current.encryptedPayload) {
+        claimed = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(claimed).toBe(true);
+    clock.mockReturnValue(deadline);
+    release();
+    await blocker;
+    await pending;
+    const [saved] = await db()
+      .select()
+      .from(invitationDeliveries)
+      .where(eq(invitationDeliveries.id, row.id));
+    expect(sendEmail.mock.calls.length).toBe(0);
+    expect(saved.state).toBe('failed');
+    expect(saved.errorCode).toBe('email_failed');
+    expect(saved.encryptedToken).toBeNull();
+    expect(saved.encryptedPayload).toBeNull();
+    expect(saved.leaseUntil).toBeNull();
+  } finally {
+    release();
+    await blocker;
+    await pending;
+    clock.mockRestore();
+  }
+});
