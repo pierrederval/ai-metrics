@@ -222,7 +222,7 @@ expect(days).toHaveLength(30);
 - [x] Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm test:integration`. Run production build with valid production-shaped non-secret test configuration; never print real local secrets. Do not blindly change local live configuration for build validation.
 - [x] Browser-check 1024px and 390px layouts, date controls and complete bar counts, repository navigation, tooltips/keyboard/touch, Free notices, denied access, pending/partial/empty states, and interest error recovery. Verify screenshot colours against the approved preview. Prototype sample numbers are not expected live values.
 - [x] Live-smoke GitHub import on an authorized repository, verify attempt and review source identities, and disclose historical limitations. Do not bypass unknown outcomes to make cards look populated.
-- [ ] Get final independent spec and code review; resolve findings and rerun only affected checks. Document migration order, worker/event registration, backfill operations, required GitHub subscriptions, observed validation and remaining limitations.
+- [x] Get final independent spec and code review; resolve findings and rerun only affected checks. Document migration order, worker/event registration, backfill operations, required GitHub subscriptions, observed validation and remaining limitations.
 - [ ] Open an implementation PR linked to the tracking issue with before/after screenshots and verification. Keep local secrets and unrelated changes out. Leave merge/deploy to the user.
 
 ## Self-review
