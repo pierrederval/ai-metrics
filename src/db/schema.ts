@@ -222,10 +222,54 @@ export const prMetrics = pgTable('pr_metrics', {
 export const users = pgTable('users', {
   id: id(),
   login: text('login').notNull(),
+  displayName: text('display_name'),
+  avatarUrl: text('avatar_url'),
   credentials: text('credentials').notNull(),
   createdAt: created(),
   updatedAt: updated(),
 });
+export const workspaces = pgTable('workspaces', {
+  id: id(),
+  name: text('name').notNull(),
+  defaultForUserId: text('default_for_user_id')
+    .unique()
+    .references(() => users.id),
+  createdAt: created(),
+  updatedAt: updated(),
+});
+export const workspaceMemberships = pgTable(
+  'workspace_memberships',
+  {
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    role: text('role').$type<'owner' | 'member'>().notNull(),
+    createdAt: created(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    check('workspace_memberships_role', sql`${t.role} IN ('owner','member')`),
+  ],
+);
+export const workspaceRepositories = pgTable(
+  'workspace_repositories',
+  {
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    connectedBy: text('connected_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: created(),
+  },
+  (t) => [primaryKey({ columns: [t.workspaceId, t.repositoryId] })],
+);
 export const sessions = pgTable('sessions', {
   id: id(),
   userId: text('user_id')

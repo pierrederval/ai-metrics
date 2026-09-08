@@ -15,6 +15,13 @@
       "when": 1788852626836,
       "tag": "0001_high_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788893895616,
+      "tag": "0002_acoustic_sasquatch",
+      "breakpoints": true
     }
   ]
 }
