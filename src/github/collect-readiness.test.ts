@@ -1,4 +1,5 @@
 import { Octokit } from 'octokit';
+import { evaluateReadiness } from '../domain/grading/readiness-v01';
 import { beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   repositoryClient: vi.fn(),
@@ -354,3 +355,18 @@ test('deadline also bounds installation client acquisition', async () => {
     vi.useRealTimers();
   }
 });
+test.each(['docs/architecture.MD', 'docs/setup.markdown', 'Docs/nested/setup.MARKDOWN'])(
+  'collected %s receives the evaluator documentation points',
+  async (path) => {
+    mocks.getTree.mockResolvedValue({ data: { truncated: false, tree: [blob(path)] } });
+    const snapshot = await collectReadiness('fixture-repo', 'abc');
+    expect(snapshot.complete).toBe(true);
+    expect(snapshot.documents).toEqual([{ path, blobSha: 'b1', text: 'text' }]);
+    const grade = evaluateReadiness(snapshot);
+    expect(grade.checks.find((check) => check.id === 'docs-markdown')).toMatchObject({
+      status: 'pass',
+      points: 20,
+      paths: [path],
+    });
+  },
+);

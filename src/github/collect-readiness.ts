@@ -99,7 +99,7 @@ function relevant(path: string) {
     path === 'AGENTS.md' ||
     path === 'CLAUDE.md' ||
     /^readme\.md$/i.test(path) ||
-    (path.startsWith('docs/') && path.endsWith('.md'))
+    (/^docs\//i.test(path) && /\.(?:md|markdown)$/i.test(path))
   );
 }
 /** Server-side evidence collection only; callers must not serialize raw documents to clients. */
