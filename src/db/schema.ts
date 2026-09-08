@@ -333,3 +333,63 @@ export const repositoryImportItems = pgTable(
     check('repository_import_items_state', sql`${t.state} IN ('pending','complete','failed')`),
   ],
 );
+
+export const workspaceInvitations = pgTable(
+  'workspace_invitations',
+  {
+    id: id(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    email: text('email').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    invitedBy: text('invited_by')
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    acceptedBy: text('accepted_by').references(() => users.id),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: created(),
+  },
+  (t) => [
+    uniqueIndex('workspace_invitations_open_email')
+      .on(t.workspaceId, t.email)
+      .where(sql`${t.acceptedAt} IS NULL AND ${t.revokedAt} IS NULL`),
+  ],
+);
+
+export const invitationDeliveries = pgTable(
+  'invitation_deliveries',
+  {
+    id: id(),
+    invitationId: text('invitation_id')
+      .notNull()
+      .references(() => workspaceInvitations.id),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    requestedBy: text('requested_by')
+      .notNull()
+      .references(() => users.id),
+    encryptedToken: text('encrypted_token'),
+    state: text('state')
+      .$type<'queued' | 'sending' | 'sent' | 'failed' | 'cancelled'>()
+      .notNull()
+      .default('queued'),
+    createdAt: created(),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    providerId: text('provider_id'),
+    errorCode: text('error_code'),
+  },
+  (t) => [
+    index('invitation_deliveries_owner_time').on(t.requestedBy, t.createdAt),
+    index('invitation_deliveries_workspace_time').on(t.workspaceId, t.createdAt),
+    index('invitation_deliveries_invitation_time').on(t.invitationId, t.createdAt),
+    check(
+      'invitation_deliveries_state',
+      sql`${t.state} IN ('queued','sending','sent','failed','cancelled')`,
+    ),
+  ],
+);
