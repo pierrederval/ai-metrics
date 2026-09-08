@@ -23,8 +23,17 @@ vi.mock('../../lib/env', () => ({ env: () => ({ DEMO_MODE: 'false' }) }));
 import { db, closeDb } from '../../db';
 import { users, workspaces, workspaceMemberships } from '../../db/schema';
 import { saveAccountName, saveWorkspaceName } from './actions';
+async function cleanFixture() {
+  await db()
+    .delete(workspaceMemberships)
+    .where(eq(workspaceMemberships.workspaceId, fixture.workspaceId));
+  await db().delete(workspaces).where(eq(workspaces.id, fixture.workspaceId));
+  await db().delete(users).where(eq(users.id, fixture.userId));
+}
 beforeAll(async () => {
   await migrate(db(), { migrationsFolder: 'drizzle' });
+  // Recover only this suite's fixed fixtures after an interrupted or failed run.
+  await cleanFixture();
   await db().insert(users).values({ id: fixture.userId, login: 'fixture', credentials: 'fixture' });
   await db()
     .insert(workspaces)
@@ -34,9 +43,11 @@ beforeAll(async () => {
     .values({ workspaceId: fixture.workspaceId, userId: fixture.userId, role: 'owner' });
 });
 afterAll(async () => {
-  await db().delete(workspaces).where(eq(workspaces.id, fixture.workspaceId));
-  await db().delete(users).where(eq(users.id, fixture.userId));
-  await closeDb();
+  try {
+    await cleanFixture();
+  } finally {
+    await closeDb();
+  }
 });
 test('trimmed account and workspace names persist independently', async () => {
   const account = new FormData();
