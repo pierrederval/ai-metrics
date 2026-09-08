@@ -1,10 +1,19 @@
+import {
+  captureGithubRetry,
+  GithubCollectionRetryError,
+  type GithubRetryFailure,
+} from './retry-errors';
 import { eq, and, sql } from 'drizzle-orm';
-import { db } from '../db';
+import { db, withPullRequestLock } from '../db';
 import { githubEvents, commits } from '../db/schema';
 import { persistPr, stableId } from '../db/queries/persist-pr';
 import { assertTrackedRepository, repositoryClient } from './repositories';
 import { prSchema, normalizeFile, normalizeCheck, errorStatus } from './normalize';
 import { collectChecks } from './collect-checks';
+import { collectReviews } from './collect-reviews';
+import { collectWorkflowAttempts } from './collect-workflow-attempts';
+import { dashboardWebhookEvidence } from './dashboard-webhooks';
+import { persistDashboardEvidence } from '../db/queries/dashboard-evidence';
 import type { Revision, PullRequestFacts } from '../domain/pull-request/types';
 import { z } from 'zod';
 const edgeSchema = z.object({
@@ -17,6 +26,9 @@ const edgeSchema = z.object({
   }),
 });
 export async function syncPullRequest(repositoryId: string, number: number) {
+  return withPullRequestLock(repositoryId, number, () => hydratePullRequest(repositoryId, number));
+}
+async function hydratePullRequest(repositoryId: string, number: number) {
   await assertTrackedRepository(repositoryId);
   const { repo, client } = await repositoryClient(repositoryId),
     args = { owner: repo.owner, repo: repo.name, pull_number: number };
@@ -93,8 +105,30 @@ export async function syncPullRequest(repositoryId: string, number: number) {
     }
   }
   const checks = [];
-  for (const sha of shas)
-    checks.push(...(await collectChecks(client, repo.owner, repo.name, sha, issues)));
+  const retryErrors: GithubRetryFailure[] = [];
+  for (const sha of shas) {
+    try {
+      checks.push(...(await collectChecks(client, repo.owner, repo.name, sha, issues)));
+    } catch (error) {
+      retryErrors.push(captureGithubRetry(error));
+      issues.push(`Check collection failed for ${sha}`);
+    }
+  }
+  // Successful dimensions survive another endpoint's failure; workers retry after persistence.
+  const [reviewResult, ciResult] = await Promise.allSettled([
+    collectReviews(client, repo.owner, repo.name, number),
+    collectWorkflowAttempts(client, repositoryId, repo.owner, repo.name, shas),
+  ]);
+  const reviewEvidence =
+    reviewResult.status === 'fulfilled'
+      ? reviewResult.value
+      : { events: [], complete: false, issues: ['Review collection failed; retry required'] };
+  const ciEvidence =
+    ciResult.status === 'fulfilled'
+      ? ciResult.value
+      : { attempts: [], complete: false, issues: ['Workflow collection failed; retry required'] };
+  if (reviewResult.status === 'rejected') retryErrors.push(captureGithubRetry(reviewResult.reason));
+  if (ciResult.status === 'rejected') retryErrors.push(captureGithubRetry(ciResult.reason));
   const checkEvents = await db()
     .select()
     .from(githubEvents)
@@ -159,6 +193,73 @@ export async function syncPullRequest(repositoryId: string, number: number) {
     sourceUpdatedAt: new Date(pr.updated_at),
     facts,
   });
+  const storedDashboardEvents = await db()
+    .select()
+    .from(githubEvents)
+    .where(
+      and(
+        eq(githubEvents.repositoryId, repo.githubRepositoryId),
+        sql`${githubEvents.eventName} IN ('pull_request_review', 'workflow_run')`,
+      ),
+    );
+  const webhookEvidence = dashboardWebhookEvidence(
+    repositoryId,
+    number,
+    shas,
+    storedDashboardEvents,
+  );
+  const reviews = [...reviewEvidence.events, ...webhookEvidence.reviews];
+  const attempts = [...webhookEvidence.attempts, ...ciEvidence.attempts];
+  const cutoff = pr.merged_at ? Date.parse(pr.merged_at) : Infinity;
+  const detectedReviews = reviews.some(
+    (r) =>
+      Date.parse(r.occurredAt) <= cutoff &&
+      (r.kind !== 'review' || ['approved', 'changes_requested', 'dismissed'].includes(r.state)),
+  );
+  const detectedCi =
+    attempts.some((a) => !a.startedAt || Date.parse(a.startedAt) <= cutoff) ||
+    checks.some((c) => !c.startedAt || Date.parse(c.startedAt) <= cutoff);
+  const unsupportedChecks = checks.some((c) => !c.workflowRunId);
+  await persistDashboardEvidence({
+    id,
+    repositoryId,
+    openedAt: pr.created_at,
+    mergedAt: pr.merged_at,
+    mergeHeadSha: pr.merged_at ? pr.head.sha : null,
+    reviewExpected: detectedReviews ? true : reviewEvidence.complete ? false : null,
+    ciExpected: detectedCi
+      ? true
+      : ciEvidence.complete &&
+          !issues.some(
+            (issue) => issue.startsWith('CI history') || issue.startsWith('Check collection'),
+          )
+        ? false
+        : null,
+    chronologyComplete,
+    reviewsComplete: reviewEvidence.complete,
+    ciComplete:
+      ciEvidence.complete &&
+      !unsupportedChecks &&
+      !issues.some(
+        (issue) => issue.startsWith('CI history') || issue.startsWith('Check collection'),
+      ),
+    reviews,
+    attempts,
+    sourceUpdatedAt: pr.updated_at,
+    provenance: {
+      chronology: chronologyComplete
+        ? ['Observed PR revision events']
+        : ['Historical head chronology unavailable'],
+      reviews: ['GitHub reviews and PR timeline', ...reviewEvidence.issues],
+      ci: [
+        'GitHub workflow attempt snapshots; terminalObservedAt is an observation bound, not exact completion',
+        ...ciEvidence.issues,
+        ...(unsupportedChecks
+          ? ['Provider checks without workflow attempt mapping are unsupported']
+          : []),
+      ],
+    },
+  });
   for (const commit of remoteCommits)
     await db()
       .update(commits)
@@ -167,5 +268,6 @@ export async function syncPullRequest(repositoryId: string, number: number) {
         committedAt: commit.commit.committer?.date ? new Date(commit.commit.committer.date) : null,
       })
       .where(eq(commits.id, stableId(id, commit.sha)));
+  if (retryErrors.length) throw new GithubCollectionRetryError(retryErrors);
   return id;
 }

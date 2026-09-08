@@ -8,6 +8,10 @@ const { send, reconcile, select } = vi.hoisted(() => ({
 vi.mock('../inngest/client', () => ({ inngest: { send } }));
 vi.mock('./repositories', () => ({ reconcileInstallation: reconcile, repositoryClient: vi.fn() }));
 vi.mock('./resolve-installation', () => ({ resolveWebhookInstallationId: async () => '123' }));
+vi.mock('../db/queries/foreground-hydration', () => ({
+  queueForegroundHydration: async (data: unknown) => data,
+  markForegroundDispatched: async () => {},
+}));
 vi.mock('../db', () => ({ db: () => ({ select }) }));
 
 import { handleGithubEvent } from './handle-event';
@@ -81,3 +85,48 @@ test('pull request event for a revoked repository requests no hydration', async 
   ).resolves.toBe('unsupported');
   expect(send).not.toHaveBeenCalled();
 });
+
+for (const eventName of ['pull_request_review', 'pull_request']) {
+  test(`${eventName} review transition hydrates a tracked PR`, async () => {
+    select.mockReturnValue(
+      query([
+        {
+          id: 'repository:1',
+          active: true,
+          trackingStartedAt: new Date(),
+          githubRepositoryId: '1',
+        },
+      ]),
+    );
+    await expect(
+      handleGithubEvent({
+        ...base,
+        action: eventName === 'pull_request_review' ? 'dismissed' : 'review_requested',
+        eventName,
+        repositoryId: '1',
+        payload: { pull_request: { number: 7 } },
+      }),
+    ).resolves.toBe('processed');
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ repositoryId: 'repository:1', number: 7 }),
+      }),
+    );
+  });
+  test(`${eventName} review transition cannot hydrate an untracked PR`, async () => {
+    select.mockReturnValue(
+      query([
+        { id: 'repository:1', active: true, trackingStartedAt: null, githubRepositoryId: '1' },
+      ]),
+    );
+    await expect(
+      handleGithubEvent({
+        ...base,
+        eventName,
+        repositoryId: '1',
+        payload: { pull_request: { number: 7 } },
+      }),
+    ).resolves.toBe('unsupported');
+    expect(send).not.toHaveBeenCalled();
+  });
+}

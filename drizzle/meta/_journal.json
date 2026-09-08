@@ -15,6 +15,34 @@
       "when": 1788852626836,
       "tag": "0001_high_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788866397598,
+      "tag": "0002_dashboard_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788868617280,
+      "tag": "0003_review_dismissal_observation",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788871499752,
+      "tag": "0004_foreground_hydration_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788871741609,
+      "tag": "0005_foreground_retry_deadlines",
+      "breakpoints": true
     }
   ]
 }

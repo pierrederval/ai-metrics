@@ -1,3 +1,7 @@
+import {
+  queueForegroundHydration,
+  markForegroundDispatched,
+} from '../db/queries/foreground-hydration';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -23,7 +27,9 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
     return 'processed';
   }
   if (
-    !['pull_request', 'check_run', 'check_suite', 'workflow_run'].includes(event.eventName) ||
+    !['pull_request', 'pull_request_review', 'check_run', 'check_suite', 'workflow_run'].includes(
+      event.eventName,
+    ) ||
     !event.repositoryId
   )
     return 'unsupported';
@@ -40,7 +46,7 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
   }
   if (!repo || !repo.active || !repo.trackingStartedAt) return 'unsupported';
   const numbers = new Set<number>();
-  if (event.eventName === 'pull_request')
+  if (event.eventName === 'pull_request' || event.eventName === 'pull_request_review')
     numbers.add(
       z.object({ number: z.number().int().positive() }).parse(event.payload.pull_request).number,
     );
@@ -62,11 +68,18 @@ export async function handleGithubEvent(event: StoredEvent): Promise<'processed'
       for (const pr of associated) numbers.add(pr.number);
     }
   }
-  for (const number of numbers)
+  for (const number of numbers) {
+    const data = await queueForegroundHydration({
+      repositoryId: repo.id,
+      number,
+      sourceEventId: event.id,
+    });
     await inngest.send({
       id: `${event.deliveryId}:pr:${number}`,
       name: 'github/pr.sync.requested',
-      data: { repositoryId: repo.id, number, sourceEventId: event.id },
+      data,
     });
+    await markForegroundDispatched(data.hydrationId);
+  }
   return numbers.size ? 'processed' : 'unsupported';
 }

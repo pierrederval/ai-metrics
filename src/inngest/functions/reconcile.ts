@@ -1,3 +1,7 @@
+import {
+  listForegroundRecovery,
+  markForegroundDispatched,
+} from '../../db/queries/foreground-hydration';
 import { sql, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { githubEvents } from '../../db/schema';
@@ -26,7 +30,17 @@ export const reconcileEvents = inngest.createFunction(
             data: { eventId: event.id },
           });
       });
-    return { count: events.length };
+    const hydration = await step.run('find-stale-hydrations', listForegroundRecovery);
+    for (const job of hydration)
+      await step.run(`recover-hydration-${job.hydrationId}`, async () => {
+        await inngest.send({
+          id: `recover:${job.hydrationId}:${Math.floor(Date.now() / 900000)}`,
+          name: 'github/pr.sync.requested',
+          data: { ...job, sourceEventId: job.sourceEventId ?? undefined },
+        });
+        await markForegroundDispatched(job.hydrationId);
+      });
+    return { count: events.length, hydrations: hydration.length };
   },
 );
 export async function markFailed(id: string, message: string) {

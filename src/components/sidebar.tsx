@@ -1,14 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 export function Sidebar() {
+  return (
+    <Suspense fallback={null}>
+      <SidebarNavigation />
+    </Suspense>
+  );
+}
+function SidebarNavigation() {
+  const search = useSearchParams();
+  const retained = new URLSearchParams();
+  for (const key of ['days', 'from', 'to']) {
+    const value = search.get(key);
+    if (value !== null) retained.set(key, value);
+  }
+  const query = retained.size ? `?${retained}` : '';
   const pathname = usePathname();
   const signedOut = pathname === '/signed-out';
   return (
     <aside className="sidebar">
-      <Link className="brand" href="/dashboard" aria-label="Fieldnote home">
+      <Link className="brand" href={`/dashboard${query}`} aria-label="Fieldnote home">
         <svg className="brand-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
           <g stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <path d="M14 53V30A20 20 0 0 1 34 10H50" />
@@ -20,12 +35,17 @@ export function Sidebar() {
         <span className="brand-caption">Engineering records</span>
       </Link>
       <nav aria-label="Main navigation">
-        <Link href="/dashboard" aria-current={pathname === '/dashboard' ? 'page' : undefined}>
+        <Link
+          href={`/dashboard${query}`}
+          aria-current={pathname === '/dashboard' ? 'page' : undefined}
+        >
           <span className="nav-number">01</span> Overview
         </Link>
         <Link
-          href="/dashboard#repositories"
-          aria-current={pathname.startsWith('/repos/') ? 'page' : undefined}
+          href={`/repos${query}`}
+          aria-current={
+            pathname === '/repos' || pathname.startsWith('/repos/') ? 'page' : undefined
+          }
         >
           <span className="nav-number">02</span> Repositories
         </Link>

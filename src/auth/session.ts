@@ -31,6 +31,16 @@ export async function hasCurrentSession(): Promise<boolean> {
     .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
   return Boolean(session);
 }
+// Local identity only: this does not need GitHub credentials or network access.
+export async function currentUserId(): Promise<string | null> {
+  const token = (await cookies()).get('reliability-session')?.value;
+  if (!token) return null;
+  const [session] = await db()
+    .select({ userId: sessions.userId })
+    .from(sessions)
+    .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
+  return session?.userId ?? null;
+}
 export async function userClient() {
   const token = (await cookies()).get('reliability-session')?.value;
   if (!token) redirect('/api/auth/login');

@@ -32,3 +32,17 @@ test('missing or expired database session is unauthenticated', async () => {
   where.mockResolvedValue([]);
   expect(await hasCurrentSession()).toBe(false);
 });
+
+test('current identity comes only from the unexpired hashed server session', async () => {
+  const { currentUserId } = await import('./session');
+  expect(await currentUserId()).toBeNull();
+  cookie.mockReturnValue({ value: 'opaque-secret' });
+  where.mockResolvedValue([{ userId: 'server-user' }]);
+  expect(await currentUserId()).toBe('server-user');
+  const query = new PgDialect().sqlToQuery(where.mock.calls.at(-1)![0]);
+  expect(query.sql).toContain('"sessions"."expires_at" >');
+  expect(query.params[0]).toBe(tokenHash('opaque-secret'));
+  expect(Object.keys(select.mock.calls.at(-1)![0])).toEqual(['userId']);
+  where.mockResolvedValue([]);
+  expect(await currentUserId()).toBeNull();
+});
