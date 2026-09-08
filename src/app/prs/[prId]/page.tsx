@@ -29,7 +29,7 @@ export default async function Pr({ params }: { params: Promise<{ prId: string }>
     m = row?.projection ?? analysis.metrics;
   return (
     <>
-      <Link href={`/repos/${repo.id}`}>
+      <Link href={`/repos/${encodeURIComponent(repo.id)}`}>
         {repo.owner}/{repo.name}
       </Link>
       <h1>

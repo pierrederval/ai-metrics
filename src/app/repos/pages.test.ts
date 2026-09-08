@@ -31,7 +31,7 @@ vi.mock('next/navigation', () => ({
 import Directory from './page';
 import Repository from './[repoId]/page';
 const repo = {
-  id: 'repo',
+  id: 'repository:1',
   owner: 'owner',
   name: 'real-project',
   trackingStartedAt: new Date(),
@@ -46,7 +46,7 @@ beforeEach(() => {
   deps.latest.mockResolvedValue(null);
   deps.records.mockResolvedValue([
     {
-      repositoryId: 'repo',
+      repositoryId: 'repository:1',
       prs: [],
       accessiblePrCount: 100,
       reviewDetected: false,
@@ -84,8 +84,8 @@ test('directory shows only tracked authorized repositories with genuine links an
   const html = renderToStaticMarkup(
     await Directory({ searchParams: Promise.resolve({ days: '90' }) }),
   );
-  expect(deps.records).toHaveBeenCalledWith(['repo']);
-  expect(html).toContain('href="/repos/repo?days=90"');
+  expect(deps.records).toHaveBeenCalledWith(['repository:1']);
+  expect(html).toContain('href="/repos/repository%3A1?days=90"');
   expect(html).toContain('https://github.com/owner/real-project');
   expect(html).toContain('2026-09-06');
   expect(html).toContain('2026-09-08');
@@ -96,16 +96,16 @@ test('directory shows only tracked authorized repositories with genuine links an
 test('detail authorizes first, scopes loader to authorized repository, and retains custom range', async () => {
   const html = renderToStaticMarkup(
     await Repository({
-      params: Promise.resolve({ repoId: 'repo' }),
+      params: Promise.resolve({ repoId: 'repository:1' }),
       searchParams: Promise.resolve({ from: '2026-08-01', to: '2026-08-30' }),
     }),
   );
-  expect(deps.require).toHaveBeenCalledWith('repo');
+  expect(deps.require).toHaveBeenCalledWith('repository:1');
   expect(deps.require.mock.invocationCallOrder[0]).toBeLessThan(
     deps.load.mock.invocationCallOrder[0],
   );
   expect(deps.load).toHaveBeenCalledWith(
-    ['repo'],
+    ['repository:1'],
     expect.objectContaining({ start: '2026-08-01T00:00:00.000Z', days: 30 }),
   );
   expect(html).toContain('/repos?from=2026-08-01&amp;to=2026-08-30');

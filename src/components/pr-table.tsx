@@ -24,7 +24,7 @@ export function PrTable({ rows }: { rows: Awaited<ReturnType<typeof prRows>> }) 
           {rows.map(({ pr, metrics: m }) => (
             <tr key={pr.id}>
               <td>
-                <Link href={`/prs/${pr.id}`}>
+                <Link href={`/prs/${encodeURIComponent(pr.id)}`}>
                   #{pr.githubPrNumber} {pr.title}
                 </Link>
               </td>

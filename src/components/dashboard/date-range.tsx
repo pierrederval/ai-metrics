@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { DashboardData, Range } from '../../domain/dashboard/types';
 import { rangeEnd } from './range-query';
+import { canonicalPathname } from '../../lib/navigation-path';
 export function DateRange({
   range,
   bounds,
@@ -10,7 +11,7 @@ export function DateRange({
   range: Range;
   bounds: DashboardData['collectionBounds'];
 }) {
-  const pathname = usePathname();
+  const pathname = canonicalPathname(usePathname());
   const router = useRouter();
   const start = range.start.slice(0, 10),
     end = rangeEnd(range);
