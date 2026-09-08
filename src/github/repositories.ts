@@ -1,4 +1,4 @@
-import { eq, and, notInArray } from 'drizzle-orm';
+import { eq, and, isNotNull, notInArray } from 'drizzle-orm';
 import { db } from '../db';
 import { installations, repositories } from '../db/schema';
 import { githubApp } from './app';
@@ -85,4 +85,21 @@ export async function repositoryClient(repositoryId: string) {
   if (!record || !record.repo.active || !record.installation.active || record.repo.isDemo)
     throw new Error(`Repository unavailable: ${repositoryId}`);
   return { ...record, client: await installationClient(record.installation.githubInstallationId) };
+}
+
+export async function assertTrackedRepository(repositoryId: string): Promise<void> {
+  const [record] = await db()
+    .select({ id: repositories.id })
+    .from(repositories)
+    .innerJoin(installations, eq(installations.id, repositories.installationId))
+    .where(
+      and(
+        eq(repositories.id, repositoryId),
+        eq(repositories.active, true),
+        eq(repositories.isDemo, false),
+        isNotNull(repositories.trackingStartedAt),
+        eq(installations.active, true),
+      ),
+    );
+  if (!record) throw new Error(`Repository is not tracked: ${repositoryId}`);
 }

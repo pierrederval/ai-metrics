@@ -7,6 +7,7 @@ import * as s from '../db/schema';
 import { persistEvent } from '../db/queries/events';
 import { syncPullRequest } from './sync-pull-request';
 vi.mock('./repositories', () => ({
+  assertTrackedRepository: async () => {},
   repositoryClient: async () => ({
     repo: { id: 'hydrate-repo', owner: 'owner', name: 'repo', githubRepositoryId: '4242' },
     client: new Octokit({ request: { fetch: fakeFetch } }),
@@ -90,6 +91,7 @@ beforeAll(async () => {
       name: 'repo',
       defaultBranch: 'main',
       isPrivate: true,
+      trackingStartedAt: new Date(),
     })
     .onConflictDoNothing();
   await db()
