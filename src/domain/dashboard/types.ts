@@ -30,6 +30,7 @@ export type ReviewEvent = {
   commitSha: string | null;
   occurredAt: string;
   kind: 'review' | 'requested' | 'dismissed' | 'request-removed';
+  dismissedReviewId: string | null;
 };
 
 export type PrEvidence = {
