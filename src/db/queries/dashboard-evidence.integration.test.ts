@@ -261,3 +261,33 @@ test.each(['2026-01-01T00:00:00Z', '2026-01-03T00:00:00Z', '2026-01-04T00:00:00Z
     expect(classifyMergedPr(after!)).toBe('first-pass');
   },
 );
+
+test('an older unmerged snapshot cannot make retained post-merge reviews applicable', async () => {
+  const merged = {
+    ...evidence,
+    reviewExpected: false,
+    ciExpected: false,
+    attempts: [],
+    reviews: [{ ...evidence.reviews[0], occurredAt: '2026-01-03T00:00:00Z' }],
+  };
+  await persistDashboardEvidence(merged);
+  const before = await loadDashboardEvidence(evidence.id);
+  expect(before).toMatchObject({ reviewExpected: false, ciExpected: false });
+  await persistDashboardEvidence({
+    ...merged,
+    mergedAt: null,
+    mergeHeadSha: null,
+    sourceUpdatedAt: '2026-01-01T00:00:00Z',
+    reviews: [],
+  });
+  const after = await loadDashboardEvidence(evidence.id);
+  expect(after).toMatchObject({
+    mergedAt: '2026-01-02T12:00:00.000Z',
+    reviewExpected: false,
+    ciExpected: false,
+  });
+  expect(after?.reviews).toEqual(before?.reviews);
+  expect(classifyMergedPr(after!)).toBe('ineligible');
+  await persistDashboardEvidence({ ...merged, sourceUpdatedAt: '2026-01-04T00:00:00Z' });
+  expect((await loadDashboardEvidence(evidence.id))?.reviewExpected).toBe(false);
+});

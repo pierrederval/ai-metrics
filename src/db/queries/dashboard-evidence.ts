@@ -46,7 +46,16 @@ export async function persistDashboardEvidence(evidence: PrEvidence): Promise<vo
         ),
       )
       .where(eq(s.prWorkflowAttempts.pullRequestId, evidence.id));
-    const cutoff = evidence.mergedAt ? Date.parse(evidence.mergedAt) : Infinity;
+    let mergedAt = evidence.mergedAt;
+    if (older) {
+      const [currentPr] = await tx
+        .select({ mergedAt: s.pullRequests.mergedAt })
+        .from(s.pullRequests)
+        .where(eq(s.pullRequests.id, evidence.id));
+      // A stale pre-merge payload cannot reopen the historical evidence window.
+      mergedAt = iso(currentPr.mergedAt);
+    }
+    const cutoff = mergedAt ? Date.parse(mergedAt) : Infinity;
     const knownReview = [
       ...retainedReviews.map((r) => ({ ...r, occurredAt: r.occurredAt.toISOString() })),
       ...evidence.reviews,
