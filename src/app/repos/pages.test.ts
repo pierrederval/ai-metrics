@@ -22,6 +22,9 @@ vi.mock('../../db/queries/repository-imports', () => ({ latestImport: deps.lates
 vi.mock('./[repoId]/actions', () => ({ saveGates: vi.fn(), refreshImport: vi.fn() }));
 vi.mock('../../lib/env', () => ({ env: () => ({ DEMO_MODE: 'false' }) }));
 vi.mock('next/navigation', () => ({
+  notFound: () => {
+    throw new Error('not found');
+  },
   usePathname: () => '/repos/repo',
   useRouter: () => ({ push: vi.fn() }),
 }));
@@ -114,6 +117,44 @@ test('denied repository cannot reach dashboard or record loaders', async () => {
   await expect(Repository({ params: Promise.resolve({ repoId: 'forbidden' }) })).rejects.toThrow(
     'not found',
   );
+  expect(deps.load).not.toHaveBeenCalled();
+  expect(deps.records).not.toHaveBeenCalled();
+});
+
+test.each(['repository:1360100266', 'repository%3A1360100266'])(
+  'detail resolves Next route ID %s before authorization and data reads',
+  async (param) => {
+    const id = 'repository:1360100266';
+    deps.require.mockImplementation(async (value) => {
+      if (value !== id) throw new Error('not found');
+      return { ...repo, id };
+    });
+    const html = renderToStaticMarkup(
+      await Repository({ params: Promise.resolve({ repoId: param }) }),
+    );
+    expect(html).toContain('Advanced gate analysis');
+    expect(deps.require).toHaveBeenCalledWith(id);
+    expect(deps.load).toHaveBeenCalledWith([id], expect.anything());
+    expect(deps.rows).toHaveBeenCalledWith([id]);
+    expect(deps.policy).toHaveBeenCalledWith(id);
+    expect(deps.latest).toHaveBeenCalledWith(id);
+  },
+);
+
+test('malformed route ID is rejected before protected repository reads', async () => {
+  await expect(
+    Repository({ params: Promise.resolve({ repoId: 'repository%ZZ1' }) }),
+  ).rejects.toThrow('not found');
+  expect(deps.require).not.toHaveBeenCalled();
+  expect(deps.load).not.toHaveBeenCalled();
+});
+
+test('a double-escaped route ID is decoded only once and still requires an exact access grant', async () => {
+  deps.require.mockRejectedValue(new Error('not found'));
+  await expect(
+    Repository({ params: Promise.resolve({ repoId: 'repository%253A1360100266' }) }),
+  ).rejects.toThrow('not found');
+  expect(deps.require).toHaveBeenCalledWith('repository%3A1360100266');
   expect(deps.load).not.toHaveBeenCalled();
   expect(deps.records).not.toHaveBeenCalled();
 });

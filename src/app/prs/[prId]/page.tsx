@@ -8,9 +8,10 @@ import { currentPolicy } from '../../../db/queries/dashboard';
 import { visiblePrIds } from '../../../db/queries/history-access';
 import { analyzePullRequest } from '../../../domain/pull-request/analyzer';
 import { yesNo, duration } from '../../../components/metrics';
+import { pageRouteId } from '../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
 export default async function Pr({ params }: { params: Promise<{ prId: string }> }) {
-  const { prId } = await params;
+  const prId = pageRouteId((await params).prId);
   const repositories = (await accessibleRepositories()).filter(
     (repo) =>
       repo.trackingStartedAt !== null || (process.env.NODE_ENV === 'development' && repo.isDemo),

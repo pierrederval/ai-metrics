@@ -20,12 +20,13 @@ import { currentPolicy, prRows } from '../../../db/queries/dashboard';
 import { MetricCards } from '../../../components/metrics';
 import { PrTable } from '../../../components/pr-table';
 import { failureBreakdown } from '../../../metrics/aggregate';
+import { pageRouteId } from '../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
 export default async function Repository({
   params,
   searchParams,
 }: { params: Promise<{ repoId: string }> } & RangePageProps) {
-  const { repoId } = await params,
+  const repoId = pageRouteId((await params).repoId),
     repo = await requireTrackedRepository(repoId);
   const search = (await searchParams) ?? {};
   let range;
