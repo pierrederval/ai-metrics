@@ -5,7 +5,7 @@ export default function SignedOut() {
     <main id="main-content" className="public-entry" tabIndex={-1}>
       <div className="signin-panel">
         <Brand href="/signed-out" />
-        <h1>Welcome to your workspace.</h1>
+        <h1 className="sr-only">Sign in</h1>
         <p>Sign in to your engineering workspace.</p>
         <a className="signin-github" href="/api/auth/login">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
