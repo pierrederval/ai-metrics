@@ -5,6 +5,7 @@ vi.mock('server-only', () => ({}));
 const fixture = vi.hoisted(() => ({ userId: 'invite-owner', demo: false }));
 vi.mock('../auth/session', () => ({ currentUser: async () => ({ id: fixture.userId }) }));
 vi.mock('../lib/env', () => ({
+  emailEnv: () => ({ RESEND_API_KEY: 'test', RESEND_FROM_EMAIL: 'team@example.com' }),
   env: () => ({ DEMO_MODE: fixture.demo ? 'true' : 'false' }),
   integrationEnv: () => ({ TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32) }),
 }));

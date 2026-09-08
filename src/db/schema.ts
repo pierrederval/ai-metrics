@@ -373,6 +373,10 @@ export const invitationDeliveries = pgTable(
       .notNull()
       .references(() => users.id),
     encryptedToken: text('encrypted_token'),
+    encryptedPayload: text('encrypted_payload'),
+    attempts: integer('attempts').notNull().default(0),
+    firstAttemptAt: timestamp('first_attempt_at', { withTimezone: true }),
+    leaseUntil: timestamp('lease_until', { withTimezone: true }),
     state: text('state')
       .$type<'queued' | 'sending' | 'sent' | 'failed' | 'cancelled'>()
       .notNull()

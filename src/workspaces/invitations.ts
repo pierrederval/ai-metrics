@@ -4,9 +4,11 @@ import { and, desc, eq, gte, isNull, sql } from 'drizzle-orm';
 import { encrypt, tokenHash } from '../auth/crypto';
 import { db } from '../db';
 import { invitationDeliveries, workspaceInvitations, workspaceMemberships } from '../db/schema';
-import { integrationEnv } from '../lib/env';
+import { emailEnv, integrationEnv } from '../lib/env';
 import { normalizeEmail } from './invitation-policy';
 import { authorizeOwner, lockWorkspace, mutationUser, type WorkspaceTransaction } from './members';
+
+import { EmailDeliveryError } from '../email/resend';
 
 const invalid = () => new Error('Invitation unavailable');
 async function lockSending(tx: WorkspaceTransaction, workspaceId: string, ownerId: string) {
@@ -20,7 +22,7 @@ async function lockSending(tx: WorkspaceTransaction, workspaceId: string, ownerI
 async function cancelDeliveries(tx: WorkspaceTransaction, invitationId: string) {
   await tx
     .update(invitationDeliveries)
-    .set({ state: 'cancelled', encryptedToken: null })
+    .set({ state: 'cancelled', encryptedToken: null, encryptedPayload: null })
     .where(
       and(
         eq(invitationDeliveries.invitationId, invitationId),
@@ -35,6 +37,7 @@ async function issue(
   email: string,
   existing?: typeof workspaceInvitations.$inferSelect,
 ) {
+  if (!emailEnv()) throw new EmailDeliveryError('email_unavailable');
   const now = Date.now();
   const [hour] = await tx
     .select({ count: sql<number>`count(*)::int` })
@@ -81,16 +84,14 @@ async function issue(
     await tx
       .insert(workspaceInvitations)
       .values({ id, workspaceId, email, invitedBy: ownerId, tokenHash: digest, expiresAt });
-  await tx
-    .insert(invitationDeliveries)
-    .values({
-      id: randomUUID(),
-      invitationId: id,
-      workspaceId,
-      requestedBy: ownerId,
-      encryptedToken,
-      createdAt: new Date(now),
-    });
+  await tx.insert(invitationDeliveries).values({
+    id: randomUUID(),
+    invitationId: id,
+    workspaceId,
+    requestedBy: ownerId,
+    encryptedToken,
+    createdAt: new Date(now),
+  });
   return { id };
 }
 export async function createInvitation(

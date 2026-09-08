@@ -38,3 +38,15 @@ Without those per-preview settings, Railway still produces a useful build and HT
 - [Railway pre-deploy commands](https://docs.railway.com/deployments/pre-deploy-command)
 - [Inngest branch environments](https://www.inngest.com/docs/platform/environments)
 - [GitHub repository webhooks](https://docs.github.com/en/rest/repos/webhooks)
+
+## Workspace invitation delivery
+
+Set optional `RESEND_API_KEY` and `RESEND_FROM_EMAIL` together to enable invitation creation. Keep the API key in Railway secrets. Verify the sender domain in Resend and use an address on that domain. Missing or invalid configuration leaves invitations unavailable; it does not disable GitHub sign-in or analytics. `APP_URL` must be the public HTTPS application origin.
+
+Grant the GitHub App **Account permissions → Email addresses: Read-only** and have existing users reauthorize after the permission change. Acceptance queries and paginates `/user/emails`, using only entries marked verified, including nonprimary addresses. Public profile email is never used. An email API permission error displays reauthorization guidance.
+
+Register both invitation Inngest functions with the deployed `/api/inngest` endpoint. The reconciliation function runs every minute and dispatches durable outbox rows with stable event IDs; only delivery IDs are sent to Inngest. Delivery snapshots the recipient, sender, workspace name and invitation URL as encrypted data before the first provider call. All retries reuse the exact body and Resend idempotency key. There are at most six provider attempts (one initial attempt and five retries), all within 24 hours of creation, conservatively inside Resend's 24-hour key retention. Revocation, acceptance, success, and terminal failure clear encrypted tokens and payloads. The failure hook settles exhausted workers; reconciliation settles abandoned rows after 24 hours.
+
+Invitation GET requests display a confirmation and never join a workspace. GitHub login carries an encrypted, HTTP-only continuation cookie with a server-checked ten-minute expiration, then redirects only to the internal invitation route. Acceptance is a server POST with a fresh verified-email query. Invitation responses and OAuth routes use `Referrer-Policy: no-referrer`; Next development request logging suppresses these paths and server-function argument logging is disabled. Configure Railway, reverse proxies, APM and access logs to redact or exclude `/invitations/*` and `/api/auth/*` URLs and query strings. Do not log provider request bodies, email payloads, OAuth codes, tokens, or raw provider errors.
+
+Verification must mock Resend and GitHub email/OAuth requests; do not send real invitation email from local test runs. Use the dedicated `TEST_DATABASE_URL` ending in `_test` for `pnpm test:integration src/workspaces/delivery.integration.test.ts`.

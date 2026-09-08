@@ -1,3 +1,5 @@
+import { sendInvitationFunction } from '../../../inngest/functions/send-invitation';
+import { reconcileInvitations } from '../../../inngest/functions/reconcile-invitations';
 import { reconcileImports } from '../../../inngest/functions/reconcile-imports';
 import { syncRepositoryFunction } from '../../../inngest/functions/sync-repository';
 import { syncPullRequestFunction } from '../../../inngest/functions/sync-pull-request';
@@ -10,6 +12,8 @@ export const runtime = 'nodejs';
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
+    sendInvitationFunction,
+    reconcileInvitations,
     syncRepositoryFunction,
     syncPullRequestFunction,
     processGithubEvent,

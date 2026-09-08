@@ -29,6 +29,13 @@
       "when": 1788895799377,
       "tag": "0003_fancy_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788896139335,
+      "tag": "0004_bent_molly_hayes",
+      "breakpoints": true
     }
   ]
 }
