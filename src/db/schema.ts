@@ -7,7 +7,12 @@ import {
   jsonb,
   uniqueIndex,
   primaryKey,
+  check,
+  index,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import type { ImportState, ItemState } from '../domain/import/types';
 import type {
   Gate,
   PullRequestFacts,
@@ -39,6 +44,7 @@ export const repositories = pgTable('repositories', {
   isPrivate: boolean('is_private').notNull(),
   active: boolean('active').notNull().default(true),
   isDemo: boolean('is_demo').notNull().default(false),
+  trackingStartedAt: timestamp('tracking_started_at', { withTimezone: true }),
   syncStatus: text('sync_status').notNull().default('idle'),
   syncProgress: integer('sync_progress').notNull().default(0),
   syncError: text('sync_error'),
@@ -228,3 +234,58 @@ export const sessions = pgTable('sessions', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: created(),
 });
+
+export const repositoryImports = pgTable(
+  'repository_imports',
+  {
+    id: id(),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    retryOf: text('retry_of').references((): AnyPgColumn => repositoryImports.id),
+    state: text('state').$type<ImportState>().notNull(),
+    total: integer('total'),
+    completed: integer('completed').notNull().default(0),
+    failed: integer('failed').notNull().default(0),
+    message: text('message'),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    createdAt: created(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (t) => [
+    check(
+      'repository_imports_state',
+      sql`${t.state} IN ('queued','discovering','importing','complete','partial','failed')`,
+    ),
+    check('repository_imports_total', sql`${t.total} BETWEEN 0 AND 100`),
+    check('repository_imports_completed', sql`${t.completed} >= 0`),
+    check('repository_imports_failed', sql`${t.failed} >= 0`),
+    check(
+      'repository_imports_counts',
+      sql`${t.total} IS NULL OR ${t.completed} + ${t.failed} <= ${t.total}`,
+    ),
+    uniqueIndex('repository_imports_one_active')
+      .on(t.repositoryId)
+      .where(sql`${t.state} IN ('queued','discovering','importing')`),
+    index('repository_imports_latest').on(t.repositoryId, t.createdAt.desc()),
+    uniqueIndex('repository_imports_one_retry')
+      .on(t.retryOf)
+      .where(sql`${t.retryOf} IS NOT NULL`),
+  ],
+);
+export const repositoryImportItems = pgTable(
+  'repository_import_items',
+  {
+    runId: text('run_id')
+      .notNull()
+      .references(() => repositoryImports.id),
+    number: integer('number').notNull(),
+    state: text('state').$type<ItemState>().notNull().default('pending'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.runId, t.number] }),
+    check('repository_import_items_number', sql`${t.number} > 0`),
+    check('repository_import_items_state', sql`${t.state} IN ('pending','complete','failed')`),
+  ],
+);

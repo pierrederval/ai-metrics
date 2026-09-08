@@ -8,6 +8,13 @@
       "when": 1788764974433,
       "tag": "0000_faulty_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788852626836,
+      "tag": "0001_high_hellcat",
+      "breakpoints": true
     }
   ]
 }
