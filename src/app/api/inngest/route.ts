@@ -1,3 +1,7 @@
+import {
+  historyBackfillFunction,
+  reconcileHistoryBackfills,
+} from '../../../inngest/functions/backfill-history';
 import { reconcileImports } from '../../../inngest/functions/reconcile-imports';
 import { syncRepositoryFunction } from '../../../inngest/functions/sync-repository';
 import { syncPullRequestFunction } from '../../../inngest/functions/sync-pull-request';
@@ -10,6 +14,8 @@ export const runtime = 'nodejs';
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
+    historyBackfillFunction,
+    reconcileHistoryBackfills,
     syncRepositoryFunction,
     syncPullRequestFunction,
     processGithubEvent,

@@ -1,3 +1,5 @@
+import { ensureHistoryBackfill } from '../../db/queries/history-backfill';
+import { dispatchHistoryBackfill } from '../dispatch-history';
 import { inngest } from '../client';
 import { repositorySyncData } from '../events';
 import { latestPullRequests } from '../../github/sync-repository';
@@ -63,6 +65,17 @@ export const syncRepositoryFunction = inngest.createFunction(
       }
       await step.run(`record-${item.number}`, () => recordImportItem(runId, item.number, outcome));
     }
-    return step.run('finish', () => finishImport(runId));
+    const finished = await step.run('finish', () => finishImport(runId));
+    if (finished.state === 'complete' || finished.state === 'partial') {
+      await step.run('start-history-backfill', async () => {
+        try {
+          await dispatchHistoryBackfill(await ensureHistoryBackfill(repositoryId));
+        } catch {
+          // Reconciliation closes both creation and dispatch gaps independently.
+          console.error('Background history start deferred', { repositoryId });
+        }
+      });
+    }
+    return finished;
   },
 );

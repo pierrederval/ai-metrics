@@ -2,6 +2,8 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import type { ImportExecution } from '../../domain/import/types';
 import { summarizeImport } from '../../domain/import/progress';
 const mocks = vi.hoisted(() => ({
+  ensureHistoryBackfill: vi.fn(),
+  dispatchHistoryBackfill: vi.fn(),
   createFunction: vi.fn((config, handler) => ({ config, handler })),
   getImport: vi.fn(),
   beginImport: vi.fn(),
@@ -12,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   latestPullRequests: vi.fn(),
   assertTrackedRepository: vi.fn(),
 }));
+vi.mock('../../db/queries/history-backfill', () => mocks);
+vi.mock('../dispatch-history', () => mocks);
 vi.mock('../client', () => ({ inngest: { createFunction: mocks.createFunction } }));
 vi.mock('../../db/queries/repository-imports', () => mocks);
 vi.mock('../../github/sync-repository', () => mocks);
@@ -143,4 +147,13 @@ test('item stays pending while the child invocation is retrying', async () => {
   expect(mocks.recordImportItem).not.toHaveBeenCalled();
   resolveChild();
   expect(await result).toMatchObject({ completed: 1, failed: 0 });
+});
+
+test('initial import success survives failure creating the background run', async () => {
+  mocks.ensureHistoryBackfill.mockRejectedValueOnce(new Error('offline'));
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  expect(await execute()).toMatchObject({ state: 'complete', completed: 2 });
+  expect(mocks.ensureHistoryBackfill).toHaveBeenCalledWith('repo');
+  expect(mocks.failImport).not.toHaveBeenCalled();
+  log.mockRestore();
 });
