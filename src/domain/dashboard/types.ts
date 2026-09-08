@@ -58,14 +58,18 @@ export type Rate = {
   numerator: number;
   denominator: number;
   excluded: number;
+  /** Percentage, on a 0–100 scale; null means no denominator. */
   value: number | null;
 };
 
 export type Day = {
   date: string;
   merged: number;
+  /** Chart value: zero only with known coverage; raw merged remains additive. */
+  mergedValue: number | null;
   firstPass: Rate;
   ci: Record<CiOutcome, number>;
+  prOutcomes: Record<PrOutcome, number>;
   coverage: 'complete' | 'partial' | 'unknown';
 };
 
@@ -73,6 +77,51 @@ export type DashboardData = {
   range: Range;
   days: Day[];
   previousDays: Day[];
+  previousRange: Range;
+  totals: MetricTotals;
+  previousTotals: MetricTotals;
+  comparisons: Comparisons;
+  coverageReasons: CoverageReason[];
+  previousCoverageReasons: CoverageReason[];
+  undatedCi: Record<CiOutcome, number>;
+  previousUndatedCi: Record<CiOutcome, number>;
+  timezone: 'UTC';
+  /** Inclusive picker bounds, not a completeness claim. Unknown disables custom history choice. */
+  collectionBounds: {
+    from: string | null;
+    to: string | null;
+    source: 'backfill-discovery' | 'unknown';
+  };
   visiblePrCount: number;
   coverage: 'complete' | 'partial' | 'unknown';
+};
+
+export type CoverageReason =
+  | 'import-incomplete'
+  | 'history-undiscovered'
+  | 'outside-collected-history'
+  | 'free-history-limit'
+  | 'evidence-incomplete'
+  | 'unknown-workflow-date'
+  | 'no-repositories'
+  | 'current-day';
+export type MetricTotals = {
+  merged: number;
+  firstPass: Rate;
+  prOutcomes: Record<PrOutcome, number>;
+  ci: Record<CiOutcome, number>;
+  ciSuccess: Rate;
+  ciRecovered: Rate;
+};
+export type PeriodAggregate = {
+  days: Day[];
+  totals: MetricTotals;
+  /** Excluded from chart/KPI totals: no defensible completion day in this period. */
+  undatedCi: Record<CiOutcome, number>;
+  coverageReasons: CoverageReason[];
+};
+export type Comparisons = {
+  mergedPercent: number | null;
+  firstPassPoints: number | null;
+  ciSuccessPoints: number | null;
 };
