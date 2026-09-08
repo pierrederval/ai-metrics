@@ -5,7 +5,10 @@ export const prSyncData = z.object({
   number: z.number().int().positive(),
   sourceEventId: z.string().min(1).optional(),
 });
-export const repositorySyncData = z.object({ repositoryId: z.string().min(1) });
+export const repositorySyncData = z.object({
+  repositoryId: z.string().min(1),
+  runId: z.string().min(1),
+});
 export const recomputeData = z.object({ prId: z.string().min(1) });
 export interface ReliabilityEvents {
   'github/webhook.received': z.infer<typeof eventData>;

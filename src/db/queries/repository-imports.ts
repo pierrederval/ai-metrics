@@ -1,6 +1,6 @@
 // Trusted server persistence primitives. Browser-facing actions must authorize callers first.
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../index';
 import {
   installations,
@@ -10,6 +10,8 @@ import {
 } from '../schema';
 import { isActiveImport, summarizeImport } from '../../domain/import/progress';
 import type { ImportExecution, ImportSnapshot } from '../../domain/import/types';
+
+const importingMessage = 'Importing PR and CI history. GitHub requests may retry automatically.';
 
 type Run = typeof runs.$inferSelect;
 type Tx = Parameters<Parameters<ReturnType<typeof db>['transaction']>[0]>[0];
@@ -121,15 +123,13 @@ export async function requestRepositoryImport(
     if (source && source.total !== null) {
       const previous = (await execution(tx, source)).items;
       if (previous.length)
-        await tx
-          .insert(items)
-          .values(
-            previous.map((item) => ({
-              runId,
-              number: item.number,
-              state: item.state === 'complete' ? ('complete' as const) : ('pending' as const),
-            })),
-          );
+        await tx.insert(items).values(
+          previous.map((item) => ({
+            runId,
+            number: item.number,
+            state: item.state === 'complete' ? ('complete' as const) : ('pending' as const),
+          })),
+        );
     }
     await tx
       .update(repositories)
@@ -162,7 +162,11 @@ export async function beginImport(runId: string): Promise<ImportExecution> {
     if (run.state === 'queued') {
       [run] = await tx
         .update(runs)
-        .set({ state: run.total === null ? 'discovering' : 'importing', startedAt: new Date() })
+        .set({
+          state: run.total === null ? 'discovering' : 'importing',
+          startedAt: new Date(),
+          message: run.total === null ? null : importingMessage,
+        })
         .where(eq(runs.id, runId))
         .returning();
     }
@@ -182,7 +186,7 @@ export async function saveImportBatch(runId: string, numbers: number[]): Promise
       await tx.insert(items).values(distinct.map((number) => ({ runId, number })));
     [run] = await tx
       .update(runs)
-      .set({ total: distinct.length, state: 'importing' })
+      .set({ total: distinct.length, state: 'importing', message: importingMessage })
       .where(eq(runs.id, runId))
       .returning();
     return execution(tx, run);
@@ -214,7 +218,11 @@ export async function finishImport(runId: string): Promise<ImportSnapshot> {
       throw new Error('Import still has pending work');
     const [finished] = await tx
       .update(runs)
-      .set({ ...summary, finishedAt: new Date() })
+      .set({
+        ...summary,
+        message: summary.failed ? 'Some PRs could not be imported. Please retry.' : null,
+        finishedAt: new Date(),
+      })
       .where(eq(runs.id, runId))
       .returning();
     return snapshot(finished);
@@ -228,4 +236,21 @@ export async function failImport(runId: string, message: string): Promise<void> 
       .set({ state: 'failed', message, finishedAt: new Date() })
       .where(eq(runs.id, runId));
   });
+}
+
+export async function listUndispatchedImports(): Promise<string[]> {
+  return (
+    await db()
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.state, 'queued'), isNull(runs.dispatchedAt)))
+      .orderBy(asc(runs.createdAt), asc(runs.id))
+      .limit(100)
+  ).map((run) => run.id);
+}
+export async function markImportDispatched(runId: string): Promise<void> {
+  await db()
+    .update(runs)
+    .set({ dispatchedAt: new Date() })
+    .where(and(eq(runs.id, runId), isNull(runs.dispatchedAt)));
 }

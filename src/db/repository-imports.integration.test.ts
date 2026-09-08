@@ -158,3 +158,16 @@ test('failure preserves success and stale retry cannot displace a newer import',
   await finishImport(refresh.id);
   await expect(requestRepositoryImport(repo, 'retry', refresh.id)).rejects.toThrow();
 });
+
+test('running and partial imports persist safe progress messages', async () => {
+  const run = await requestRepositoryImport(await seedRepository(), 'start');
+  await beginImport(run.id);
+  expect((await saveImportBatch(run.id, [1, 2])).snapshot.message).toBe(
+    'Importing PR and CI history. GitHub requests may retry automatically.',
+  );
+  await recordImportItem(run.id, 1, 'complete');
+  await recordImportItem(run.id, 2, 'failed');
+  expect((await finishImport(run.id)).message).toBe(
+    'Some PRs could not be imported. Please retry.',
+  );
+});

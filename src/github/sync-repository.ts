@@ -1,7 +1,12 @@
-import { inngest } from '../inngest/client';
-import { repositoryClient } from './repositories';
-export async function syncRepository(repositoryId: string) {
-  return inngest.send({ name: 'github/repository.sync.requested', data: { repositoryId } });
+import { dispatchImport } from '../inngest/dispatch-import';
+import { requestRepositoryImport } from '../db/queries/repository-imports';
+import type { ImportSnapshot } from '../domain/import/types';
+import { repositoryClient, assertTrackedRepository } from './repositories';
+export async function syncRepository(repositoryId: string): Promise<ImportSnapshot> {
+  await assertTrackedRepository(repositoryId);
+  const run = await requestRepositoryImport(repositoryId, 'refresh');
+  await dispatchImport(run.id);
+  return run;
 }
 export async function latestPullRequests(repositoryId: string) {
   const { repo, client } = await repositoryClient(repositoryId);
