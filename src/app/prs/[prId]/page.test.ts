@@ -39,7 +39,7 @@ beforeEach(() => {
     .mockReturnValueOnce(
       query([
         {
-          id: 'hidden-pr',
+          id: 'pr:123',
           repositoryId: 'repo',
           facts: { checks: [], files: [], revisions: [], historyComplete: true, issues: [] },
           openedAt: new Date('2025-01-01T00:00:00.000Z'),
@@ -71,4 +71,10 @@ test('direct PR access rejects a stored record outside the visible history windo
   await expect(Pr({ params: Promise.resolve({ prId: 'hidden-pr' }) })).rejects.toThrow('404');
   expect(deps.visibleIds).toHaveBeenCalledWith(['repo']);
   expect(deps.select).not.toHaveBeenCalled();
+});
+
+test('escaped PR route ID resolves the same visible record without bypassing history access', async () => {
+  deps.visibleIds.mockResolvedValue(['pr:123']);
+  await expect(Pr({ params: Promise.resolve({ prId: 'pr%3A123' }) })).resolves.toBeDefined();
+  expect(deps.visibleIds).toHaveBeenCalledWith(['repo']);
 });
