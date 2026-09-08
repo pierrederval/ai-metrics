@@ -3,7 +3,7 @@ import { hasCurrentSession } from '../../../auth/session';
 import { sealInvitation } from '../../../auth/invitation-continuation';
 import { acceptInvitationAction } from './actions';
 export const metadata: Metadata = {
-  title: 'Workspace invitation · Fieldnote',
+  title: 'Workspace invitation',
   referrer: 'no-referrer',
   robots: { index: false, follow: false },
 };

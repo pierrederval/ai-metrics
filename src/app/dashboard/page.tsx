@@ -3,14 +3,16 @@ import { redirect } from 'next/navigation';
 import { env } from '../../lib/env';
 import { needsOnboarding } from '../../domain/import/onboarding';
 import { latestImport } from '../../db/queries/repository-imports';
-import { accessibleRepositories } from '../../workspaces/access';
+import { accessibleRepositories, requireWorkspace } from '../../workspaces/access';
 import { prRows } from '../../db/queries/dashboard';
 import { MetricCards } from '../../components/metrics';
 export const dynamic = 'force-dynamic';
 export default async function Dashboard() {
+  const workspace = await requireWorkspace();
   const available = await accessibleRepositories();
   const demo = env().DEMO_MODE === 'true';
-  if (needsOnboarding(available, demo)) redirect('/onboarding');
+  if (workspace.role === 'owner' && available.length > 0 && needsOnboarding(available, demo))
+    redirect('/onboarding');
   const repositories = demo
     ? available
     : available.filter((repo) => repo.trackingStartedAt !== null);
@@ -44,7 +46,7 @@ export default async function Dashboard() {
         <p>No pull requests imported yet. Follow your repository’s import below.</p>
       )}
       <h2 id="repositories">Repositories</h2>
-      <Link href="/onboarding">Add repository</Link>
+      {workspace.role === 'owner' && <Link href="/onboarding">Add repository</Link>}
       {repositories.length ? (
         repositories.map((r) => (
           <section key={r.id} className="repository-card">
@@ -66,7 +68,9 @@ export default async function Dashboard() {
         ))
       ) : (
         <p>
-          No accessible installed repositories. Install the GitHub App on a repository to begin.
+          {workspace.role === 'owner'
+            ? 'Connect a repository to start your engineering record.'
+            : 'Ask a workspace owner to connect a repository. Your team’s engineering record will appear here.'}
         </p>
       )}
       <p className="muted">

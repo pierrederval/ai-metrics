@@ -62,6 +62,11 @@ export default async function Onboarding({
           />
           <Link href="/onboarding">Connect another repository</Link>
         </div>
+      ) : workspace.role !== 'owner' ? (
+        <p>
+          Ask a workspace owner to connect a repository.{' '}
+          <Link href="/dashboard">Return to overview</Link>
+        </p>
       ) : (
         <RepositoryPicker
           allConnected={!choices.length && hasTracked}

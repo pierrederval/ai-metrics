@@ -4,8 +4,12 @@ const deps = vi.hoisted(() => ({
   rows: vi.fn(),
   latest: vi.fn(),
   demo: false,
+  role: 'owner',
 }));
-vi.mock('../../workspaces/access', () => ({ accessibleRepositories: deps.available }));
+vi.mock('../../workspaces/access', () => ({
+  accessibleRepositories: deps.available,
+  requireWorkspace: async () => ({ id: 'w', role: deps.role }),
+}));
 vi.mock('../../db/queries/dashboard', () => ({ prRows: deps.rows }));
 vi.mock('../../db/queries/repository-imports', () => ({ latestImport: deps.latest }));
 vi.mock('../../lib/env', () => ({ env: () => ({ DEMO_MODE: deps.demo ? 'true' : 'false' }) }));
@@ -18,6 +22,7 @@ import Dashboard from './page';
 beforeEach(() => {
   vi.clearAllMocks();
   deps.demo = false;
+  deps.role = 'owner';
   deps.rows.mockResolvedValue([]);
   deps.latest.mockResolvedValue(null);
 });
@@ -41,4 +46,10 @@ test('explicit demo rows retain read access without onboarding', async () => {
   deps.available.mockResolvedValue([{ id: 'demo', trackingStartedAt: null, isDemo: true }]);
   await Dashboard();
   expect(deps.rows).toHaveBeenCalledWith(['demo']);
+});
+
+test('members with no repositories stay in the overview', async () => {
+  deps.role = 'member';
+  deps.available.mockResolvedValue([]);
+  await expect(Dashboard()).resolves.toBeDefined();
 });
