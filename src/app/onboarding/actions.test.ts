@@ -1,15 +1,21 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { redirect } from 'next/navigation';
-const { authorize, request, dispatch, revalidate, available } = vi.hoisted(() => ({
+const { authorize, request, dispatch, revalidate, available, workspace, link } = vi.hoisted(() => ({
   authorize: vi.fn(),
   available: vi.fn(),
+  workspace: vi.fn(),
+  link: vi.fn(),
   request: vi.fn(),
   dispatch: vi.fn(),
   revalidate: vi.fn(),
 }));
 vi.mock('../../auth/access', () => ({
+  githubAccessibleRepositories: available,
+}));
+vi.mock('../../workspaces/access', () => ({
   requireRepository: authorize,
-  accessibleRepositories: available,
+  requireWorkspace: workspace,
+  linkRepository: link,
 }));
 vi.mock('../../db/queries/repository-imports', () => ({ requestRepositoryImport: request }));
 vi.mock('../../inngest/dispatch-import', () => ({ dispatchImport: dispatch }));
@@ -40,12 +46,15 @@ function form(id: string) {
 beforeEach(() => {
   vi.resetAllMocks();
   authorize.mockResolvedValue({ id: 'repo:1' });
+  workspace.mockResolvedValue({ id: 'workspace', role: 'owner' });
+  link.mockResolvedValue(undefined);
   request.mockResolvedValue(run);
 });
 test('start authorizes administrator before persistence', async () => {
   authorize.mockRejectedValueOnce(new Error('denied'));
   await expect(startFirstAnalysis({}, form('repo:1'))).rejects.toThrow('denied');
   expect(authorize).toHaveBeenCalledWith('repo:1', true);
+  expect(link).toHaveBeenCalledWith('workspace', 'repo:1');
   expect(request).not.toHaveBeenCalled();
 });
 test.each(['', '   '])('invalid repository input is safe: %s', async (id) => {
@@ -106,6 +115,7 @@ test('retry authorization failure cannot create or dispatch a run', async () => 
 test('explicit access refresh reconciles GitHub repositories without starting analysis', async () => {
   await refreshRepositoryAccess();
   expect(available).toHaveBeenCalledWith(true);
+  expect(workspace).toHaveBeenCalledWith(undefined, 'owner');
   expect(request).not.toHaveBeenCalled();
   expect(dispatch).not.toHaveBeenCalled();
 });
