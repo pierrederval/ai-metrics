@@ -45,6 +45,8 @@ interface Hit {
 // avoids ever needing to cast a plain string back to EvidenceSource.
 type AgentHits = Map<AgentId, Map<EvidenceSource, Map<string, Hit>>>;
 
+export type { AgentHits };
+
 function note(
   hits: AgentHits,
   agent: AgentId,
@@ -70,7 +72,8 @@ function matchCatalogueLogin(values: readonly string[], observed: string): strin
   return values.find((value) => value.toLowerCase() === lower);
 }
 
-export function detectExecuted(input: ExecutedInput): Detection[] {
+/** The evidence walk shared by detectExecuted and attributePullRequests. */
+export function collectHits(input: ExecutedInput): AgentHits {
   // Rows referencing a pull request absent from input.pullRequests are discarded
   // first, so a stale row can never inflate a count.
   const prIds = new Set(input.pullRequests.map((row) => row.id));
@@ -119,6 +122,12 @@ export function detectExecuted(input: ExecutedInput): Detection[] {
         note(hits, entry.agent, 'review-author', reviewerMatch, row.pullRequestId, row.occurredAt);
     }
   }
+
+  return hits;
+}
+
+export function detectExecuted(input: ExecutedInput): Detection[] {
+  const hits = collectHits(input);
 
   const detections: Detection[] = [...hits.entries()]
     .map((entry): Detection | null => {
