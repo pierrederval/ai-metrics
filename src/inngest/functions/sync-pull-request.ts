@@ -6,6 +6,7 @@ import {
   finishForegroundHydration,
   runForegroundHydration,
 } from '../../db/queries/foreground-hydration';
+import { recomputeExecutedDetections } from '../../db/queries/ai-involvement';
 export const syncPullRequestFunction = inngest.createFunction(
   {
     id: 'sync-pull-request',
@@ -26,7 +27,7 @@ export const syncPullRequestFunction = inngest.createFunction(
   },
   async ({ event, step, runId }) => {
     const data = prSyncData.parse(event.data);
-    return step.run('hydrate-and-project-pr', async () => {
+    const result = await step.run('hydrate-and-project-pr', async () => {
       try {
         return await runForegroundHydration(data, runId);
       } catch (error) {
@@ -35,5 +36,13 @@ export const syncPullRequestFunction = inngest.createFunction(
         throw error;
       }
     });
+    // Only the webhook path sets sourceEventId (see handle-event.ts); the import
+    // path invokes this per pull request and must not repeat the whole-repository
+    // aggregate once per item. Runs after hydration so it sees the fresh rows.
+    if (data.sourceEventId)
+      await step.run('recompute-ai-involvement', () =>
+        recomputeExecutedDetections(data.repositoryId),
+      );
+    return result;
   },
 );

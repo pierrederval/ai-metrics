@@ -23,7 +23,13 @@ import type {
   ChangedFile,
 } from '../domain/pull-request/types';
 import type { ReviewEvent } from '../domain/dashboard/types';
-import type { AgentMarker } from '../domain/ai-involvement/types';
+import type {
+  AgentMarker,
+  AgentId,
+  DetectionKind,
+  DetectionSignal,
+  EvidenceRef,
+} from '../domain/ai-involvement/types';
 const id = () => text('id').primaryKey();
 const created = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 const updated = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
@@ -661,3 +667,40 @@ export const gradeRuns = pgTable(
     index('grade_runs_latest').on(t.repositoryId, t.createdAt.desc()),
   ],
 );
+
+export const repoAiDetections = pgTable(
+  'repo_ai_detections',
+  {
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    agent: text('agent').$type<AgentId>().notNull(),
+    signal: text('signal').$type<DetectionSignal>().notNull(),
+    kind: text('kind').$type<DetectionKind>().notNull(),
+    firstSeenAt: timestamp('first_seen_at', { withTimezone: true }),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    occurrences: integer('occurrences'),
+    evidence: jsonb('evidence').$type<EvidenceRef[]>().notNull(),
+    detectorVersion: text('detector_version').notNull(),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.repositoryId, t.agent, t.signal] }),
+    check('repo_ai_detections_signal', sql`${t.signal} IN ('executed','configured','declared')`),
+    check('repo_ai_detections_kind', sql`${t.kind} IN ('coding-agent','llm-in-ci')`),
+    check('repo_ai_detections_occurrences', sql`${t.occurrences} IS NULL OR ${t.occurrences} >= 0`),
+    index('repo_ai_detections_repository').on(t.repositoryId),
+  ],
+);
+
+export const repoDetectionState = pgTable('repo_detection_state', {
+  repositoryId: text('repository_id')
+    .primaryKey()
+    .references(() => repositories.id),
+  scannedSha: text('scanned_sha'),
+  detectorVersion: text('detector_version').notNull(),
+  executedRefreshedAt: timestamp('executed_refreshed_at', { withTimezone: true }),
+  configuredRefreshedAt: timestamp('configured_refreshed_at', { withTimezone: true }),
+  incompleteReason: text('incomplete_reason'),
+  updatedAt: updated(),
+});
