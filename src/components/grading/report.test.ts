@@ -109,23 +109,26 @@ test.each([
   [80, 'silver', 'Readable, testable, navigable'],
   [90, 'gold', 'land a change unaided'],
   [100, 'rainbow', 'Nothing the rubric asks for is missing'],
-] as const)('score %s renders the %s finish with its flavour line', (score, finish, flavourSnippet) => {
-  const html = renderToStaticMarkup(
-    createElement(GradeCard, {
-      score,
-      repositoryName: 'demo/repo',
-      sha,
-      rubricVersion: '0.1.0',
-      checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
-    }),
-  );
-  expect(html).toContain(`data-finish="${finish}"`);
-  expect(html).toContain(flavourSnippet);
-  if (score === 100) {
-    expect(html).toContain('No higher tier.');
-    expect(html).not.toContain('Next tier');
-  }
-});
+] as const)(
+  'score %s renders the %s finish with its flavour line',
+  (score, finish, flavourSnippet) => {
+    const html = renderToStaticMarkup(
+      createElement(GradeCard, {
+        score,
+        repositoryName: 'demo/repo',
+        sha,
+        rubricVersion: '0.1.0',
+        checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
+      }),
+    );
+    expect(html).toContain(`data-finish="${finish}"`);
+    expect(html).toContain(flavourSnippet);
+    if (score === 100) {
+      expect(html).toContain('No higher tier.');
+      expect(html).not.toContain('Next tier');
+    }
+  },
+);
 
 test('actual evaluator checks have readable report headings', async () => {
   const { evaluateReadiness } = await import('../../domain/grading/readiness-v01');

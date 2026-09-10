@@ -28,9 +28,7 @@ export function attributePullRequests(input: ExecutedInput): Map<string, Attribu
   }
 
   for (const [prId, counts] of perPr) {
-    const [top] = [...counts.entries()].sort(
-      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-    );
+    const [top] = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     if (top) result.set(prId, top[0]);
   }
 

@@ -57,11 +57,15 @@ test('the subtitle is built from real configured/declared counts, never the prev
 });
 
 test('every detection executed reports it plainly, with the singular verb at one', () => {
-  expect(summarizeAgentsInvolved([d('codex', 'executed')]).subtitle).toBe('Every detected agent has run.');
+  expect(summarizeAgentsInvolved([d('codex', 'executed')]).subtitle).toBe(
+    'Every detected agent has run.',
+  );
 });
 
 test('no detections at all yields an empty-history subtitle', () => {
-  expect(summarizeAgentsInvolved([]).subtitle).toBe('No agent found in accessible pull request history.');
+  expect(summarizeAgentsInvolved([]).subtitle).toBe(
+    'No agent found in accessible pull request history.',
+  );
 });
 
 test('an unscanned repository renders the not-scanned state, not a zero count', () => {
@@ -80,7 +84,7 @@ test('a scanned repository with no detections renders the empty state, not a zer
   expect(html).not.toContain('class="v"');
 });
 
-test('the evidence link always points at this repository\'s involvement route', () => {
+test("the evidence link always points at this repository's involvement route", () => {
   const html = renderToStaticMarkup(
     createElement(AgentsInvolved, {
       detections: [d('codex', 'executed')],

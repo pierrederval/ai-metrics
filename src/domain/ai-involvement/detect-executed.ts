@@ -103,7 +103,8 @@ export function collectHits(input: ExecutedInput): AgentHits {
   for (const row of checks) {
     for (const entry of catalogue) {
       const appMatch = entry.checkAppIds.find((appId) => appId === row.appId);
-      if (appMatch) note(hits, entry.agent, 'check-app', appMatch, row.pullRequestId, row.occurredAt);
+      if (appMatch)
+        note(hits, entry.agent, 'check-app', appMatch, row.pullRequestId, row.occurredAt);
     }
   }
 
@@ -111,7 +112,8 @@ export function collectHits(input: ExecutedInput): AgentHits {
     if (!row.authorLogin) continue;
     for (const entry of catalogue) {
       const authorMatch = matchCatalogueLogin(entry.botLogins, row.authorLogin);
-      if (authorMatch) note(hits, entry.agent, 'commit-author', authorMatch, row.pullRequestId, row.occurredAt);
+      if (authorMatch)
+        note(hits, entry.agent, 'commit-author', authorMatch, row.pullRequestId, row.occurredAt);
     }
   }
 

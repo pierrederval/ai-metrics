@@ -25,10 +25,7 @@ export default async function RepositoryLayout({
 }) {
   const repoId = pageRouteId((await params).repoId),
     repo = await requireTrackedRepository(repoId);
-  const [record, latest] = await Promise.all([
-    repositoryRecord(repo.id),
-    latestImport(repo.id),
-  ]);
+  const [record, latest] = await Promise.all([repositoryRecord(repo.id), latestImport(repo.id)]);
   const header = composeRepositoryHeader(record, latest);
   return (
     <div className="repo-layout">

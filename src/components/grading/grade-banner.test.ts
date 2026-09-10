@@ -35,7 +35,5 @@ test('banner carries no next-tier block, flavour line or scale — those stay on
 });
 
 test('untrusted score input cannot inject markup', () => {
-  expect(() =>
-    renderToStaticMarkup(createElement(GradeBanner, { score: Number.NaN })),
-  ).toThrow();
+  expect(() => renderToStaticMarkup(createElement(GradeBanner, { score: Number.NaN }))).toThrow();
 });
