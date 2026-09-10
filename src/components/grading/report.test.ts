@@ -121,6 +121,10 @@ test.each([
   );
   expect(html).toContain(`data-finish="${finish}"`);
   expect(html).toContain(flavourSnippet);
+  if (score === 100) {
+    expect(html).toContain('No higher tier.');
+    expect(html).not.toContain('Next tier');
+  }
 });
 
 test('actual evaluator checks have readable report headings', async () => {

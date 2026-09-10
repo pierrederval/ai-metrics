@@ -108,10 +108,7 @@ export function GradeCard({
             </ul>
           </div>
         ) : (
-          <div className="grade-card-move-top">
-            <span>Next tier</span>
-            <b>None</b>
-          </div>
+          <p className="grade-card-move-top">No higher tier.</p>
         )}
         <div className="grade-card-rubric">
           <span>Rubric</span>
