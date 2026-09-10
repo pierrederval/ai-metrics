@@ -217,6 +217,26 @@ section {
   margin: 14px 0 8px;
   font-variant-numeric: lining-nums tabular-nums;
 }
+/* Shared card chrome for the Agents view's sibling stat cards (agent share,
+   cohort comparison, and any future card in that grid) — kept here, not
+   duplicated per-component, so one edit to the shared treatment can't
+   silently desync between them. */
+.bigcard {
+  background: var(--glass);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 6px 20px #203f3610;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.bigcard .t {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
 .summary-strip {
   display: flex;
   flex-wrap: wrap;

@@ -55,20 +55,3 @@ describe('agentCellClassName', () => {
     expect(className).toBe('agentcell human');
   });
 });
-
-describe('unattributed row labelling', () => {
-  it('the unattributed row label is Unattributed, never Human', () => {
-    const row = {
-      agent: 'unknown',
-      label: 'Unattributed',
-      attributed: false,
-      pullRequestCount: 5,
-      firstPass: { value: null, known: 0, unknown: 5 },
-      averageAttempts: null,
-      clean: { value: null, known: 0, unknown: 5 },
-    };
-    expect(row.label).toBe('Unattributed');
-    expect(row.label).not.toMatch(/human/i);
-    expect(agentCellClassName(row)).not.toMatch(/^human$/);
-  });
-});

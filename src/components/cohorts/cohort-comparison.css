@@ -1,24 +1,10 @@
-/* Treatment copied from the approved preview's .bigcard, .cohortcard,
-   .cohort/.agentcell and .num rules (docs/superpowers/previews/
+/* Treatment copied from the approved preview's .cohortcard, .cohort/
+   .agentcell and .num rules (docs/superpowers/previews/
    2026-09-10-repository-page-architecture.html) — that file's figures are
-   invented, but its visual system for this card is the approved reference. */
+   invented, but its visual system for this card is the approved reference.
+   The shared .bigcard/.bigcard .t chrome lives in src/app/style.css so it
+   isn't duplicated between this file and agent-share.css. */
 
-.bigcard {
-  background: var(--glass);
-  border-radius: 12px;
-  padding: 18px 20px 20px;
-  box-shadow: 0 6px 20px #203f3610;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-}
-.bigcard .t {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 700;
-}
 .cohortcard {
   gap: 12px;
 }
