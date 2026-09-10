@@ -46,6 +46,12 @@ pnpm build
 
 The production build requires `DEMO_MODE=false`, an HTTPS `APP_URL`, and the GitHub/encryption/Inngest configuration described in [GitHub App setup](docs/github-app.md). Do not use the development demo configuration for a production build. The [dashboard validation report](docs/validation-dashboard-metrics.md) records a build with synthetic, non-secret configuration; it is not a deployment check.
 
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs five separate checks on every pull request into `main` and every push to `main`: `lint`, `typecheck`, `unit`, `integration`, and `build`. Each appears as its own GitHub check run.
+
+The `integration` job supplies a `postgres:17-alpine` service whose default database is the dedicated `_test` database, so it needs no `createdb` step and the suites apply their own migrations. The `build` job uses synthetic, non-secret production configuration generated per run; it reads no repository secret and never reaches a database.
+
 ## Enable GitHub integration
 
 Follow [docs/github-app.md](docs/github-app.md), set `DEMO_MODE=false`, and fill every GitHub and encryption variable in `.env`. Apply migrations, start the application, then start the durable worker UI:
