@@ -38,3 +38,14 @@ export function integrationEnv() {
   if (!value) throw new Error('GitHub integration is disabled in demo mode');
   return value;
 }
+
+// Email is optional and independent of GitHub/database configuration.
+export function emailEnv(input: Record<string, string | undefined> = process.env) {
+  const result = z
+    .object({
+      RESEND_API_KEY: z.string().min(1),
+      RESEND_FROM_EMAIL: z.email(),
+    })
+    .safeParse(input);
+  return result.success ? result.data : null;
+}

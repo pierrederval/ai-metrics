@@ -15,7 +15,7 @@ vi.mock('../github/repositories', () => ({ reconcileInstallation: reconcile }));
 vi.mock('next/navigation', () => ({ notFound }));
 vi.mock('../db', () => ({ db: () => ({ select }) }));
 
-import { accessibleRepositories, requireTrackedRepository } from './access';
+import { githubAccessibleRepositories } from './access';
 
 function query(rows: unknown[]) {
   const promise = Promise.resolve(rows);
@@ -49,13 +49,15 @@ test('missing local inventory is reconciled before GitHub grants are joined to r
     .mockReturnValueOnce(query([]))
     .mockReturnValueOnce(query([{ repo: repository, installation }]));
 
-  await expect(accessibleRepositories()).resolves.toEqual([{ ...repository, canAdmin: false }]);
+  await expect(githubAccessibleRepositories()).resolves.toEqual([
+    { ...repository, canAdmin: false },
+  ]);
   expect(reconcile).toHaveBeenCalledWith('10');
 });
 
 test('GitHub API errors propagate instead of becoming an empty repository list', async () => {
   paginate.mockReset().mockRejectedValue(new Error('GitHub unavailable'));
-  await expect(accessibleRepositories()).rejects.toThrow('GitHub unavailable');
+  await expect(githubAccessibleRepositories()).rejects.toThrow('GitHub unavailable');
 });
 
 test('current user grants still constrain rows returned after reconciliation', async () => {
@@ -68,7 +70,7 @@ test('current user grants still constrain rows returned after reconciliation', a
     .mockReturnValueOnce(query([]))
     .mockReturnValueOnce(query([{ repo: repository, installation }]));
 
-  await expect(accessibleRepositories()).resolves.toEqual([]);
+  await expect(githubAccessibleRepositories()).resolves.toEqual([]);
 });
 
 test('ordinary access checks do not reconcile complete local inventory', async () => {
@@ -76,7 +78,7 @@ test('ordinary access checks do not reconcile complete local inventory', async (
     .mockReturnValueOnce(query([installation]))
     .mockReturnValueOnce(query([{ repo: repository, installation }]));
 
-  await accessibleRepositories();
+  await githubAccessibleRepositories();
   expect(reconcile).not.toHaveBeenCalled();
 });
 
@@ -86,13 +88,6 @@ test('explicit picker refresh reconciles installations with complete local inven
     .mockReturnValueOnce(query([{ repo: repository, installation }]))
     .mockReturnValueOnce(query([{ repo: repository, installation }]));
 
-  await accessibleRepositories(true);
+  await githubAccessibleRepositories(true);
   expect(reconcile).toHaveBeenCalledWith('10');
-});
-
-test('tracked repository access rejects untracked live rows', async () => {
-  select
-    .mockReturnValueOnce(query([installation]))
-    .mockReturnValueOnce(query([{ repo: repository, installation }]));
-  await expect(requireTrackedRepository(repository.id)).rejects.toThrow('not found');
 });

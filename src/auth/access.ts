@@ -2,7 +2,6 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { repositories, installations } from '../db/schema';
 import { env } from '../lib/env';
-import { notFound } from 'next/navigation';
 import { userClient } from './session';
 import { authorizeRepository, type RepositoryGrant } from './authorization';
 import { reconcileInstallation } from '../github/repositories';
@@ -21,7 +20,7 @@ async function availableRepositories() {
     );
 }
 
-export async function accessibleRepositories(refresh = false) {
+export async function githubAccessibleRepositories(refresh = false) {
   if (env().DEMO_MODE === 'true')
     return (
       await db()
@@ -85,15 +84,12 @@ export async function accessibleRepositories(refresh = false) {
       ),
     }));
 }
-export async function requireRepository(id: string, admin = false) {
-  const repo = (await accessibleRepositories()).find((r) => r.id === id);
-  if (!repo || (admin && !repo.canAdmin)) notFound();
-  return repo;
-}
-
-export async function requireTrackedRepository(id: string, admin = false) {
-  const repo = await requireRepository(id, admin);
-  if (!repo.trackingStartedAt && !(process.env.NODE_ENV === 'development' && repo.isDemo && !admin))
-    notFound();
-  return repo;
-}
+// Workspace membership is the authority for repository access; this module keeps
+// only the raw GitHub grant lookup.
+export {
+  accessibleRepositories,
+  linkRepository,
+  unlinkRepository,
+  requireRepository,
+  requireTrackedRepository,
+} from '../workspaces/access';

@@ -229,6 +229,8 @@ export const users = pgTable('users', {
   id: id(),
   login: text('login').notNull(),
   credentials: text('credentials').notNull(),
+  displayName: text('display_name'),
+  avatarUrl: text('avatar_url'),
   createdAt: created(),
   updatedAt: updated(),
 });
@@ -493,5 +495,112 @@ export const foregroundHydrations = pgTable(
       sql`${t.status} IN ('queued','importing','retrying','complete','failed')`,
     ),
     index('foreground_hydrations_active').on(t.repositoryId, t.status, t.updatedAt),
+  ],
+);
+
+export const workspaces = pgTable('workspaces', {
+  id: id(),
+  name: text('name').notNull(),
+  defaultForUserId: text('default_for_user_id')
+    .unique()
+    .references(() => users.id),
+  createdAt: created(),
+  updatedAt: updated(),
+});
+export const workspaceMemberships = pgTable(
+  'workspace_memberships',
+  {
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    role: text('role').$type<'owner' | 'member'>().notNull(),
+    createdAt: created(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    check('workspace_memberships_role', sql`${t.role} IN ('owner','member')`),
+  ],
+);
+export const workspaceRepositories = pgTable(
+  'workspace_repositories',
+  {
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    connectedBy: text('connected_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: created(),
+  },
+  (t) => [primaryKey({ columns: [t.workspaceId, t.repositoryId] })],
+);
+
+export const workspaceInvitations = pgTable(
+  'workspace_invitations',
+  {
+    id: id(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    email: text('email').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    invitedBy: text('invited_by')
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    acceptedBy: text('accepted_by').references(() => users.id),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: created(),
+  },
+  (t) => [
+    uniqueIndex('workspace_invitations_open_email')
+      .on(t.workspaceId, t.email)
+      .where(sql`${t.acceptedAt} IS NULL AND ${t.revokedAt} IS NULL`),
+  ],
+);
+
+export const invitationDeliveries = pgTable(
+  'invitation_deliveries',
+  {
+    id: id(),
+    invitationId: text('invitation_id')
+      .notNull()
+      .references(() => workspaceInvitations.id),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    requestedBy: text('requested_by')
+      .notNull()
+      .references(() => users.id),
+    encryptedToken: text('encrypted_token'),
+    encryptedPayload: text('encrypted_payload'),
+    attempts: integer('attempts').notNull().default(0),
+    firstAttemptAt: timestamp('first_attempt_at', { withTimezone: true }),
+    leaseUntil: timestamp('lease_until', { withTimezone: true }),
+    state: text('state')
+      .$type<'queued' | 'sending' | 'sent' | 'failed' | 'cancelled'>()
+      .notNull()
+      .default('queued'),
+    createdAt: created(),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    providerId: text('provider_id'),
+    errorCode: text('error_code'),
+  },
+  (t) => [
+    index('invitation_deliveries_owner_time').on(t.requestedBy, t.createdAt),
+    index('invitation_deliveries_workspace_time').on(t.workspaceId, t.createdAt),
+    index('invitation_deliveries_invitation_time').on(t.invitationId, t.createdAt),
+    check(
+      'invitation_deliveries_state',
+      sql`${t.state} IN ('queued','sending','sent','failed','cancelled')`,
+    ),
   ],
 );

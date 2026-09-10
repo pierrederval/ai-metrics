@@ -3,37 +3,40 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { Brand } from './brand';
+import { WorkspaceSwitcher } from './workspace-switcher';
 
-export function Sidebar() {
+type Workspace = { id: string; name: string; role: 'owner' | 'member' };
+
+export function Sidebar(props: { active: Workspace; workspaces: Workspace[]; demo: boolean }) {
   return (
     <Suspense fallback={null}>
-      <SidebarNavigation />
+      <SidebarNavigation {...props} />
     </Suspense>
   );
 }
-function SidebarNavigation() {
+function SidebarNavigation({
+  active,
+  workspaces,
+  demo,
+}: {
+  active: Workspace;
+  workspaces: Workspace[];
+  demo: boolean;
+}) {
   const search = useSearchParams();
   const retained = new URLSearchParams();
+  // Keep the selected range while moving between overview and repositories.
   for (const key of ['days', 'from', 'to']) {
     const value = search.get(key);
     if (value !== null) retained.set(key, value);
   }
   const query = retained.size ? `?${retained}` : '';
   const pathname = usePathname();
-  const signedOut = pathname === '/signed-out';
   return (
     <aside className="sidebar">
-      <Link className="brand" href={`/dashboard${query}`} aria-label="Fieldnote home">
-        <svg className="brand-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <g stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 53V30A20 20 0 0 1 34 10H50" />
-            <path d="M22 53V30A12 12 0 0 1 34 18H50" />
-            <path d="M30 53V30A4 4 0 0 1 34 26H50" />
-          </g>
-        </svg>
-        <span className="brand-name">fieldnote</span>
-        <span className="brand-caption">Engineering records</span>
-      </Link>
+      <Brand />
+      <WorkspaceSwitcher active={active} workspaces={workspaces} demo={demo} />
       <nav aria-label="Main navigation">
         <Link
           href={`/dashboard${query}`}
@@ -53,13 +56,6 @@ function SidebarNavigation() {
       <div className="sidebar-footer">
         <span className="connection-label">GitHub · PR & CI evidence</span>
         <p>Good work compounds.</p>
-        {signedOut ? (
-          <Link href="/api/auth/login">Sign in with GitHub ↗</Link>
-        ) : (
-          <form action="/api/auth/logout" method="post">
-            <button className="quiet-button">Sign out</button>
-          </form>
-        )}
       </div>
     </aside>
   );

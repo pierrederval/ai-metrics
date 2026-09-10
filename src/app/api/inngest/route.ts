@@ -1,3 +1,5 @@
+import { sendInvitationFunction } from '../../../inngest/functions/send-invitation';
+import { reconcileInvitations } from '../../../inngest/functions/reconcile-invitations';
 import {
   historyBackfillFunction,
   reconcileHistoryBackfills,
@@ -16,6 +18,8 @@ export const { GET, POST, PUT } = serve({
   functions: [
     historyBackfillFunction,
     reconcileHistoryBackfills,
+    sendInvitationFunction,
+    reconcileInvitations,
     syncRepositoryFunction,
     syncPullRequestFunction,
     processGithubEvent,

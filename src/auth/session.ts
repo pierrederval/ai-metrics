@@ -31,7 +31,21 @@ export async function hasCurrentSession(): Promise<boolean> {
     .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
   return Boolean(session);
 }
+
+async function sessionUser() {
+  const token = (await cookies()).get('reliability-session')?.value;
+  if (!token) redirect('/signed-out');
+  const [row] = await db()
+    .select({ user: users })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
+  if (!row) redirect('/signed-out');
+  return row.user;
+}
+
 // Local identity only: this does not need GitHub credentials or network access.
+// Returns null instead of redirecting, for callers that tolerate a signed-out visitor.
 export async function currentUserId(): Promise<string | null> {
   const token = (await cookies()).get('reliability-session')?.value;
   if (!token) return null;
@@ -41,19 +55,29 @@ export async function currentUserId(): Promise<string | null> {
     .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
   return session?.userId ?? null;
 }
+
+export async function currentUser(): Promise<{
+  id: string;
+  login: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+}> {
+  const user = await sessionUser();
+  return {
+    id: user.id,
+    login: user.login,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+  };
+}
+
 export async function userClient() {
-  const token = (await cookies()).get('reliability-session')?.value;
-  if (!token) redirect('/api/auth/login');
-  const [session] = await db()
-    .select()
-    .from(sessions)
-    .where(and(eq(sessions.id, tokenHash(token)), gt(sessions.expiresAt, new Date())));
-  if (!session) redirect('/api/auth/login');
+  const identity = await sessionUser();
   const accessToken = await db().transaction(async (tx) => {
     await tx.execute(
-      sql`select pg_advisory_xact_lock(hashtextextended(${`user:${session.userId}`},0))`,
+      sql`select pg_advisory_xact_lock(hashtextextended(${`user:${identity.id}`},0))`,
     );
-    const [user] = await tx.select().from(users).where(eq(users.id, session.userId));
+    const [user] = await tx.select().from(users).where(eq(users.id, identity.id));
     if (!user) throw new Error('User unavailable');
     let credentials = credentialsSchema.parse(
       JSON.parse(decrypt(user.credentials, integrationEnv().TOKEN_ENCRYPTION_KEY)),
