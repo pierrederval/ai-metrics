@@ -70,7 +70,9 @@ export function AiInvolvementRail({
                 const row = rowState(detection);
                 return (
                   <div className="ai-rail-row" key={detection.agent}>
-                    <AgentMark agent={detection.agent} />
+                    <span className="ai-rail-mark">
+                      <AgentMark agent={detection.agent} />
+                    </span>
                     <span className="ai-rail-name">{agentLabel(detection.agent)}</span>
                     <span className={`ai-rail-state ${row.className}`}>{row.text}</span>
                   </div>
