@@ -26,3 +26,16 @@ export function tabHref(repoId: string, tab: RepositoryTab): string {
   const base = `/repos/${encodeURIComponent(repoId)}`;
   return tab.segment ? `${base}/${tab.segment}` : base;
 }
+
+/**
+ * Which tab holds the bar's single tab stop. Falls back to the first tab, so a
+ * route added under [repoId] without a tab entry cannot leave every anchor at
+ * tabIndex -1 and the whole bar unreachable by keyboard.
+ */
+export function focusIndex(segment: string | null): number {
+  const selected = tabs.findIndex((tab) => isActive(tab, segment));
+  return selected === -1 ? 0 : selected;
+}
+
+/** The single panel all five tabs control; shared so the id cannot drift. */
+export const TAB_PANEL_ID = 'repo-panel';

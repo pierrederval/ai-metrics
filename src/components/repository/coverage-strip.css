@@ -36,3 +36,11 @@
   font-weight: 700;
   white-space: nowrap;
 }
+/* The live import panel takes its own row beneath the one-line summary. */
+.cov-import {
+  flex-basis: 100%;
+  min-width: 0;
+}
+.cov-import section {
+  margin: 4px 0 0;
+}

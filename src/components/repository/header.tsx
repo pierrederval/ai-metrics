@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { refreshImport } from '../../app/repos/[repoId]/actions';
 import { githubRepositoryUrl } from '../dashboard/repository-metadata';
+import { canRefreshImport } from '../../domain/import/progress';
 import type { RepositoryHeader } from '../../db/queries/repository-header';
 import { CoverageStrip } from './coverage-strip';
 import './header.css';
@@ -58,7 +59,10 @@ export function RepositoryPageHeader({
             <a className="btn ghost" href={githubRepositoryUrl(repo)}>
               GitHub ↗
             </a>
-            {repo.canAdmin && !header.activeImport && (
+            {/* Exact parity with the gate this header replaced: never over an
+                in-flight, failed or partial run, because Refresh inserts a new
+                run and only the latest run may be retried. */}
+            {repo.canAdmin && canRefreshImport(header.latestImportState) && (
               <form action={refreshImport.bind(null, repo.id)}>
                 <button className="btn">Refresh data</button>
               </form>
@@ -66,9 +70,10 @@ export function RepositoryPageHeader({
           </div>
         </div>
         <CoverageStrip
-          repoId={repo.id}
+          repo={repo}
           coverage={header.coverage}
           activeImport={header.activeImport}
+          latestImportState={header.latestImportState}
         />
       </header>
     </>

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { summarizeImport, isActiveImport } from './progress';
+import { canRefreshImport, summarizeImport, isActiveImport } from './progress';
 test('zero PRs completes, partial evidence is explicit', () => {
   expect(summarizeImport([])).toEqual({ state: 'complete', total: 0, completed: 0, failed: 0 });
   expect(
@@ -14,4 +14,12 @@ test('zero PRs completes, partial evidence is explicit', () => {
     expect(isActiveImport(state)).toBe(true);
   for (const state of ['partial', 'complete', 'failed'] as const)
     expect(isActiveImport(state)).toBe(false);
+});
+test('refresh is offered only with no import or a complete one, never over a retryable run', () => {
+  expect(canRefreshImport(null)).toBe(true);
+  expect(canRefreshImport('complete')).toBe(true);
+  // Refresh here would insert a newer run and permanently disable Retry.
+  for (const state of ['failed', 'partial'] as const) expect(canRefreshImport(state)).toBe(false);
+  for (const state of ['queued', 'discovering', 'importing'] as const)
+    expect(canRefreshImport(state)).toBe(false);
 });

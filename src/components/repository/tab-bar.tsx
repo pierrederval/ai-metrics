@@ -2,27 +2,42 @@
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { useRef, type KeyboardEvent } from 'react';
-import { isActive, tabHref, tabs } from './tabs';
+import {
+  focusIndex,
+  isActive,
+  tabHref,
+  tabs,
+  TAB_PANEL_ID,
+  type RepositoryTabSegment,
+} from './tabs';
 import './tab-bar.css';
 
-// The only client component in the repository header: it exists solely to read
-// which segment is selected. Selection is route state, not client state.
+// The client component in the repository header that reads which segment is
+// selected. Selection is route state, not client state.
 export function TabBar({
   repoId,
   score,
   agentCount,
 }: {
   repoId: string;
-  score: number | null;
-  agentCount: number | null;
+  score?: number | null;
+  agentCount?: number | null;
 }) {
   const segment = useSelectedLayoutSegment();
   const links = useRef<(HTMLAnchorElement | null)[]>([]);
-  const counts: Partial<Record<string, number | null>> = {
+  // Keyed on the segment union, so a mistyped key is a type error.
+  const counts: Partial<Record<Exclude<RepositoryTabSegment, null>, number | null>> = {
     grading: score,
     'ai-involvement': agentCount,
   };
+  const stop = focusIndex(segment);
   function move(event: KeyboardEvent<HTMLAnchorElement>, index: number) {
+    // role="tab" promises Space activates, and an anchor would only scroll.
+    if (event.key === ' ') {
+      event.preventDefault();
+      event.currentTarget.click();
+      return;
+    }
     const target =
       event.key === 'ArrowRight'
         ? (index + 1) % tabs.length
@@ -40,16 +55,16 @@ export function TabBar({
   return (
     <div className="tabs" role="tablist" aria-label="Repository views">
       {tabs.map((tab, index) => {
-        const active = isActive(tab, segment);
         const count = tab.segment ? counts[tab.segment] : null;
         return (
           <Link
             key={tab.label}
             className="tab"
             role="tab"
-            aria-selected={active}
+            aria-selected={isActive(tab, segment)}
+            aria-controls={TAB_PANEL_ID}
             // Roving tabindex: one stop for the whole bar, arrows move within it.
-            tabIndex={active ? 0 : -1}
+            tabIndex={index === stop ? 0 : -1}
             href={tabHref(repoId, tab)}
             ref={(node) => {
               links.current[index] = node;

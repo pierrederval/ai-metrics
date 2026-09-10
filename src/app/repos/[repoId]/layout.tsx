@@ -1,6 +1,7 @@
 import { requireTrackedRepository } from '../../../auth/access';
 import { RepositoryPageHeader } from '../../../components/repository/header';
 import { TabBar } from '../../../components/repository/tab-bar';
+import { TAB_PANEL_ID } from '../../../components/repository/tabs';
 import { loadRepositoryHeader } from '../../../db/queries/repository-header';
 import { pageRouteId } from '../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
@@ -25,9 +26,11 @@ export default async function RepositoryLayout({
       {/* Counts are omitted rather than bought: neither the readiness score nor
           the agent count is available from the header load, and adding a query
           the other three tabs never read is exactly the split this layout exists
-          to avoid. */}
-      <TabBar repoId={repoId} score={null} agentCount={null} />
-      <div className="repo-panel">{children}</div>
+          to avoid. TabBar accepts them when a caller has them cheaply. */}
+      <TabBar repoId={repoId} />
+      <div className="repo-panel" id={TAB_PANEL_ID} role="tabpanel">
+        {children}
+      </div>
     </div>
   );
 }

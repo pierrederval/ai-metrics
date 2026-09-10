@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { RepositoryHeader } from '../../db/queries/repository-header';
+import { ImportProgress } from '../onboarding/import-progress';
 import './coverage-strip.css';
 
 // The product's claim is that missing evidence stays unknown rather than being
@@ -33,39 +34,54 @@ function historyPhrase(historyState: string) {
 }
 
 export function CoverageStrip({
-  repoId,
+  repo,
   coverage,
   activeImport,
+  latestImportState,
 }: {
-  repoId: string;
+  repo: { id: string; owner: string; name: string; canAdmin: boolean };
   coverage: RepositoryHeader['coverage'];
   activeImport: RepositoryHeader['activeImport'];
+  latestImportState: RepositoryHeader['latestImportState'];
 }) {
-  const complete = coverage.reviewDetected && coverage.ciDetected && !activeImport;
+  const brokenImport = latestImportState === 'failed' || latestImportState === 'partial';
+  const complete = coverage.reviewDetected && coverage.ciDetected && !activeImport && !brokenImport;
   const status = activeImport
     ? 'Collection in progress'
-    : complete
-      ? 'Evidence complete'
-      : coverage.reviewDetected || coverage.ciDetected
-        ? 'Evidence partial'
-        : 'No evidence detected';
+    : brokenImport
+      ? 'Collection incomplete'
+      : complete
+        ? 'Evidence complete'
+        : coverage.reviewDetected || coverage.ciDetected
+          ? 'Evidence partial'
+          : 'No evidence detected';
   return (
-    <p className="coverage">
+    <div className="coverage">
       <span className={complete ? 'cov-dot' : 'cov-dot partial'} aria-hidden="true" />
       <b>{status}</b>
       <span className="cov-detail">
-        {activeImport ? (
-          <>
-            Importing {activeImport.completed} of {activeImport.total ?? 'an unknown number of'}{' '}
-            pull requests — figures below are incomplete until it finishes ·{' '}
-          </>
-        ) : null}
+        {brokenImport ? <>Latest import {latestImportState} · </> : null}
         {evidencePhrase(coverage.reviewDetected, coverage.ciDetected)} ·{' '}
         {fetchPhrase(coverage.lastSuccessfulFetch)} · {historyPhrase(coverage.historyState)}
       </span>
-      <Link className="cov-link" href={`/repos/${encodeURIComponent(repoId)}/settings`}>
+      <Link className="cov-link" href={`/repos/${encodeURIComponent(repo.id)}/settings`}>
         Collection detail →
       </Link>
-    </p>
+      {/* An import in flight is the sharpest "do not trust these numbers yet"
+          condition, so it has to keep counting. The layout never re-renders on
+          navigation and refreshAnalysis revalidates no path, so a server-rendered
+          counter would freeze. The existing polling component is reused verbatim
+          and mounts only while an import is actually running. */}
+      {activeImport && (
+        <div className="cov-import">
+          <ImportProgress
+            key={activeImport.id}
+            initial={activeImport}
+            repository={repo}
+            canAdmin={repo.canAdmin}
+          />
+        </div>
+      )}
+    </div>
   );
 }

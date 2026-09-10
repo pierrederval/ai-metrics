@@ -43,7 +43,7 @@ const facts = (openedAt: string) => ({
   issues: [],
 });
 
-let prNumbersByRepo = new Map<string, number>();
+const prNumbersByRepo = new Map<string, number>();
 
 async function insertPr(opts: {
   id: string;
@@ -217,7 +217,11 @@ describe('loadCohorts', () => {
     expect(table.attributedPullRequests).toBe(0);
     expect(table.rows.find((r) => r.agent === 'codex')).toBeUndefined();
     expect(table.rows).toHaveLength(1);
-    expect(table.rows[0]).toMatchObject({ agent: 'unknown', label: 'Unattributed', attributed: false });
+    expect(table.rows[0]).toMatchObject({
+      agent: 'unknown',
+      label: 'Unattributed',
+      attributed: false,
+    });
   });
 
   it('returns an empty table for a repository with no visible pull requests', async () => {

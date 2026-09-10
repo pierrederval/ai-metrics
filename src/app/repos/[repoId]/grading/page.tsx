@@ -28,13 +28,10 @@ export default async function Grading({
   const href = `/repos/${encodeURIComponent(repoId)}/grading`;
   return (
     <>
-      <Link href={`/repos/${encodeURIComponent(repoId)}`}>
-        ← {repo.owner}/{repo.name}
-      </Link>
+      {/* Identity and the back-link live in the repository layout header. */}
       <div className="eyebrow" style={{ marginTop: 28 }}>
         Repository / Readiness
       </div>
-      <h1>A record of readiness.</h1>
       <p className="page-intro">Understand the foundations your agents build on.</p>
       <GradeControls
         key={repoId}
