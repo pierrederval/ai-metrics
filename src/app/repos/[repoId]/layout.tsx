@@ -23,10 +23,10 @@ export default async function RepositoryLayout({
   return (
     <div className="repo-layout">
       <RepositoryPageHeader repo={repo} header={header} />
-      {/* Counts are omitted rather than bought: neither the readiness score nor
-          the agent count is available from the header load, and adding a query
-          the other three tabs never read is exactly the split this layout exists
-          to avoid. TabBar accepts them when a caller has them cheaply. */}
+      {/* The preview's Readiness and Involvement counts are not rendered:
+          neither is available from the header load, and adding a query the
+          other three tabs never read is exactly the split this layout exists
+          to avoid. Re-add them the day a count is cheap here. */}
       <TabBar repoId={repoId} />
       <div className="repo-panel" id={TAB_PANEL_ID} role="tabpanel">
         {children}

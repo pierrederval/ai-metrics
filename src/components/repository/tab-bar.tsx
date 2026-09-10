@@ -2,34 +2,14 @@
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { useRef, type KeyboardEvent } from 'react';
-import {
-  focusIndex,
-  isActive,
-  tabHref,
-  tabs,
-  TAB_PANEL_ID,
-  type RepositoryTabSegment,
-} from './tabs';
+import { focusIndex, isActive, tabHref, tabs, TAB_PANEL_ID } from './tabs';
 import './tab-bar.css';
 
 // The client component in the repository header that reads which segment is
 // selected. Selection is route state, not client state.
-export function TabBar({
-  repoId,
-  score,
-  agentCount,
-}: {
-  repoId: string;
-  score?: number | null;
-  agentCount?: number | null;
-}) {
+export function TabBar({ repoId }: { repoId: string }) {
   const segment = useSelectedLayoutSegment();
   const links = useRef<(HTMLAnchorElement | null)[]>([]);
-  // Keyed on the segment union, so a mistyped key is a type error.
-  const counts: Partial<Record<Exclude<RepositoryTabSegment, null>, number | null>> = {
-    grading: score,
-    'ai-involvement': agentCount,
-  };
   const stop = focusIndex(segment);
   function move(event: KeyboardEvent<HTMLAnchorElement>, index: number) {
     // role="tab" promises Space activates, and an anchor would only scroll.
@@ -55,7 +35,6 @@ export function TabBar({
   return (
     <div className="tabs" role="tablist" aria-label="Repository views">
       {tabs.map((tab, index) => {
-        const count = tab.segment ? counts[tab.segment] : null;
         return (
           <Link
             key={tab.label}
@@ -72,7 +51,6 @@ export function TabBar({
             onKeyDown={(event) => move(event, index)}
           >
             {tab.label}
-            {count === null || count === undefined ? null : <span className="count">{count}</span>}
           </Link>
         );
       })}

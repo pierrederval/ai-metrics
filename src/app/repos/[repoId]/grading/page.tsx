@@ -28,10 +28,12 @@ export default async function Grading({
   const href = `/repos/${encodeURIComponent(repoId)}/grading`;
   return (
     <>
-      {/* Identity and the back-link live in the repository layout header. */}
+      {/* Identity and the back-link live in the repository layout header; the
+          tagline is demoted to h2 as this tab panel's own heading. */}
       <div className="eyebrow" style={{ marginTop: 28 }}>
         Repository / Readiness
       </div>
+      <h2>A record of readiness.</h2>
       <p className="page-intro">Understand the foundations your agents build on.</p>
       <GradeControls
         key={repoId}
