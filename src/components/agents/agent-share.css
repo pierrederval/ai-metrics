@@ -1,7 +1,0 @@
-/* Treatment copied from the approved preview's .bigcard rules
-   (docs/superpowers/previews/2026-09-10-repository-page-architecture.html)
-   — that file's figures are invented, but its visual system for this card
-   is the approved reference. The shared .bigcard/.bigcard .t/.bigcard .v/
-   .bigcard .s chrome lives in src/app/style.css (also used by
-   cohort-comparison.css and agents-involved.css); this file has nothing
-   left that is genuinely scoped to AgentShare alone. */

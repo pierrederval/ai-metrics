@@ -1,5 +1,3 @@
-import './agent-share.css';
-
 /**
  * Both figures here come from the same CohortTable object loadCohorts
  * already assembled (attributedPullRequests / totalPullRequests) — never

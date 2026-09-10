@@ -223,7 +223,9 @@ section {
    shared treatment can't silently desync between them. .v and .s started
    out scoped to agent-share.css, but agents-involved.tsx now needs the
    identical figure/detail-line treatment, so they moved here rather than
-   being copied a second time. */
+   being copied a second time. agent-share.css itself is deleted (Task 7):
+   once .v/.s moved here it held nothing but a comment pointing back to
+   this block, and no rules of its own. */
 .bigcard {
   background: var(--glass);
   border-radius: 12px;
@@ -619,19 +621,26 @@ code {
   font-size: 12px;
   margin: 0;
 }
-.metrics-page .range-presets {
+/* .projection-toggle (Delivery's basic-outcomes / gate-policy-projection
+   switch on the pull-request table) shares this exact treatment — it is
+   the same "pick one of a few route-scoped views" control as the date
+   range presets, just switching table columns instead of a date window. */
+.metrics-page .range-presets,
+.metrics-page .projection-toggle {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
   margin-left: auto;
 }
-.metrics-page .range-presets a {
+.metrics-page .range-presets a,
+.metrics-page .projection-toggle a {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 12px;
 }
-.metrics-page .range-presets a[aria-current] {
+.metrics-page .range-presets a[aria-current],
+.metrics-page .projection-toggle a[aria-current] {
   background: var(--ink);
   color: var(--paper);
 }
@@ -958,16 +967,6 @@ code {
 }
 .repository-metadata small {
   display: block;
-}
-.advanced-analysis {
-  margin: 32px 0;
-  border-top: 1px solid var(--line);
-  padding-top: 18px;
-}
-.advanced-analysis > summary {
-  font:
-    23px Georgia,
-    serif;
 }
 @media (max-width: 1050px) {
   .daily-chart {
