@@ -1641,3 +1641,27 @@ code {
   padding-top: 22px;
   min-width: 0;
 }
+
+/* The Agents view: the readiness card fixed at 330px beside a column of
+   agents-involved / agent-share / cohort-comparison cards. align-items:
+   start (not stretch, grid's default) is required, not optional — card
+   height varies with the flavour line and the number of failing checks, and
+   the right column is deliberately never height-matched to it. */
+.agents-view {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 18px;
+}
+.agents-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .agents-view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
