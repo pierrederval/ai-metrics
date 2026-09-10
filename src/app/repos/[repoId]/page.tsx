@@ -8,9 +8,10 @@ import { currentPolicy, prRows } from '../../../db/queries/dashboard';
 import { MetricCards } from '../../../components/metrics';
 import { PrTable } from '../../../components/pr-table';
 import { failureBreakdown } from '../../../metrics/aggregate';
+import { pageRouteId } from '../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
 export default async function Repository({ params }: { params: Promise<{ repoId: string }> }) {
-  const { repoId } = await params,
+  const repoId = pageRouteId((await params).repoId),
     repo = await requireTrackedRepository(repoId),
     rows = await prRows([repoId]),
     policy = await currentPolicy(repoId),

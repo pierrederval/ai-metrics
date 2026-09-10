@@ -67,3 +67,11 @@ test('incomplete evidence has an ungraded state with no numeric card', async () 
   expect(html).toContain('Not graded yet');
   expect(html).not.toContain('out of 100');
 });
+
+test('escaped route id is decoded before authorization', async () => {
+  await Grading({
+    params: Promise.resolve({ repoId: 'repository%3A1360100266' }),
+    searchParams: Promise.resolve({}),
+  });
+  expect(deps.authorize).toHaveBeenCalledWith('repository:1360100266');
+});

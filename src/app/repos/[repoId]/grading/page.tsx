@@ -5,6 +5,7 @@ import { getGrade, gradeHistory, gradeSummaries } from '../../../../db/queries/g
 import { readinessRubric } from '../../../../domain/grading/readiness-v01';
 import { GradeCard } from '../../../../components/grading/grade-card';
 import { GradeControls, GradeReport } from '../../../../components/grading/report';
+import { pageRouteId } from '../../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
 export default async function Grading({
   params,
@@ -13,7 +14,7 @@ export default async function Grading({
   params: Promise<{ repoId: string }>;
   searchParams: Promise<{ run?: string }>;
 }) {
-  const { repoId } = await params;
+  const repoId = pageRouteId((await params).repoId);
   const repo = await requireRepository(repoId);
   const { run } = await searchParams;
   const [summaries, history, selected] = await Promise.all([

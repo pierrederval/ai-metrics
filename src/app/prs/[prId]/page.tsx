@@ -7,9 +7,10 @@ import { requireTrackedRepository } from '../../../workspaces/access';
 import { currentPolicy } from '../../../db/queries/dashboard';
 import { analyzePullRequest } from '../../../domain/pull-request/analyzer';
 import { yesNo, duration } from '../../../components/metrics';
+import { pageRouteId } from '../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
 export default async function Pr({ params }: { params: Promise<{ prId: string }> }) {
-  const { prId } = await params,
+  const prId = pageRouteId((await params).prId),
     [pr] = await db().select().from(pullRequests).where(eq(pullRequests.id, prId));
   if (!pr) notFound();
   const repo = await requireTrackedRepository(pr.repositoryId),
