@@ -50,6 +50,13 @@
       "when": 1789026002242,
       "tag": "0006_powerful_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789026572794,
+      "tag": "0007_nifty_mandrill",
+      "breakpoints": true
     }
   ]
 }
