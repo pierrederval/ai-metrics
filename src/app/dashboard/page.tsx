@@ -59,7 +59,7 @@ export default async function Dashboard() {
         repositories.map((r) => (
           <section key={r.id} className="repository-card">
             <div>
-              <Link href={`/repos/${r.id}`}>
+              <Link href={`/repos/${encodeURIComponent(r.id)}`}>
                 {r.owner}/{r.name}
               </Link>
               <p>

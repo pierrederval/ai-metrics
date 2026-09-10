@@ -1,4 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 const deps = vi.hoisted(() => ({
   available: vi.fn(),
   rows: vi.fn(),
@@ -65,4 +66,13 @@ test('grade KPIs fetch all visible repositories in one batch', async () => {
   ]);
   await Dashboard();
   expect(deps.grades).toHaveBeenCalledExactlyOnceWith(['one', 'two']);
+});
+
+test('repository links use canonical encoded ids so prefetch does not retry', async () => {
+  deps.available.mockResolvedValue([
+    { id: 'repository:1360100266', owner: 'o', name: 'n', trackingStartedAt: new Date() },
+  ]);
+  const html = renderToStaticMarkup(await Dashboard());
+  expect(html).toContain('/repos/repository%3A1360100266');
+  expect(html).not.toContain('/repos/repository:1360100266');
 });
