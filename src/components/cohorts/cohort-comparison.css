@@ -2,8 +2,9 @@
    .agentcell and .num rules (docs/superpowers/previews/
    2026-09-10-repository-page-architecture.html) — that file's figures are
    invented, but its visual system for this card is the approved reference.
-   The shared .bigcard/.bigcard .t chrome lives in src/app/style.css so it
-   isn't duplicated between this file and agent-share.css. */
+   The shared .bigcard/.bigcard .t chrome lives in src/app/style.css, kept
+   there rather than duplicated per-component (agent-share.tsx and
+   agents-involved.tsx use it too; agent-share.css itself is deleted). */
 
 .cohortcard {
   gap: 12px;

@@ -60,8 +60,8 @@ export default async function Repository({
       </div>
       <h2>Is this repository working for agents?</h2>
       <p className="page-intro">
-        {range.days} UTC days ending {rangeEnd(range)}. The full KPI history and the pull-request
-        table for this same range are on{' '}
+        {range.days} UTC days ending {rangeEnd(range)}. The full KPI history for this same range,
+        and the pull-request table across all accessible history, are on{' '}
         <Link href={`/repos/${encodeURIComponent(repoId)}/delivery${query}`}>Delivery</Link>.
       </p>
       <div className="agents-view">

@@ -15,12 +15,16 @@ vi.mock('../../../../db/queries/dashboard', () => ({
   currentPolicy: deps.policy,
 }));
 // BasicDashboard renders DateRange, a client component that calls
-// usePathname() — outside an actual Next.js request context that throws, so
-// this mirrors the same mock src/app/dashboard/page.test.ts uses for the
-// other BasicDashboard caller.
+// usePathname()/useSearchParams() — outside an actual Next.js request
+// context that throws, so this mirrors the same mock
+// src/app/dashboard/page.test.ts uses for the other BasicDashboard caller.
+// An empty URLSearchParams here is fine: DateRange's own test covers
+// preserving unrelated params, and this suite covers the other direction
+// (the projection toggle preserving the range).
 vi.mock('next/navigation', () => ({
   usePathname: () => '/repos/repo/delivery',
   useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 import Delivery from './page';
@@ -200,6 +204,15 @@ test('the gate-policy projection is a toggle on the same table, not a separate l
   expect(html).not.toContain('Source activity (UTC)');
   // MetricCards, the gate-policy rollup, joins the toggle.
   expect(html).toContain('Average attempts to green');
+});
+
+test('the projection toggle links preserve the date range in both directions', async () => {
+  const html = renderToStaticMarkup(await call({ days: '30' }));
+  // Round trip direction 1: switching projection must not drop the range.
+  expect(html).toContain('href="/repos/repo/delivery?days=30&amp;projection=gate-policy"');
+  // The basic-outcomes link is the current view: it still carries the range
+  // (and no stray projection param) so returning to it later round-trips too.
+  expect(html).toContain('href="/repos/repo/delivery?days=30"');
 });
 
 test('renders the failure-breakdown table, classified against the current gate policy', async () => {

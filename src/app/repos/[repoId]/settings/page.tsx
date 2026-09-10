@@ -83,20 +83,28 @@ export default async function Settings({ params }: { params: Promise<{ repoId: s
       )}
 
       <h2>Collection detail</h2>
-      <RepositoryMetadata record={record} githubUrl={githubRepositoryUrl(repo)} />
+      <section>
+        <RepositoryMetadata record={record} githubUrl={githubRepositoryUrl(repo)} />
+      </section>
 
       <h2>Data</h2>
       {latest ? (
-        latest.state === 'complete' ? (
-          <p>{`Imported batch: ${latest.total ?? 'unknown'} PRs.`}</p>
-        ) : (
-          <ImportProgress
-            key={latest.id}
-            initial={latest}
-            repository={repo}
-            canAdmin={repo.canAdmin}
-          />
-        )
+        <>
+          <p className="muted">
+            Initial import: latest 100 pull requests by creation date. New activity is updated as
+            it arrives.
+          </p>
+          {latest.state === 'complete' ? (
+            <p>{`Imported batch: ${latest.total ?? 'unknown'} PRs.`}</p>
+          ) : (
+            <ImportProgress
+              key={latest.id}
+              initial={latest}
+              repository={repo}
+              canAdmin={repo.canAdmin}
+            />
+          )}
+        </>
       ) : (
         <p className="muted">Existing imported history</p>
       )}

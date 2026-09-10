@@ -621,16 +621,25 @@ code {
   font-size: 12px;
   margin: 0;
 }
-/* .projection-toggle (Delivery's basic-outcomes / gate-policy-projection
-   switch on the pull-request table) shares this exact treatment — it is
-   the same "pick one of a few route-scoped views" control as the date
-   range presets, just switching table columns instead of a date window. */
-.metrics-page .range-presets,
-.metrics-page .projection-toggle {
+.metrics-page .range-presets {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
   margin-left: auto;
+}
+/* .projection-toggle (Delivery's basic-outcomes / gate-policy-projection
+   switch on the pull-request table) shares .range-presets' link styling
+   below — same "pick one of a few route-scoped views" control, just
+   switching table columns instead of a date window — but NOT its
+   `margin-left: auto`: .range-presets lives inside the .metric-range flex
+   row, where that pushes it to the row's end; .projection-toggle is a
+   direct block child of .metrics-page, where auto-margin has no row to
+   push against and resolves to 0. It gets its own block-level spacing. */
+.metrics-page .projection-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 10px 0 16px;
 }
 .metrics-page .range-presets a,
 .metrics-page .projection-toggle a {
