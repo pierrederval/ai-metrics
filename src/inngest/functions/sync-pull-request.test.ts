@@ -46,3 +46,15 @@ test('the import path (no sourceEventId) never recomputes per pull request', asy
   await handler({ event: { data: importData }, runId: 'execution', step });
   expect(mocks.recomputeExecutedDetections).not.toHaveBeenCalled();
 });
+test('a recompute failure does not fail an otherwise healthy hydration', async () => {
+  // The hydrate step is memoized; a retry would only re-run this aggregate, so
+  // its failure must never mark a successful hydration as failed.
+  mocks.runForegroundHydration.mockResolvedValueOnce('hydrated-id');
+  mocks.recomputeExecutedDetections.mockRejectedValueOnce(new Error('boom'));
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  await expect(handler({ event: { data }, runId: 'execution', step })).resolves.toBe(
+    'hydrated-id',
+  );
+  expect(mocks.finishForegroundHydration).not.toHaveBeenCalled();
+  log.mockRestore();
+});

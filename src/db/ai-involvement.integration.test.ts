@@ -116,3 +116,34 @@ test('a repository never recomputed reports no state', async () => {
   const repositoryId = await seedEmptyRepository();
   expect(await loadDetections(repositoryId)).toEqual({ detections: [], state: null });
 });
+
+test('a row with null occurrences sorts after rows with a count, not before', async () => {
+  // Postgres DESC implies NULLS FIRST; 'configured'/'declared' rows (not written
+  // by this slice yet) carry a null occurrences. Insert one directly to prove the
+  // query does not let it outrank an executed row with real evidence.
+  const repositoryId = await seedEmptyRepository();
+  await db()
+    .insert(s.repoAiDetections)
+    .values([
+      {
+        repositoryId,
+        agent: 'claude-code',
+        signal: 'configured',
+        kind: 'coding-agent',
+        occurrences: null,
+        evidence: [],
+        detectorVersion: '0.1.0',
+      },
+      {
+        repositoryId,
+        agent: 'codex',
+        signal: 'executed',
+        kind: 'coding-agent',
+        occurrences: 5,
+        evidence: [],
+        detectorVersion: '0.1.0',
+      },
+    ]);
+  const { detections } = await loadDetections(repositoryId);
+  expect(detections.map((d) => d.agent)).toEqual(['codex', 'claude-code']);
+});

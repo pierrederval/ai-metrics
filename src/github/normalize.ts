@@ -70,7 +70,7 @@ export const prSchema = z.object({
   title: z.string(),
   state: z.enum(['open', 'closed']),
   user: z.object({ login: z.string() }).nullable(),
-  head: z.object({ sha: z.string(), ref: z.string() }),
+  head: z.object({ sha: z.string(), ref: z.string().nullish() }),
   base: z.object({ sha: z.string() }),
   created_at: z.string(),
   updated_at: z.string(),

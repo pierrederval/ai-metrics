@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '..';
 import * as s from '../schema';
 import { detectExecuted, type ExecutedInput } from '../../domain/ai-involvement/detect-executed';
@@ -145,7 +145,11 @@ export async function loadDetections(
     .select()
     .from(s.repoAiDetections)
     .where(eq(s.repoAiDetections.repositoryId, repositoryId))
-    .orderBy(desc(s.repoAiDetections.occurrences), asc(s.repoAiDetections.agent));
+    // Postgres DESC implies NULLS FIRST; 'configured'/'declared' rows carry a
+    // null occurrences, and this order feeds the detail route's render order
+    // directly, so an explicit NULLS LAST keeps them from sorting above
+    // executed rows once those signals start being written.
+    .orderBy(sql`${s.repoAiDetections.occurrences} desc nulls last`, asc(s.repoAiDetections.agent));
   const [state] = await db()
     .select()
     .from(s.repoDetectionState)

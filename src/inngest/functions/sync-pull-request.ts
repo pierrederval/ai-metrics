@@ -39,10 +39,20 @@ export const syncPullRequestFunction = inngest.createFunction(
     // Only the webhook path sets sourceEventId (see handle-event.ts); the import
     // path invokes this per pull request and must not repeat the whole-repository
     // aggregate once per item. Runs after hydration so it sees the fresh rows.
+    // A recompute failure must not turn a healthy hydration into a failed one
+    // (the hydrate step above is memoized, so a retry would only re-run this),
+    // so it is swallowed here rather than left to the function's retries/onFailure.
     if (data.sourceEventId)
-      await step.run('recompute-ai-involvement', () =>
-        recomputeExecutedDetections(data.repositoryId),
-      );
+      await step.run('recompute-ai-involvement', async () => {
+        try {
+          await recomputeExecutedDetections(data.repositoryId);
+        } catch (error) {
+          console.error('AI involvement recompute failed', {
+            repositoryId: data.repositoryId,
+            error,
+          });
+        }
+      });
     return result;
   },
 );

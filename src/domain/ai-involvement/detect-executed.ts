@@ -120,39 +120,49 @@ export function detectExecuted(input: ExecutedInput): Detection[] {
     }
   }
 
-  const detections: Detection[] = [...hits.entries()].map(([agent, bySource]) => {
-    const entries: Array<{ source: EvidenceSource; value: string; hit: Hit }> = [];
-    for (const [source, byValue] of bySource) {
-      for (const [value, hit] of byValue) {
-        entries.push({ source, value, hit });
+  const detections: Detection[] = [...hits.entries()]
+    .map((entry): Detection | null => {
+      const [agent, bySource] = entry;
+      // Agent ids are persisted in pull_requests.agent_markers and outlive the
+      // code that wrote them: a catalogue entry can be renamed or removed while
+      // old rows still carry it. Skip rather than throw so stale evidence never
+      // fails a whole repository's recompute.
+      const catalogueEntry = catalogue.find((candidate) => candidate.agent === agent);
+      if (!catalogueEntry) {
+        console.warn(`Unknown agent in hits; skipping: ${agent}`);
+        return null;
       }
-    }
-    entries.sort((a, b) => a.source.localeCompare(b.source) || a.value.localeCompare(b.value));
 
-    // occurrences is the size of the UNION of pull-request ids across all of
-    // this agent's evidence, never the sum of per-evidence counts.
-    const allPrIds = new Set(entries.flatMap(({ hit }) => [...hit.prIds]));
-    const times = entries
-      .flatMap(({ hit }) => [hit.first, hit.last])
-      .filter((t): t is string => t !== null);
+      const entries: Array<{ source: EvidenceSource; value: string; hit: Hit }> = [];
+      for (const [source, byValue] of bySource) {
+        for (const [value, hit] of byValue) {
+          entries.push({ source, value, hit });
+        }
+      }
+      entries.sort((a, b) => a.source.localeCompare(b.source) || a.value.localeCompare(b.value));
 
-    const catalogueEntry = catalogue.find((entry) => entry.agent === agent);
-    if (!catalogueEntry) throw new Error(`Unknown agent in hits: ${agent}`);
+      // occurrences is the size of the UNION of pull-request ids across all of
+      // this agent's evidence, never the sum of per-evidence counts.
+      const allPrIds = new Set(entries.flatMap(({ hit }) => [...hit.prIds]));
+      const times = entries
+        .flatMap(({ hit }) => [hit.first, hit.last])
+        .filter((t): t is string => t !== null);
 
-    return {
-      agent,
-      kind: catalogueEntry.kind,
-      signal: 'executed',
-      firstSeenAt: times.length ? times.reduce((a, b) => (a < b ? a : b)) : null,
-      lastSeenAt: times.length ? times.reduce((a, b) => (a > b ? a : b)) : null,
-      occurrences: allPrIds.size,
-      evidence: entries.map(({ source, value, hit }) => ({
-        source,
-        value,
-        prCount: hit.prIds.size,
-      })),
-    };
-  });
+      return {
+        agent,
+        kind: catalogueEntry.kind,
+        signal: 'executed',
+        firstSeenAt: times.length ? times.reduce((a, b) => (a < b ? a : b)) : null,
+        lastSeenAt: times.length ? times.reduce((a, b) => (a > b ? a : b)) : null,
+        occurrences: allPrIds.size,
+        evidence: entries.map(({ source, value, hit }) => ({
+          source,
+          value,
+          prCount: hit.prIds.size,
+        })),
+      };
+    })
+    .filter((detection): detection is Detection => detection !== null);
 
   return detections.sort(
     (a, b) => (b.occurrences ?? 0) - (a.occurrences ?? 0) || a.agent.localeCompare(b.agent),

@@ -193,7 +193,7 @@ async function hydratePullRequest(repositoryId: string, number: number) {
     state: pr.state,
     authorLogin: pr.user?.login ?? 'deleted',
     headSha: pr.head.sha,
-    headRef: pr.head.ref,
+    headRef: pr.head.ref ?? null,
     baseSha: pr.base.sha,
     openedAt: new Date(pr.created_at),
     mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,

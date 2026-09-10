@@ -1,5 +1,12 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { detectExecuted, type PullRequestRow } from './detect-executed';
+import type { AgentId } from './types';
+
+// Agent ids are persisted as jsonb and outlive the code that wrote them, so a
+// stale row can carry an id the current catalogue no longer knows. JSON.parse
+// (rather than a type assertion) reproduces that: the value genuinely arrives
+// untyped, the same way a persisted marker does when it is read back.
+const retiredAgent: AgentId = JSON.parse('"retired-agent"');
 
 const pr = (id: string, over: Partial<PullRequestRow> = {}): PullRequestRow => ({
   id,
@@ -67,6 +74,27 @@ test('a row referencing an absent pull request is discarded', () => {
     commits: [{ pullRequestId: 'missing', authorLogin: 'claude[bot]', occurredAt: null }],
   });
   expect(result).toEqual([]);
+});
+
+test('a marker whose agent is not in the catalogue is skipped, not thrown', () => {
+  // Agent ids are persisted in pull_requests.agent_markers and outlive the code
+  // that wrote them: a catalogue entry can be renamed or removed while old rows
+  // still carry it. That must degrade, not fail the whole repository's recompute.
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const result = detectExecuted({
+    ...empty,
+    pullRequests: [
+      pr('1', {
+        headRef: 'codex/one',
+        markers: [{ agent: retiredAgent, source: 'pr-body', ref: 'body' }],
+      }),
+    ],
+  });
+  expect(result).toHaveLength(1);
+  expect(result[0]).toMatchObject({ agent: 'codex', occurrences: 1 });
+  expect(warn).toHaveBeenCalledTimes(1);
+  expect(warn.mock.calls[0][0]).toContain('retired-agent');
+  warn.mockRestore();
 });
 
 test('detections are ordered by occurrences descending then agent ascending', () => {
