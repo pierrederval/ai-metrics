@@ -19,6 +19,28 @@ function otherParams(searchParams: URLSearchParams): URLSearchParams {
   return kept;
 }
 
+/**
+ * The custom-range form's submit target, factored out of the onSubmit
+ * handler so it can be unit-tested directly: renderToStaticMarkup (this
+ * codebase's whole rendering-test pattern) never fires interaction
+ * handlers, so logic that only runs inside one has no regression guard
+ * from a rendering test alone. `current` is the full current search —
+ * `days` (if the range was previously a preset) is dropped along with any
+ * previous `from`/`to`, replaced rather than duplicated, while every other
+ * param (Delivery's `?projection=`) survives.
+ */
+export function customRangeHref(
+  pathname: string,
+  current: URLSearchParams,
+  from: string,
+  to: string,
+): string {
+  const params = otherParams(current);
+  params.set('from', from);
+  params.set('to', to);
+  return `${pathname}?${params}`;
+}
+
 export function DateRange({
   range,
   bounds,
@@ -73,12 +95,8 @@ export function DateRange({
                 to = String(values.get('to'));
               const input = form.elements.namedItem('to') as HTMLInputElement;
               input.setCustomValidity(from > to ? 'End date must be on or after start date.' : '');
-              if (form.reportValidity()) {
-                const params = new URLSearchParams(kept);
-                params.set('from', from);
-                params.set('to', to);
-                router.push(`${pathname}?${params}`, { scroll: false });
-              }
+              if (form.reportValidity())
+                router.push(customRangeHref(pathname, kept, from, to), { scroll: false });
             }}
           >
             <label>

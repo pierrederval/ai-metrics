@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, expect, test, vi } from 'vitest';
 import { resolveRange } from '../../domain/dashboard/range';
-import { DateRange } from './date-range';
+import { customRangeHref, DateRange } from './date-range';
 
 const deps = vi.hoisted(() => ({ search: '' }));
 vi.mock('next/navigation', () => ({
@@ -62,4 +62,43 @@ test('preset links preserve an unrelated search param instead of silently resett
       `href="/repos/repository%3A1360100266?projection=gate-policy&amp;days=${days}"`,
     );
   }
+});
+
+// The custom-range form's submit target (router.push(customRangeHref(...)))
+// only ever runs inside an onSubmit handler, which renderToStaticMarkup
+// never fires — this codebase's whole rendering-test pattern can't exercise
+// it, so customRangeHref is extracted and unit-tested directly instead.
+// Each case below fails against a version that just appends from/to to the
+// existing query string rather than building it properly.
+test('customRangeHref preserves an unrelated param across a custom-range submission', () => {
+  const href = customRangeHref(
+    '/repos/repo/delivery',
+    new URLSearchParams('projection=gate-policy'),
+    '2026-08-01',
+    '2026-08-30',
+  );
+  expect(href).toBe('/repos/repo/delivery?projection=gate-policy&from=2026-08-01&to=2026-08-30');
+});
+
+test('customRangeHref drops days when switching from a preset to a custom range', () => {
+  const href = customRangeHref(
+    '/repos/repo/delivery',
+    new URLSearchParams('days=30&projection=gate-policy'),
+    '2026-08-01',
+    '2026-08-30',
+  );
+  expect(href).toBe('/repos/repo/delivery?projection=gate-policy&from=2026-08-01&to=2026-08-30');
+  expect(href).not.toContain('days=');
+});
+
+test('customRangeHref replaces, not duplicates, an already-active custom range', () => {
+  const href = customRangeHref(
+    '/repos/repo/delivery',
+    new URLSearchParams('from=2026-07-01&to=2026-07-15&projection=gate-policy'),
+    '2026-08-01',
+    '2026-08-30',
+  );
+  expect(href).toBe('/repos/repo/delivery?projection=gate-policy&from=2026-08-01&to=2026-08-30');
+  expect(href.match(/from=/g)).toHaveLength(1);
+  expect(href.match(/to=/g)).toHaveLength(1);
 });
