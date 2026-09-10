@@ -1669,8 +1669,24 @@ code {
   flex-direction: column;
   gap: 16px;
 }
+/* GradeBanner is the phone-width stand-in for GradeCard (grade-banner.css):
+   both are always rendered here, and this decides which one shows. Hidden
+   by default; swapped in below phone width, where the full card "consumes
+   most of the first screen" (see the design doc's Responsive behaviour
+   section). */
+.agents-view .grade-banner {
+  display: none;
+}
 @media (max-width: 720px) {
   .agents-view {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .agents-view .grade-card {
+    display: none;
+  }
+  .agents-view .grade-banner {
+    display: flex;
   }
 }
