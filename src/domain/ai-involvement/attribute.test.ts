@@ -62,13 +62,33 @@ describe('attributePullRequests', () => {
     expect(result.get('pr-1')).toBe('codex');
   });
 
-  it('breaks a tie alphabetically so recomputes are stable', () => {
+  it('breaks a tie alphabetically', () => {
+    // Two real catalogue agents, each with exactly one distinct evidence
+    // source on the same PR: an actual tie, not just repeated identical input.
     const result = attributePullRequests(
-      input({ pullRequests: [pr('pr-1', 'someone', 'claude/x')] }),
+      input({
+        pullRequests: [
+          pr('pr-1', 'someone', null, [
+            { agent: 'codex', source: 'pr-body', ref: 'body' },
+            { agent: 'claude-code', source: 'commit-trailer', ref: 'trailer' },
+          ]),
+        ],
+      }),
     );
-    const again = attributePullRequests(
-      input({ pullRequests: [pr('pr-1', 'someone', 'claude/x')] }),
+    expect(result.get('pr-1')).toBe('claude-code');
+  });
+
+  it('is not order-dependent: reversing the tied evidence gives the same attribution', () => {
+    const result = attributePullRequests(
+      input({
+        pullRequests: [
+          pr('pr-1', 'someone', null, [
+            { agent: 'claude-code', source: 'commit-trailer', ref: 'trailer' },
+            { agent: 'codex', source: 'pr-body', ref: 'body' },
+          ]),
+        ],
+      }),
     );
-    expect(result.get('pr-1')).toBe(again.get('pr-1'));
+    expect(result.get('pr-1')).toBe('claude-code');
   });
 });

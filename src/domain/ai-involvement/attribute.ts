@@ -28,7 +28,6 @@ export function attributePullRequests(input: ExecutedInput): Map<string, Attribu
   }
 
   for (const [prId, counts] of perPr) {
-    if (!result.has(prId)) continue; // defensive: hits are already pr-id filtered
     const [top] = [...counts.entries()].sort(
       (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
     );
