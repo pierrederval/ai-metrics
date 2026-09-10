@@ -1,0 +1,33 @@
+/* Treatment copied from the approved preview's .bigcard rules
+   (docs/superpowers/previews/2026-09-10-repository-page-architecture.html)
+   — that file's figures are invented, but its visual system for this card
+   is the approved reference. Scoped to this file, self-contained: every
+   class name AgentShare's JSX references has a rule here, and every rule
+   here is referenced by that JSX. */
+
+.bigcard {
+  background: var(--glass);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 6px 20px #203f3610;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.bigcard .t {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.bigcard .v {
+  font: 400 30px Georgia, serif;
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+}
+.bigcard .s {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
