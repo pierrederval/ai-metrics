@@ -1628,3 +1628,16 @@ code {
   font-family: Georgia, serif;
   font-weight: 400;
 }
+
+/* Repository route layout: the persistent header and tab bar sit above the
+   panel that each of the five views renders into. Kept here with the other
+   route-level page layouts (.metrics-page, .ai-content) rather than in a
+   component file, because it positions the routes themselves. */
+.repo-layout {
+  display: flex;
+  flex-direction: column;
+}
+.repo-panel {
+  padding-top: 22px;
+  min-width: 0;
+}
