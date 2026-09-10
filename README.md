@@ -1,15 +1,72 @@
-# AI Engineering Reliability
+# fieldnote
 
-An evidence-first MVP for reconstructing pull-request and CI history from GitHub. It stores raw webhook deliveries, normalizes GitHub facts, and recomputes deterministic reliability metrics. V1 makes no LLM-based quality judgments.
+**Monitor what your coding agents actually do. Act on it. Train them on it.**
 
-## Prerequisites
+Evidence-first analytics for AI-written pull requests. Every number is
+recomputed from GitHub facts and replays identically. There are no LLM judges
+anywhere in the pipeline.
 
-- Node.js 24+
-- pnpm 10.27+
-- Docker with Compose, or PostgreSQL 17+
-- A GitHub App for live integration; the seeded demo does not need one
+[![CI](https://github.com/pierrederval/ai-metrics/actions/workflows/ci.yml/badge.svg)](https://github.com/pierrederval/ai-metrics/actions/workflows/ci.yml)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![Node 24+](https://img.shields.io/badge/node-24%2B-green.svg)](package.json)
 
-## Run the seeded demo
+![The fieldnote overview dashboard, showing PRs merged, first-pass green rate, and CI success rate across accessible repositories](docs/screenshots/dashboard-metrics/after-desktop.jpg)
+
+## Why
+
+Your coding agents open pull requests. CI turns green. You merge.
+
+Green does not mean the agent fixed the bug. Sometimes it weakened the
+assertion, raised the timeout, or edited the test until the test agreed with
+the code. In every dashboard you already own, that pull request looks exactly
+like a good one.
+
+fieldnote reads the revision history and tells you which one it was.
+
+## Monitor · Act · Train
+
+**Monitor** — _shipped._ Reconstruct pull-request and CI history from GitHub,
+then recompute deterministic metrics over it. Raw webhook deliveries are kept
+for provenance, normalized into queryable facts, and projected into metrics by
+a pure analyzer. Same facts plus same gate policy always produce the same
+numbers.
+
+**Act** — _scoring shipped, pull requests next._ Grade a repository on how
+workable it is for an agent: agent instructions, README, docs, documented setup,
+documented tests. Each failing check already records what is missing and the
+exact paths and line ranges that prove it. The next step is opening the pull
+request that fixes it.
+
+**Train** — _designed._ Serve a repository's own record back to the coding
+agent over MCP, so the agent reads its history before it starts work rather
+than after review. The metrics that answer _"what do I keep getting wrong
+here?"_ are already computed; what is missing is the server that speaks them.
+
+See [docs/roadmap.md](docs/roadmap.md) for what Act and Train require and what
+they reuse.
+
+## What it measures
+
+| Metric                            | Definition                                                                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Clean Green**                   | Eventually green **and** the harness was not changed after failure. The headline number.                                                   |
+| **Harness Changed After Failure** | A test, CI, runner, quality, or package-configuration file changed on a later revision, after failed CI and through the first green state. |
+| **First Pass Green**              | Every configured gate's first execution on the first evaluated SHA succeeded.                                                              |
+| **Eventually Green**              | Some SHA reached a simultaneous, complete, successful state.                                                                               |
+| **Attempts to Green**             | One-based SHA index of the earliest chronological green state.                                                                             |
+| **Time to Green**                 | Interval from the first relevant execution start to that green state.                                                                      |
+| **Failed Check Count**            | Terminal failed required executions. Deduplicated by producing App and exact check name for the unique count.                              |
+| **Agent readiness**               | Repository score out of 100 across five documentation and instruction checks, with per-check file and line evidence.                       |
+
+Outcomes stay `null` when the gate policy is unconfigured, relevant work is
+still pending, or historical evidence cannot support the claim. Aggregate rates
+exclude unknown values and always show their denominators, so missing evidence
+is never silently counted as either failure or success.
+
+## Try it in 60 seconds
+
+No GitHub App required. The seeded demo is repeatable and contains 21 pull
+requests.
 
 ```bash
 pnpm install
@@ -20,77 +77,63 @@ pnpm db:seed
 pnpm dev
 ```
 
-Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard). The seed is repeatable and contains 21 PRs. PR `demo-pr-4` demonstrates failed CI, a test-file change, successful CI, and `Clean Green = No`.
+Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard).
 
-The checked-in `.env.example` enables explicit development-only demo mode. The application rejects demo mode when `NODE_ENV=production`.
+Look at PR `demo-pr-4`: failed CI, then a change to a test file, then successful
+CI, and therefore **Clean Green = No**. That single PR is the whole thesis.
 
-## Run tests and checks
+Requires Node.js 24+, pnpm 10.27+, and Docker with Compose (or PostgreSQL 17+).
 
-Create the dedicated integration database once:
+The checked-in `.env.example` enables development-only demo mode. The
+application refuses demo mode when `NODE_ENV=production`.
 
-```bash
-docker compose exec postgres createdb -U reliability reliability_test
-```
+## How it works
 
-Then run:
+1. A GitHub App receives webhook deliveries; every raw delivery is stored first.
+2. Deliveries and backfill are normalized into facts: pull requests, revisions,
+   CI runs, checks, and changed files, each carrying how it was observed.
+3. A revision comparison is trusted for harness attribution only when GitHub
+   reports the previous SHA as the merge base and the file list is complete.
+   Cumulative diffs are never attributed to a single repair commit.
+4. A pure analyzer projects facts plus an immutable, versioned gate policy into
+   metrics. Nothing in this step calls a model or the network.
+5. Durable workers (Inngest) handle import, backfill, and recovery.
 
-```bash
-pnpm test
-pnpm test:integration
-pnpm lint
-pnpm typecheck
-pnpm build
-```
+Full detail in [architecture.md](docs/architecture.md) and
+[domain-model.md](docs/domain-model.md).
 
-`pnpm test` has no database dependency. `pnpm test:integration` refuses any database whose name does not end in `_test`. `pnpm check` runs the complete suite and production build.
+## Status
 
-The production build requires `DEMO_MODE=false`, an HTTPS `APP_URL`, and the GitHub/encryption/Inngest configuration described in [GitHub App setup](docs/github-app.md). Do not use the development demo configuration for a production build. The [dashboard validation report](docs/validation-dashboard-metrics.md) records a build with synthetic, non-secret configuration; it is not a deployment check.
+|                                         | State               |
+| --------------------------------------- | ------------------- |
+| PR and CI ingestion, backfill, recovery | Shipped             |
+| Deterministic metrics and dashboards    | Shipped             |
+| Team workspaces and invitations         | Shipped             |
+| Repository agent-readiness grading      | Shipped             |
+| Act — opening readiness pull requests   | Designed, not built |
+| Train — MCP server for coding agents    | Designed, not built |
 
-## Continuous integration
-
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs five separate checks on every pull request into `main` and every push to `main`: `lint`, `typecheck`, `unit`, `integration`, and `build`. Each appears as its own GitHub check run.
-
-The `integration` job supplies a `postgres:17-alpine` service whose default database is the dedicated `_test` database, so it needs no `createdb` step and the suites apply their own migrations. The `build` job uses synthetic, non-secret production configuration generated per run; it reads no repository secret and never reaches a database.
-
-## Enable GitHub integration
-
-Follow [docs/github-app.md](docs/github-app.md), set `DEMO_MODE=false`, and fill every GitHub and encryption variable in `.env`. Apply migrations, start the application, then start the durable worker UI:
-
-```bash
-pnpm db:migrate
-pnpm dev
-pnpm inngest:dev
-```
-
-Configure the GitHub App webhook as `APP_URL/api/github/webhook`, install the app, and sign in through `/api/auth/login`. Installation grants repository availability. In onboarding, a repository administrator chooses a repository and starts its latest-100-PR analysis. Administrators can retry partial imports, request a fresh batch, and select required gates from the repository page. Set `GITHUB_APP_SLUG` for the access-management link.
-
-Overview and repository dashboards share UTC date ranges, merged-PR counts, review-aware first-pass outcomes, and workflow success including reruns. Basic metrics do not require an advanced gate policy. Missing historical evidence stays unknown. Free access shows the latest 100 PRs per repository by creation time; background collection retains one year of PR activity independently of that visibility limit. Expanded-history interest registration does not unlock access or send notifications. Apply the dashboard migrations and register the background and recovery workers together; see [release operations](docs/github-app.md#dashboard-release-and-background-operations).
-
-Operators can also request a fresh import for an already tracked repository by internal repository ID:
-
-```bash
-pnpm github:sync repository:123456789
-```
-
-## Key commands
-
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Run the Next.js application |
-| `pnpm inngest:dev` | Run Inngest locally against `/api/inngest` |
-| `pnpm db:migrate` | Apply checked-in Drizzle migrations |
-| `pnpm db:seed` | Repeatably create the 21-PR demo dataset |
-| `pnpm github:sync <id>` | Queue a historical repository import |
-| `pnpm test` | Run deterministic unit/domain tests |
-| `pnpm test:integration` | Run PostgreSQL and hydration tests |
-| `pnpm check` | Run lint, types, all tests, and production build |
+Known limits are recorded in [validation.md](docs/validation.md), and
+deliberately excluded work in [future.md](docs/future.md). Free access shows the
+latest 100 pull requests per repository.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Domain model](docs/domain-model.md)
-- [GitHub App setup](docs/github-app.md)
-- [Validation and limitations](docs/validation.md)
-- [Dashboard verification and release handoff](docs/validation-dashboard-metrics.md)
+- [Architecture](docs/architecture.md) — how the pieces fit
+- [Domain model](docs/domain-model.md) — facts, metrics, and the tables behind them
+- [Roadmap](docs/roadmap.md) — Act and Train
+- [Operations](docs/operations.md) — tests, CI, production config, operator commands
+- [GitHub App setup](docs/github-app.md) — running against real repositories
+- [Validation and limitations](docs/validation.md) — what these numbers do not claim
 - [Deferred work](docs/future.md)
-- [Execution plan](docs/superpowers/plans/2026-09-07-ai-engineering-reliability-mvp.md)
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the
+five CI gates every pull request must pass, and what a good change looks like
+here.
+
+## License
+
+[AGPL-3.0](LICENSE). You may self-host, modify, and use fieldnote freely. If you
+run a modified version as a network service, you must publish your changes.
