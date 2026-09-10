@@ -1,5 +1,13 @@
 export type AgentProvider =
-  'claude-code' | 'codex' | 'cursor' | 'gemini' | 'other' | 'human' | 'unknown';
+  | 'claude-code'
+  | 'codex'
+  | 'copilot'
+  | 'cursor'
+  | 'devin'
+  | 'gemini'
+  | 'other'
+  | 'human'
+  | 'unknown';
 export type Conclusion =
   | 'success'
   | 'failure'

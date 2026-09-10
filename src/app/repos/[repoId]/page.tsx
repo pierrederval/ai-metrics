@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { loadBasicDashboard } from '../../../db/queries/basic-dashboard';
 import { repositoryRecords } from '../../../db/queries/repository-records';
+import { loadDetections } from '../../../db/queries/ai-involvement';
+import { AiInvolvementRail } from '../../../components/ai-involvement/rail';
 import { BasicDashboard, InvalidRange } from '../../../components/dashboard/basic-dashboard';
 import {
   githubRepositoryUrl,
@@ -42,6 +44,7 @@ export default async function Repository({
   }
   const data = await loadBasicDashboard([repo.id], range);
   const [record] = await repositoryRecords([repo.id]);
+  const involvement = await loadDetections(repo.id);
   const query = rangeQuery(range, search);
   const rows = await prRows([repoId]),
     policy = await currentPolicy(repoId),
@@ -67,53 +70,64 @@ export default async function Repository({
       <p className="page-intro">
         Review, CI, and progress for this repository.{' '}
         <a href={githubRepositoryUrl(repo)}>GitHub ↗</a>{' '}
-        <Link href={`/repos/${encodeURIComponent(repoId)}/grading`}>Agent readiness →</Link>
+        <Link href={`/repos/${encodeURIComponent(repoId)}/grading`}>Agent readiness →</Link>{' '}
+        <Link href={`/repos/${encodeURIComponent(repoId)}/ai-involvement`}>AI involvement →</Link>
       </p>
       <BasicDashboard data={data} />
-      <h2>Repository evidence</h2>
-      <section>
-        <RepositoryMetadata record={record} githubUrl={githubRepositoryUrl(repo)} />
-      </section>
-      <h2>Recent pull requests</h2>
-      <p className="muted">
-        Latest source activity across accessible history; the date range above applies to metrics.
-      </p>
-      {record.prs.length ? (
-        <div className="scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Pull request</th>
-                <th>Status</th>
-                <th>Source activity (UTC)</th>
-                <th>GitHub</th>
-              </tr>
-            </thead>
-            <tbody>
-              {record.prs.map((pr) => (
-                <tr key={pr.id}>
-                  <td>
-                    <Link href={`/prs/${encodeURIComponent(pr.id)}`}>
-                      #{pr.number} {pr.title}
-                    </Link>
-                  </td>
-                  <td>{pr.state}</td>
-                  <td>
-                    <time dateTime={pr.sourceUpdatedAt}>
-                      {pr.sourceUpdatedAt.slice(0, 16).replace('T', ' ')}
-                    </time>
-                  </td>
-                  <td>
-                    <a href={`${githubRepositoryUrl(repo)}/pull/${pr.number}`}>View PR ↗</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="ai-content">
+        <div className="ai-maincol">
+          <h2>Repository evidence</h2>
+          <section>
+            <RepositoryMetadata record={record} githubUrl={githubRepositoryUrl(repo)} />
+          </section>
+          <h2>Recent pull requests</h2>
+          <p className="muted">
+            Latest source activity across accessible history; the date range above applies to
+            metrics.
+          </p>
+          {record.prs.length ? (
+            <div className="scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pull request</th>
+                    <th>Status</th>
+                    <th>Source activity (UTC)</th>
+                    <th>GitHub</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {record.prs.map((pr) => (
+                    <tr key={pr.id}>
+                      <td>
+                        <Link href={`/prs/${encodeURIComponent(pr.id)}`}>
+                          #{pr.number} {pr.title}
+                        </Link>
+                      </td>
+                      <td>{pr.state}</td>
+                      <td>
+                        <time dateTime={pr.sourceUpdatedAt}>
+                          {pr.sourceUpdatedAt.slice(0, 16).replace('T', ' ')}
+                        </time>
+                      </td>
+                      <td>
+                        <a href={`${githubRepositoryUrl(repo)}/pull/${pr.number}`}>View PR ↗</a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No accessible PR records imported yet.</p>
+          )}
         </div>
-      ) : (
-        <p>No accessible PR records imported yet.</p>
-      )}
+        <AiInvolvementRail
+          detections={involvement.detections}
+          state={involvement.state}
+          repoId={repoId}
+        />
+      </div>
       <details className="advanced-analysis">
         <summary>Advanced gate analysis</summary>
         <p>
