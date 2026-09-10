@@ -1,7 +1,8 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '..';
 import * as s from '../schema';
 import { detectExecuted, type ExecutedInput } from '../../domain/ai-involvement/detect-executed';
+import { attributePullRequests } from '../../domain/ai-involvement/attribute';
 import { DETECTOR_VERSION, type Detection } from '../../domain/ai-involvement/types';
 
 type Transaction = Parameters<Parameters<ReturnType<typeof db>['transaction']>[0]>[0];
@@ -93,7 +94,9 @@ export async function recomputeExecutedDetections(repositoryId: string): Promise
   await db().transaction(async (tx) => {
     // Same repository lock persistPr takes, so a concurrent sync cannot interleave.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${repositoryId},0))`);
-    const detections = detectExecuted(await readRows(tx, repositoryId));
+    const rows = await readRows(tx, repositoryId);
+    const detections = detectExecuted(rows);
+    const attribution = attributePullRequests(rows);
     await tx
       .delete(s.repoAiDetections)
       .where(
@@ -117,6 +120,21 @@ export async function recomputeExecutedDetections(repositoryId: string): Promise
           refreshedAt: new Date(),
         })),
       );
+    // Group ids by agent so this is one UPDATE per distinct agent, not one per
+    // pull request.
+    const byAgent = new Map<string, string[]>();
+    for (const [prId, agent] of attribution) {
+      byAgent.set(agent, [...(byAgent.get(agent) ?? []), prId]);
+    }
+    for (const [agent, prIds] of byAgent) {
+      await tx
+        .update(s.pullRequests)
+        .set({ agentProvider: agent })
+        .where(
+          and(eq(s.pullRequests.repositoryId, repositoryId), inArray(s.pullRequests.id, prIds)),
+        );
+    }
+
     // configuredRefreshedAt and scannedSha are intentionally omitted: slice two owns them.
     const state = {
       repositoryId,
