@@ -71,6 +71,7 @@ export default async function Repository({
             repositoryName={`${repo.owner} / ${repo.name}`}
             sha={grade.sha}
             rubricVersion={grade.rubricVersion}
+            checks={grade.checks}
           />
         ) : (
           <section className="grading-ungraded">

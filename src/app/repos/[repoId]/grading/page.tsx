@@ -54,6 +54,7 @@ export default async function Grading({
               repositoryName={`${repo.owner} / ${repo.name}`}
               sha={grade.sha}
               rubricVersion={grade.rubricVersion}
+              checks={grade.checks}
             />
           ) : (
             <section className="grading-ungraded">
