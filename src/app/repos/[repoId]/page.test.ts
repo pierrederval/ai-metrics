@@ -79,12 +79,17 @@ test('loads the cohort aggregation scoped to the authorized repository and the p
   expect(deps.grade).toHaveBeenCalledWith('repo');
 });
 
-test('an invalid range renders the guard instead of querying anything', async () => {
+test('an invalid range renders the guard instead of querying anything, without a second h1', async () => {
   const html = renderToStaticMarkup(await call({ days: '5' }));
   expect(html).toContain('Invalid date range');
   expect(deps.cohorts).not.toHaveBeenCalled();
   expect(deps.detections).not.toHaveBeenCalled();
   expect(deps.grade).not.toHaveBeenCalled();
+  // The layout already renders the page's one <h1>; this guard must render
+  // at h2 here, unlike its other two callers (dashboard, /repos), which sit
+  // at their own route root and keep the default h1.
+  expect(html).not.toContain('<h1');
+  expect(html).toContain('<h2>Invalid date range</h2>');
 });
 
 test('no completed grade run renders an ungraded placeholder instead of a score', async () => {
@@ -98,6 +103,13 @@ test('renders only one h1 worth of identity — the view starts at h2', async ()
   const html = renderToStaticMarkup(await call());
   expect(html).not.toContain('<h1');
   expect(html).toContain('<h2>Is this repository working for agents?</h2>');
+});
+
+test('the Delivery link carries the parsed range forward, not just the raw search params', async () => {
+  const html = renderToStaticMarkup(await call({ from: '2026-08-01', to: '2026-08-30' }));
+  expect(html).toContain(
+    'href="/repos/repo/delivery?from=2026-08-01&amp;to=2026-08-30"',
+  );
 });
 
 test('escaped route id is decoded before authorization', async () => {
@@ -131,4 +143,6 @@ test('a double-escaped route id is decoded only once and still requires an exact
   ).rejects.toThrow('not found');
   expect(deps.authorize).toHaveBeenCalledWith('repository%3A1360100266');
   expect(deps.cohorts).not.toHaveBeenCalled();
+  expect(deps.grade).not.toHaveBeenCalled();
+  expect(deps.detections).not.toHaveBeenCalled();
 });

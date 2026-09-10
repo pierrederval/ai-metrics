@@ -217,10 +217,13 @@ section {
   margin: 14px 0 8px;
   font-variant-numeric: lining-nums tabular-nums;
 }
-/* Shared card chrome for the Agents view's sibling stat cards (agent share,
-   cohort comparison, and any future card in that grid) — kept here, not
-   duplicated per-component, so one edit to the shared treatment can't
-   silently desync between them. */
+/* Shared card chrome for the Agents view's sibling stat cards (agents
+   involved, agent share, cohort comparison, and any future card in that
+   grid) — kept here, not duplicated per-component, so one edit to the
+   shared treatment can't silently desync between them. .v and .s started
+   out scoped to agent-share.css, but agents-involved.tsx now needs the
+   identical figure/detail-line treatment, so they moved here rather than
+   being copied a second time. */
 .bigcard {
   background: var(--glass);
   border-radius: 12px;
@@ -236,6 +239,16 @@ section {
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
+}
+.bigcard .v {
+  font: 400 30px Georgia, serif;
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+}
+.bigcard .s {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
 }
 .summary-strip {
   display: flex;
@@ -1382,24 +1395,12 @@ code {
   }
 }
 
-/* AI involvement: repository-page rail and its detail route. */
-.ai-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
-  gap: 24px;
-  align-items: start;
-  margin-top: 22px;
-}
-.ai-maincol {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* AI involvement: repository-page rail and its detail route. .ai-content and
+   .ai-maincol were the old page.tsx's two-column wrapper around the rail;
+   Task 6 replaced that layout with .agents-view/.agents-col and the rail is
+   production-unused for now (kept, not deleted — see agents-involved.tsx),
+   so those two rules were deleted rather than left with no caller. */
 @media (max-width: 760px) {
-  .ai-content {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .ai-rail {
     order: -1;
   }
@@ -1631,7 +1632,7 @@ code {
 
 /* Repository route layout: the persistent header and tab bar sit above the
    panel that each of the five views renders into. Kept here with the other
-   route-level page layouts (.metrics-page, .ai-content) rather than in a
+   route-level page layouts (.metrics-page, .agents-view) rather than in a
    component file, because it positions the routes themselves. */
 .repo-layout {
   display: flex;

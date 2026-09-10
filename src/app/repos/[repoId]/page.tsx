@@ -4,7 +4,7 @@ import { latestGrade } from '../../../db/queries/grade-runs';
 import { loadDetections } from '../../../db/queries/ai-involvement';
 import { loadCohorts } from '../../../db/queries/cohorts';
 import { GradeCard } from '../../../components/grading/grade-card';
-import { AiInvolvementRail } from '../../../components/ai-involvement/rail';
+import { AgentsInvolved } from '../../../components/agents/agents-involved';
 import { AgentShare } from '../../../components/agents/agent-share';
 import { CohortComparison } from '../../../components/cohorts/cohort-comparison';
 import { InvalidRange } from '../../../components/dashboard/basic-dashboard';
@@ -20,8 +20,8 @@ export const dynamic = 'force-dynamic';
 
 // This is the view the product exists to produce: whether the repository is
 // a place agents can work (the readiness card), which agents actually work
-// there (the involvement rail), and how well each performs (agent share and
-// the cohort comparison). It loads exactly the latest grade run, the
+// there (the agents-involved card), and how well each performs (agent share
+// and the cohort comparison). It loads exactly the latest grade run, the
 // detections and the cohort aggregation — nothing that belongs to Delivery
 // (the dashboard aggregation, the pull-request records) or Settings (the
 // gate policy, the import record). The repository identity, breadcrumb,
@@ -43,6 +43,7 @@ export default async function Repository({
       <InvalidRange
         message={(error as Error).message}
         href={`/repos/${encodeURIComponent(repoId)}`}
+        headingLevel="h2"
       />
     );
   }
@@ -81,7 +82,7 @@ export default async function Repository({
           </section>
         )}
         <div className="agents-col">
-          <AiInvolvementRail
+          <AgentsInvolved
             detections={involvement.detections}
             state={involvement.state}
             repoId={repoId}

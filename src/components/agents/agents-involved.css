@@ -1,0 +1,42 @@
+/* Treatment copied from the approved preview's .agentchips/.chip/.bigcard .l
+   rules (docs/superpowers/previews/2026-09-10-repository-page-architecture.html)
+   — that file's figures are invented, but its visual system for this card is
+   the approved reference. The shared .bigcard/.bigcard .t/.bigcard .v/
+   .bigcard .s chrome lives in src/app/style.css; everything below is
+   genuinely scoped to AgentsInvolved: the nested muted verb after the
+   headline count, the chip row, and the card's own evidence link. */
+
+.bigcard .v span {
+  font-size: 15px;
+  color: var(--muted);
+}
+.bigcard .l {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 700;
+  margin-top: auto;
+}
+.agentchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #2f6b5216;
+  color: var(--ran);
+  box-shadow: inset 0 0 0 1px #2f6b5233;
+}
+.chip.idle {
+  background: #98681716;
+  color: var(--setup);
+  box-shadow: inset 0 0 0 1px #98681733;
+}
+.chip.none {
+  background: #526b6012;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px #526b6026;
+}
