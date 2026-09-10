@@ -2,11 +2,15 @@ import { inngest } from '../client';
 import { historySyncData } from '../events';
 import {
   ensureHistoryBackfill,
+  getHistoryBackfill,
   listHistoryRecovery,
   processHistorySlice,
   repositoriesMissingHistory,
 } from '../../db/queries/history-backfill';
 import { dispatchHistoryBackfill } from '../dispatch-history';
+import { recomputeExecutedDetections } from '../../db/queries/ai-involvement';
+
+const historyBackfillTerminalStatuses = new Set(['complete', 'partial']);
 
 export const historyBackfillFunction = inngest.createFunction(
   {
@@ -23,6 +27,24 @@ export const historyBackfillFunction = inngest.createFunction(
     await step.run('collect-one-history-slice', () =>
       processHistorySlice(repositoryId, backfillId),
     );
+    // The backfill hydrates older pull requests directly through the collector
+    // (see history-backfill.ts), never through sync-pull-request.ts, so nothing
+    // else recomputes detections for the pull requests it hydrates. Recompute
+    // once, here, the slice that observes the run reach a terminal state —
+    // not per hydrated pull request. Non-fatal: detection lagging is acceptable,
+    // failing the backfill lifecycle over it is not.
+    await step.run('recompute-ai-involvement-on-history-completion', async () => {
+      const run = await getHistoryBackfill(backfillId);
+      if (!run || !historyBackfillTerminalStatuses.has(run.status)) return;
+      try {
+        await recomputeExecutedDetections(repositoryId);
+      } catch (error) {
+        console.error('AI involvement recompute failed after history backfill', {
+          repositoryId,
+          error,
+        });
+      }
+    });
     await step.run('dispatch-next-history-slice', () => dispatchHistoryBackfill(backfillId));
   },
 );
