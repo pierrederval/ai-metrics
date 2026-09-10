@@ -1,14 +1,22 @@
 'use client';
 import Link from 'next/link';
-import { useSelectedLayoutSegment } from 'next/navigation';
+import { useSearchParams, useSelectedLayoutSegment } from 'next/navigation';
 import { useRef, type KeyboardEvent } from 'react';
 import { focusIndex, isActive, tabHref, tabs, TAB_PANEL_ID } from './tabs';
 import './tab-bar.css';
 
 // The client component in the repository header that reads which segment is
 // selected. Selection is route state, not client state.
+//
+// The query string is read here rather than in the layout: layouts do not
+// rerender on navigation and cannot see search params, but this is a client
+// component below one, so useSearchParams() gives it the live query. Every tab
+// therefore keeps the date range the reader arrived with — the range enters the
+// repository from /repos and the body links between views already preserve it,
+// so the tab bar must too.
 export function TabBar({ repoId }: { repoId: string }) {
   const segment = useSelectedLayoutSegment();
+  const search = useSearchParams().toString();
   const links = useRef<(HTMLAnchorElement | null)[]>([]);
   const stop = focusIndex(segment);
   function move(event: KeyboardEvent<HTMLAnchorElement>, index: number) {
@@ -44,7 +52,7 @@ export function TabBar({ repoId }: { repoId: string }) {
             aria-controls={TAB_PANEL_ID}
             // Roving tabindex: one stop for the whole bar, arrows move within it.
             tabIndex={index === stop ? 0 : -1}
-            href={tabHref(repoId, tab)}
+            href={tabHref(repoId, tab, search)}
             ref={(node) => {
               links.current[index] = node;
             }}

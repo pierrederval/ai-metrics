@@ -22,9 +22,21 @@ export function isActive(tab: RepositoryTab, segment: string | null): boolean {
   return tab.segment === segment;
 }
 
-export function tabHref(repoId: string, tab: RepositoryTab): string {
+/**
+ * `search` is the current query string (with or without its leading `?`), which
+ * the tab bar reads from useSearchParams(). It is carried across every tab
+ * because the date range arrives in the URL from /repos and is preserved by the
+ * body links between views — a tab that dropped it would silently reset the
+ * range the reader chose. Nothing is filtered out: a view ignores the params it
+ * does not read, and preserving all of them is what keeps `projection` (and the
+ * selected saved `run`) alive across a round trip, the same way DateRange
+ * preserves unrelated params.
+ */
+export function tabHref(repoId: string, tab: RepositoryTab, search = ''): string {
   const base = `/repos/${encodeURIComponent(repoId)}`;
-  return tab.segment ? `${base}/${tab.segment}` : base;
+  const path = tab.segment ? `${base}/${tab.segment}` : base;
+  const query = search.startsWith('?') ? search.slice(1) : search;
+  return query ? `${path}?${query}` : path;
 }
 
 /**

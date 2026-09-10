@@ -78,12 +78,11 @@ export default async function Delivery({
   };
   return (
     <div className="metrics-page">
-      <div className="eyebrow" style={{ marginTop: 28 }}>
-        Repository / Delivery
-      </div>
+      <div className="eyebrow panel-eyebrow">Repository / Delivery</div>
       <h2>Delivery</h2>
       <p className="page-intro">
-        Review, CI, and progress for this repository. <a href={githubRepositoryUrl(repo)}>GitHub ↗</a>
+        Review, CI, and progress for this repository.{' '}
+        <a href={githubRepositoryUrl(repo)}>GitHub ↗</a>
       </p>
       <BasicDashboard data={data} />
       <h2>Pull requests</h2>
@@ -107,6 +106,18 @@ export default async function Delivery({
           Gate-policy projection
         </Link>
       </nav>
+      {/* The old page opened its "Advanced gate analysis" accordion with this
+          sentence. The accordion is gone; the projection is not, so the
+          sentence follows the projection here. It is the only place the product
+          reconciles its two first-pass-green definitions — the cohort table on
+          Agents and the KPI cards here can disagree — so it keeps both original
+          claims (these use your configured gates; they do not define the
+          headline metrics) and the policy version, which says which gates
+          "configured" currently means. */}
+      <p className="muted">
+        Separate gate-policy projections · policy v{policy.version}. These metrics use your
+        configured gates and do not define the KPI cards and charts above.
+      </p>
       {projection === 'gate-policy' && rows.length > 0 && (
         <MetricCards metrics={rows.map((r) => r.metrics.projection)} />
       )}

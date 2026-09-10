@@ -27,12 +27,10 @@ export default async function Grading({
   const grade = run ? selected : summary?.latest;
   const href = `/repos/${encodeURIComponent(repoId)}/grading`;
   return (
-    <>
+    <div className="metrics-page">
       {/* Identity and the back-link live in the repository layout header; the
           tagline is demoted to h2 as this tab panel's own heading. */}
-      <div className="eyebrow" style={{ marginTop: 28 }}>
-        Repository / Readiness
-      </div>
+      <div className="eyebrow panel-eyebrow">Repository / Readiness</div>
       <h2>A record of readiness.</h2>
       <p className="page-intro">Understand the foundations your agents build on.</p>
       <GradeControls
@@ -96,6 +94,6 @@ export default async function Grading({
           />
         )}
       </div>
-    </>
+    </div>
   );
 }

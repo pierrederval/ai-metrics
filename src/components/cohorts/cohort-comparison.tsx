@@ -35,11 +35,39 @@ export function agentCellClassName(row: Pick<CohortRow, 'attributed'>): string {
   return row.attributed ? 'agentcell' : 'agentcell human';
 }
 
+/**
+ * loadCohorts selects on `openedAt`, so every figure in this table is about
+ * pull requests *opened* in the selected range, while Delivery's KPI cards and
+ * charts count pull requests *merged* in it. The two populations are different
+ * by design, which is why the same cohort can read 0.0% here and — with a
+ * different denominator — unknown on Delivery. The card says so out loud rather
+ * than leaving the reader to reconcile two numbers that were never the same
+ * measurement.
+ */
+export const COHORT_POPULATION = 'Pull requests opened in this range.';
+export const COHORT_POPULATION_CONTRAST = 'Delivery counts pull requests merged in it.';
+
+/** Same register as AgentShare's "No pull requests in this range." */
+export const COHORT_EMPTY = 'No pull requests opened in this range.';
+
 // Server component: renders static cohort data handed down by the page, no interactivity.
 export function CohortComparison({ table }: { table: CohortTable }) {
+  // Day one of a newly connected repository, and any range with no opened pull
+  // requests, land here: a headers-only table is not an empty state.
+  if (table.rows.length === 0) {
+    return (
+      <div className="bigcard cohortcard">
+        <span className="t">How each agent is doing</span>
+        <span className="s">{COHORT_EMPTY}</span>
+      </div>
+    );
+  }
   return (
     <div className="bigcard cohortcard">
       <span className="t">How each agent is doing</span>
+      <span className="s">
+        {COHORT_POPULATION} {COHORT_POPULATION_CONTRAST}
+      </span>
       <div className="scroll">
         <table className="cohort">
           <thead>

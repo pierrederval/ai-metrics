@@ -224,6 +224,27 @@ describe('loadCohorts', () => {
     });
   });
 
+  // Distinct from the zero-visible-pull-requests case below: here the
+  // repository has visible pull requests with metrics and the *range* excludes
+  // every one of them. Both must produce the same empty table, because that is
+  // what the cohort card's empty state renders from.
+  it('returns an empty table when visible pull requests exist but none were opened in the range', async () => {
+    const emptyRange: Range = {
+      start: '2027-01-01T00:00:00.000Z',
+      endExclusive: '2027-01-08T00:00:00.000Z',
+      days: 7,
+    };
+
+    const populated = await loadCohorts('cohort-repo-basic', RANGE);
+    expect(populated.rows.length).toBeGreaterThan(0);
+
+    const table = await loadCohorts('cohort-repo-basic', emptyRange);
+
+    expect(table.rows).toEqual([]);
+    expect(table.totalPullRequests).toBe(0);
+    expect(table.attributedPullRequests).toBe(0);
+  });
+
   it('returns an empty table for a repository with no visible pull requests', async () => {
     const table = await loadCohorts('cohort-repo-does-not-exist', RANGE);
 

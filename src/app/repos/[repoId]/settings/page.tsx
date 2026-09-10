@@ -53,11 +53,11 @@ export default async function Settings({ params }: { params: Promise<{ repoId: s
   ];
   return (
     <div className="metrics-page">
-      <div className="eyebrow" style={{ marginTop: 28 }}>
-        Repository / Settings
-      </div>
+      <div className="eyebrow panel-eyebrow">Repository / Settings</div>
       <h2>Settings</h2>
-      <p className="page-intro">Configuration is not analysis: gates and collection, in one place.</p>
+      <p className="page-intro">
+        Configuration is not analysis: gates and collection, in one place.
+      </p>
 
       <h2>Required gates</h2>
       <p className="muted">Policy v{policy.version}</p>
@@ -91,8 +91,8 @@ export default async function Settings({ params }: { params: Promise<{ repoId: s
       {latest ? (
         <>
           <p className="muted">
-            Initial import: latest 100 pull requests by creation date. New activity is updated as
-            it arrives.
+            Initial import: latest 100 pull requests by creation date. New activity is updated as it
+            arrives.
           </p>
           {latest.state === 'complete' ? (
             <p>{`Imported batch: ${latest.total ?? 'unknown'} PRs.`}</p>

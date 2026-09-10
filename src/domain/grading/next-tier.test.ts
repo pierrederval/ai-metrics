@@ -52,4 +52,14 @@ describe('nextTier', () => {
     const checks = Array.from({ length: 5 }, (_, i) => check(`c${i}`, 'pass'));
     expect(nextTier(100, checks)).toBeNull();
   });
+  it('returns null at a perfect score even when a check still reads as failing', () => {
+    // Unreachable under today's binary rubric, where 100 implies every check
+    // passed. Under a finer-grained one a partial-credit check can fail at a
+    // full score, and the guard is on the score precisely so that case says
+    // "no higher tier" instead of offering the tier already reached.
+    expect(nextTier(100, [check('documented-tests', 'fail')])).toBeNull();
+  });
+  it('names no tier when nothing is failing below a perfect score', () => {
+    expect(nextTier(90, [check('root-readme', 'pass')])).toBeNull();
+  });
 });

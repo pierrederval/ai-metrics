@@ -16,7 +16,11 @@ const chipClass: Record<DetectionSignal, 'ran' | 'idle' | 'none'> = {
 
 const rank: Record<DetectionSignal, number> = { executed: 0, configured: 1, declared: 2 };
 
-export type AgentChip = { agent: Detection['agent']; label: string; state: 'ran' | 'idle' | 'none' };
+export type AgentChip = {
+  agent: Detection['agent'];
+  label: string;
+  state: 'ran' | 'idle' | 'none';
+};
 
 export type AgentsInvolvedSummary = {
   ranCount: number;
@@ -25,13 +29,13 @@ export type AgentsInvolvedSummary = {
 };
 
 /**
- * Pure by design, same rationale as rail.ts's railRows: chips and the
- * subtitle are derived entirely from the Detection rows loadDetections
- * already returns, never from the preview's invented copy ("None
- * configured but idle. No LLM steps in CI."). There is no detector signal
- * for "no LLM steps in CI" as a distinct claim — that would mean scanning
- * workflow definitions, which detectExecuted does not do — so this never
- * asserts it; it only describes counts the detections actually carry.
+ * Pure by design: chips and the subtitle are derived entirely from the
+ * Detection rows loadDetections already returns, never from the preview's
+ * invented copy ("None configured but idle. No LLM steps in CI."). There is
+ * no detector signal for "no LLM steps in CI" as a distinct claim — that
+ * would mean scanning workflow definitions, which detectExecuted does not do
+ * — so this never asserts it; it only describes counts the detections
+ * actually carry.
  */
 export function summarizeAgentsInvolved(detections: Detection[]): AgentsInvolvedSummary {
   const sorted = [...detections].sort(

@@ -243,7 +243,9 @@ section {
   font-weight: 700;
 }
 .bigcard .v {
-  font: 400 30px Georgia, serif;
+  font:
+    400 30px Georgia,
+    serif;
   letter-spacing: -0.8px;
   line-height: 1.05;
 }
@@ -593,7 +595,12 @@ code {
   border-radius: 16px;
   padding: clamp(16px, 2.5vw, 30px);
 }
-.metrics-page section {
+/* Flattens the global glass <section> chrome onto the metrics palette. The two
+   sections that arrive with a treatment of their own are excluded: the grade
+   card's border carries the grade colour, and the ungraded placeholder's dashed
+   border is what says "nothing here yet". :not(:where(...)) keeps this at the
+   specificity it had before the Agents and Readiness views joined the class. */
+.metrics-page section:not(:where(.grade-card, .grading-ungraded)) {
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: none;
@@ -1403,122 +1410,11 @@ code {
   }
 }
 
-/* AI involvement: repository-page rail and its detail route. .ai-content and
-   .ai-maincol were the old page.tsx's two-column wrapper around the rail;
-   Task 6 replaced that layout with .agents-view/.agents-col and the rail is
-   production-unused for now (kept, not deleted — see agents-involved.tsx),
-   so those two rules were deleted rather than left with no caller. */
-@media (max-width: 760px) {
-  .ai-rail {
-    order: -1;
-  }
-}
-.ai-rail {
-  background: var(--glass);
-  border-radius: 12px;
-  box-shadow: 0 6px 20px #203f3610;
-  padding: 17px 18px 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-self: start;
-}
-.ai-rail-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-.ai-rail-title {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 700;
-}
-.ai-rail-ver {
-  font-size: 10px;
-  color: var(--muted);
-}
-.ai-rail-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.ai-rail-row {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid #203f3612;
-}
-.ai-rail-row:last-child {
-  border-bottom: 0;
-}
-.ai-rail-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-}
-.ai-rail-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ai-rail-state {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.ai-rail-state.ran {
-  color: var(--ran);
-}
-.ai-rail-state.setup {
-  color: var(--setup);
-}
-.ai-rail-more {
-  font-size: 11px;
-  color: var(--muted);
-  padding-top: 2px;
-}
-.ai-rail-foot {
-  border-top: 1px solid var(--line);
-  padding-top: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.ai-rail-stamp {
-  font-size: 10.5px;
-  color: var(--muted);
-  line-height: 1.45;
-}
-.ai-rail-link {
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 700;
-  white-space: nowrap;
-}
-.ai-rail-empty {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.ai-rail-empty b {
-  color: var(--ink);
-  font-weight: 700;
-}
+/* AI involvement detail route. .ai-content and .ai-maincol were the old
+   page.tsx's two-column wrapper around the rail, and .ai-rail* was the rail
+   itself: Task 6 replaced the rail with AgentsInvolved on the Agents view and
+   nothing renders it any more, so its rules are deleted rather than left with
+   no caller. Git history keeps them. */
 .agent-mark {
   width: 20px;
   height: 20px;
@@ -1649,6 +1545,14 @@ code {
 .repo-panel {
   padding-top: 22px;
   min-width: 0;
+}
+/* Every one of the five views opens with an eyebrow at the same offset. One
+   definition of that gap, rather than the same inline marginTop copy-pasted
+   into five route files; scoped to its own class so the shared .eyebrow used
+   elsewhere (the dashboard, the repositories directory, the evidence report)
+   keeps its own spacing. */
+.eyebrow.panel-eyebrow {
+  margin-top: 28px;
 }
 
 /* The Agents view: the readiness card fixed at 330px beside a column of

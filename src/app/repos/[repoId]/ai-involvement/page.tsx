@@ -120,6 +120,8 @@ export default async function AiInvolvement({ params }: { params: Promise<{ repo
   return (
     <div className="metrics-page">
       {/* Identity and the back-link live in the repository layout header. */}
+      <div className="eyebrow panel-eyebrow">Repository / Involvement</div>
+      <h2>AI involvement</h2>
       <p className="page-intro">
         Every AI signal we can prove in this repository, with the evidence behind it. Detector v0.1.
       </p>

@@ -55,10 +55,8 @@ export default async function Repository({
   ]);
   const query = rangeQuery(range, search);
   return (
-    <>
-      <div className="eyebrow" style={{ marginTop: 28 }}>
-        Repository / Agents
-      </div>
+    <div className="metrics-page">
+      <div className="eyebrow panel-eyebrow">Repository / Agents</div>
       <h2>Is this repository working for agents?</h2>
       <p className="page-intro">
         {range.days} UTC days ending {rangeEnd(range)}. The full KPI history for this same range,
@@ -99,6 +97,6 @@ export default async function Repository({
           <CohortComparison table={table} />
         </div>
       </div>
-    </>
+    </div>
   );
 }

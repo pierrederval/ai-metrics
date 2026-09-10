@@ -28,6 +28,28 @@ describe('repository tabs', () => {
     expect(tabHref('repository:1', tabs[4])).toBe('/repos/repository%3A1/settings');
   });
 
+  it('carries the current query string onto every tab, landing view included', () => {
+    // The date range arrives in the URL from /repos and is preserved by the
+    // body links between views; a tab that dropped it would silently reset the
+    // range the reader chose.
+    expect(tabHref('repository:1', tabs[0], 'from=2025-01-01&to=2025-01-07')).toBe(
+      '/repos/repository%3A1?from=2025-01-01&to=2025-01-07',
+    );
+    expect(tabHref('repository:1', tabs[3], 'days=30')).toBe(
+      '/repos/repository%3A1/delivery?days=30',
+    );
+  });
+
+  it('accepts the query string with or without its leading question mark', () => {
+    expect(tabHref('repo', tabs[1], '?days=30')).toBe('/repos/repo/grading?days=30');
+    expect(tabHref('repo', tabs[1], 'days=30')).toBe('/repos/repo/grading?days=30');
+  });
+
+  it('emits a bare path when there is no query to carry', () => {
+    expect(tabHref('repo', tabs[1], '')).toBe('/repos/repo/grading');
+    expect(tabHref('repo', tabs[1])).toBe('/repos/repo/grading');
+  });
+
   it('puts the tab stop on the selected tab', () => {
     expect(focusIndex(null)).toBe(0);
     expect(focusIndex('grading')).toBe(1);
