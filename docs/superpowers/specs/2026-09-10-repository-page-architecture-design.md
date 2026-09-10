@@ -124,9 +124,10 @@ reaches every tier. Ten checks worth ten points would do it. That is a rubric ch
 version bump and its own comparability consequences, so it is out of scope here and must not be
 smuggled into this work.
 
-Until then the card renders correctly for all six finishes and only four occur. Fixtures and visual
-checks must cover all six regardless, because the unreachable ones become reachable the moment the
-rubric changes.
+Bronze and Gold are explicitly parked by decision, not overlooked. Until the rubric grows, the card
+renders correctly for all six finishes and only four occur. Fixtures and visual checks must cover
+all six regardless, because the unreachable ones become reachable the moment a rule is added, and a
+finish first exercised on the day it appears in production is a finish nobody has looked at.
 
 ## Cohort comparison
 
@@ -188,6 +189,13 @@ bar scrolls horizontally rather than wrapping, with its scrollbar hidden.
 
 The tab bar is a `tablist` with `tab` roles, arrow-key navigation between tabs, and a visible focus
 state. Selection is expressed by route, not by client state.
+
+## Prerequisite
+
+Per-pull-request attribution reads `pull_requests.agent_markers` and `pull_requests.head_ref`, which
+are added by the repository AI involvement branch. That work is not on the default branch at the
+time of writing. It must land before this work begins, or this work must branch from it; starting
+from a base without those columns will fail immediately.
 
 ## Delivery order
 
