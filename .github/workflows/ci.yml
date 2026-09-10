@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm typecheck
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm test
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      # The service database is itself the dedicated `_test` database, so no
+      # createdb step is needed. Suites apply migrations in their own beforeAll.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: reliability
+          POSTGRES_PASSWORD: reliability
+          POSTGRES_DB: reliability_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U reliability"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://reliability:reliability@localhost:5432/reliability_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm test:integration
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+      # Synthetic, non-secret production configuration. Every value is
+      # throwaway and generated or fixed per run; no repository secret is read.
+      # The build never reaches the database, so DATABASE_URL stays unroutable.
+      - name: Build with synthetic production configuration
+        env:
+          NODE_ENV: production
+          DEMO_MODE: 'false'
+          APP_URL: https://ci.example.invalid
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:1/ci_unreachable
+          GITHUB_APP_SLUG: ci-synthetic-app
+          GITHUB_APP_ID: '000000'
+          GITHUB_WEBHOOK_SECRET: ci-synthetic-webhook-secret
+          GITHUB_CLIENT_ID: ci-synthetic-client-id
+          GITHUB_CLIENT_SECRET: ci-synthetic-client-secret
+          INNGEST_DEV: '0'
+          INNGEST_EVENT_KEY: ci-synthetic-event-key
+          INNGEST_SIGNING_KEY: ci-synthetic-signing-key
+        run: |
+          export GITHUB_PRIVATE_KEY="$(openssl genrsa 2048 2>/dev/null)"
+          export TOKEN_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+          pnpm build
