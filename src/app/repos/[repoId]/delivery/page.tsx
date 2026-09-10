@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireTrackedRepository } from '../../../../auth/access';
 import { loadBasicDashboard } from '../../../../db/queries/basic-dashboard';
-import { prRows } from '../../../../db/queries/dashboard';
+import { currentPolicy, prRows } from '../../../../db/queries/dashboard';
 import { BasicDashboard, InvalidRange } from '../../../../components/dashboard/basic-dashboard';
 import {
   readRange,
@@ -12,6 +12,7 @@ import {
 import { MetricCards } from '../../../../components/metrics';
 import { PrTable } from '../../../../components/pr-table';
 import { githubRepositoryUrl } from '../../../../components/dashboard/repository-metadata';
+import { failureBreakdown } from '../../../../metrics/aggregate';
 import { pageRouteId } from '../../../../lib/page-route-id';
 
 export const dynamic = 'force-dynamic';
@@ -25,18 +26,18 @@ function readProjection(search: RangeSearch): Projection {
 
 // Delivery is the KPI cards, the three daily charts, the date range, the
 // pull-request table at full width (with the Agent column Task 2's
-// per-pull-request attribution makes possible), and the gate-policy
-// projection as a toggle on that same table — never a separate list. It
-// loads exactly the dashboard aggregation and the pull-request records:
-// loadBasicDashboard and prRows. Nothing else, and in particular never
-// repositoryRecords or currentPolicy — see task-7-report.md.
-//
-// The old page's "Failures by check name" table (failureBreakdown) is NOT
-// rendered here. failureBreakdown(prs, policy) needs the current GatePolicy
-// to decide which checks are gates; that is currentPolicy, which this
-// route's query budget excludes (it is Settings' load under this split).
-// Flagged as concern 2 in task-7-report.md pending a ruling, rather than
-// either dropping the table silently or calling currentPolicy here.
+// per-pull-request attribution makes possible), the failure breakdown, and
+// the gate-policy projection as a toggle on that same table — never a
+// separate list. It loads loadBasicDashboard, prRows and currentPolicy.
+// currentPolicy is a single-row indexed `limit 1` select (see
+// db/queries/dashboard.ts), not the accessible-PR-history join
+// repositoryRecords() runs — Delivery still never calls repositoryRecords.
+// currentPolicy is needed because failureBreakdown(prs, policy) classifies
+// each observed check as a gate or not by testing it against the *current*
+// policy at render time; that is not something prMetrics.projection
+// (already computed against whichever policy was active at last save)
+// carries. MetricCards and the table's gate-policy columns need no policy
+// query — they render prMetrics.projection as-is.
 export default async function Delivery({
   params,
   searchParams,
@@ -56,7 +57,15 @@ export default async function Delivery({
       />
     );
   }
-  const [data, rows] = await Promise.all([loadBasicDashboard([repo.id], range), prRows([repoId])]);
+  const [data, rows, policy] = await Promise.all([
+    loadBasicDashboard([repo.id], range),
+    prRows([repoId]),
+    currentPolicy(repoId),
+  ]);
+  const failures = failureBreakdown(
+    rows.map((r) => r.pr),
+    policy,
+  );
   const projection = readProjection(search);
   const basePath = `/repos/${encodeURIComponent(repoId)}/delivery`;
   const rangeQ = rangeQuery(range, search);
@@ -105,6 +114,37 @@ export default async function Delivery({
         <PrTable rows={rows} githubUrl={githubRepositoryUrl(repo)} projection={projection} />
       ) : (
         <p>No accessible PR records imported yet.</p>
+      )}
+      <h2>Failures by check name</h2>
+      {failures.length > 0 ? (
+        <div className="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Failures</th>
+                <th>Affected PRs</th>
+                <th>Failure rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {failures.map((f) => (
+                <tr key={`${f.appId}:${f.checkName}`}>
+                  <td>
+                    {f.checkName} <small>app {f.appId}</small>
+                  </td>
+                  <td>{f.failureCount}</td>
+                  <td>{f.affectedPrCount}</td>
+                  <td>
+                    {(f.failureRate * 100).toFixed(1)}% / {f.total} executions
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted">No gate failures observed, or no gates are configured.</p>
       )}
     </div>
   );

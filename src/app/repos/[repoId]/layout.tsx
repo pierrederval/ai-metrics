@@ -2,7 +2,8 @@ import { requireTrackedRepository } from '../../../auth/access';
 import { RepositoryPageHeader } from '../../../components/repository/header';
 import { TabBar } from '../../../components/repository/tab-bar';
 import { TAB_PANEL_ID } from '../../../components/repository/tabs';
-import { loadRepositoryHeader } from '../../../db/queries/repository-header';
+import { composeRepositoryHeader, repositoryRecord } from '../../../db/queries/repository-header';
+import { latestImport } from '../../../db/queries/repository-imports';
 import { pageRouteId } from '../../../lib/page-route-id';
 export const dynamic = 'force-dynamic';
 // The layout renders on every tab, so it loads only what every tab shows: the
@@ -10,6 +11,11 @@ export const dynamic = 'force-dynamic';
 // the dashboard aggregation, the PR records, the gate policy, the cohorts —
 // belongs in that view's own page.tsx. The date range is not here at all:
 // layouts do not rerender on navigation and cannot read search params.
+//
+// Calls repositoryRecord (not repositoryRecords) so that when Settings also
+// needs a RepositoryRecord (for RepositoryMetadata), React's per-request
+// cache() gives the two calls one execution of the underlying
+// accessible-PR-history join, not two.
 export default async function RepositoryLayout({
   children,
   params,
@@ -19,7 +25,11 @@ export default async function RepositoryLayout({
 }) {
   const repoId = pageRouteId((await params).repoId),
     repo = await requireTrackedRepository(repoId);
-  const header = await loadRepositoryHeader(repo.id);
+  const [record, latest] = await Promise.all([
+    repositoryRecord(repo.id),
+    latestImport(repo.id),
+  ]);
+  const header = composeRepositoryHeader(record, latest);
   return (
     <div className="repo-layout">
       <RepositoryPageHeader repo={repo} header={header} />

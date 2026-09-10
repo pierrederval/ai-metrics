@@ -6,10 +6,14 @@ const deps = vi.hoisted(() => ({
   authorize: vi.fn(),
   dashboard: vi.fn(),
   prRows: vi.fn(),
+  policy: vi.fn(),
 }));
 vi.mock('../../../../auth/access', () => ({ requireTrackedRepository: deps.authorize }));
 vi.mock('../../../../db/queries/basic-dashboard', () => ({ loadBasicDashboard: deps.dashboard }));
-vi.mock('../../../../db/queries/dashboard', () => ({ prRows: deps.prRows }));
+vi.mock('../../../../db/queries/dashboard', () => ({
+  prRows: deps.prRows,
+  currentPolicy: deps.policy,
+}));
 // BasicDashboard renders DateRange, a client component that calls
 // usePathname() — outside an actual Next.js request context that throws, so
 // this mirrors the same mock src/app/dashboard/page.test.ts uses for the
@@ -47,6 +51,24 @@ const dashboardData = {
   days: [],
 };
 
+const policy = { version: 2, gates: [{ appId: '15368', name: 'unit' }] };
+
+function check(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'check-1',
+    appId: '15368',
+    name: 'unit',
+    sha: 'a'.repeat(40),
+    execution: 1,
+    status: 'completed',
+    conclusion: 'failure',
+    queuedAt: '2026-09-06T00:00:00.000Z',
+    startedAt: '2026-09-06T00:01:00.000Z',
+    completedAt: '2026-09-06T00:02:00.000Z',
+    ...overrides,
+  };
+}
+
 const rows = [
   {
     pr: {
@@ -57,6 +79,7 @@ const rows = [
       mergedAt: null,
       sourceUpdatedAt: new Date('2026-09-08T10:00:00.000Z'),
       agentProvider: 'codex',
+      facts: { checks: [check({ id: 'check-codex', conclusion: 'success' })] },
     },
     metrics: {
       projection: {
@@ -85,6 +108,7 @@ const rows = [
       mergedAt: new Date('2026-09-07T00:00:00.000Z'),
       sourceUpdatedAt: new Date('2026-09-07T00:00:00.000Z'),
       agentProvider: 'unknown',
+      facts: { checks: [check({ id: 'check-unattributed', conclusion: 'success' })] },
     },
     metrics: {
       projection: {
@@ -113,6 +137,9 @@ const rows = [
       mergedAt: new Date('2026-09-06T00:00:00.000Z'),
       sourceUpdatedAt: new Date('2026-09-06T00:00:00.000Z'),
       agentProvider: 'retired-agent',
+      // This PR's one observed 'unit' check failed: the sole entry the
+      // failure-breakdown table should show, at 1 of 3 executions.
+      facts: { checks: [check({ id: 'check-retired' })] },
     },
     metrics: {
       projection: {
@@ -139,6 +166,7 @@ beforeEach(() => {
   deps.authorize.mockResolvedValue({ id: 'repo', owner: 'owner', name: 'repo', canAdmin: true });
   deps.dashboard.mockResolvedValue(dashboardData);
   deps.prRows.mockResolvedValue(rows);
+  deps.policy.mockResolvedValue(policy);
 });
 
 test('renders the pull-request table at full width with an Agent column', async () => {
@@ -174,10 +202,20 @@ test('the gate-policy projection is a toggle on the same table, not a separate l
   expect(html).toContain('Average attempts to green');
 });
 
-test('loads only the dashboard aggregation and the pull-request records', async () => {
+test('renders the failure-breakdown table, classified against the current gate policy', async () => {
+  const html = renderToStaticMarkup(await call());
+  expect(html).toContain('Failures by check name');
+  // Two PRs ran the 'unit' gate successfully, one failed it: 1 failure / 3 executions.
+  expect(html).toContain('unit');
+  expect(html).toContain('<td>1</td>');
+  expect(html).toContain('33.3% / 3 executions');
+});
+
+test('loads the dashboard aggregation, the pull-request records, and the gate policy', async () => {
   await call({ days: '30' });
   expect(deps.dashboard).toHaveBeenCalledWith(['repo'], expect.objectContaining({ days: 30 }));
   expect(deps.prRows).toHaveBeenCalledWith(['repo']);
+  expect(deps.policy).toHaveBeenCalledWith('repo');
 });
 
 test('an invalid range renders the guard instead of querying anything, without a second h1', async () => {
@@ -185,6 +223,7 @@ test('an invalid range renders the guard instead of querying anything, without a
   expect(html).toContain('Invalid date range');
   expect(deps.dashboard).not.toHaveBeenCalled();
   expect(deps.prRows).not.toHaveBeenCalled();
+  expect(deps.policy).not.toHaveBeenCalled();
   expect(html).not.toContain('<h1');
   expect(html).toContain('<h2>Invalid date range</h2>');
 });
