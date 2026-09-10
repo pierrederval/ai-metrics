@@ -15,6 +15,7 @@ import { collectWorkflowAttempts } from './collect-workflow-attempts';
 import { dashboardWebhookEvidence } from './dashboard-webhooks';
 import { persistDashboardEvidence } from '../db/queries/dashboard-evidence';
 import type { Revision, PullRequestFacts } from '../domain/pull-request/types';
+import { matchCommitTrailers, matchPullRequestBody } from '../domain/ai-involvement/markers';
 import { z } from 'zod';
 const edgeSchema = z.object({
   action: z.string(),
@@ -177,6 +178,12 @@ async function hydratePullRequest(repositoryId: string, number: number) {
     issues,
   };
   const id = `pr:${repo.githubRepositoryId}:${number}`;
+  const agentMarkers = [
+    ...remoteCommits.flatMap((commit) =>
+      matchCommitTrailers(commit.sha, commit.commit.message ?? ''),
+    ),
+    ...matchPullRequestBody(pr.body ?? null),
+  ];
   await persistPr({
     id,
     repositoryId,
@@ -186,12 +193,14 @@ async function hydratePullRequest(repositoryId: string, number: number) {
     state: pr.state,
     authorLogin: pr.user?.login ?? 'deleted',
     headSha: pr.head.sha,
+    headRef: pr.head.ref,
     baseSha: pr.base.sha,
     openedAt: new Date(pr.created_at),
     mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
     closedAt: pr.closed_at ? new Date(pr.closed_at) : null,
     sourceUpdatedAt: new Date(pr.updated_at),
     facts,
+    agentMarkers,
   });
   const storedDashboardEvents = await db()
     .select()

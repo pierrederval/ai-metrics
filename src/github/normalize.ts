@@ -70,7 +70,7 @@ export const prSchema = z.object({
   title: z.string(),
   state: z.enum(['open', 'closed']),
   user: z.object({ login: z.string() }).nullable(),
-  head: z.object({ sha: z.string() }),
+  head: z.object({ sha: z.string(), ref: z.string() }),
   base: z.object({ sha: z.string() }),
   created_at: z.string(),
   updated_at: z.string(),
@@ -78,6 +78,7 @@ export const prSchema = z.object({
   closed_at: z.string().nullable(),
   changed_files: z.number().optional(),
   commits: z.number().optional(),
+  body: z.string().nullish(),
 });
 export function errorStatus(error: unknown) {
   return typeof error === 'object' && error !== null && 'status' in error

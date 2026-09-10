@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { normalizeCheck, normalizeFile } from './normalize';
+import { normalizeCheck, normalizeFile, prSchema } from './normalize';
 test('normalizes renamed files and rejects unsupported check conclusions', () => {
   expect(
     normalizeFile({
@@ -76,4 +76,38 @@ test('correlates Actions jobs without counting check runs twice and retains atte
   expect(checks).toHaveLength(2);
   expect(checks.map((c) => c.conclusion)).toEqual(['failure', 'success']);
   expect(checks.map((c) => c.execution)).toEqual([1, 2]);
+});
+test('prSchema keeps the head reference and body', () => {
+  const parsed = prSchema.parse({
+    id: 1,
+    number: 2,
+    title: 't',
+    state: 'open',
+    user: { login: 'dana' },
+    head: { sha: 'a', ref: 'codex/thing' },
+    base: { sha: 'b' },
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+    merged_at: null,
+    closed_at: null,
+    body: 'Generated with Claude Code',
+  });
+  expect(parsed.head.ref).toBe('codex/thing');
+  expect(parsed.body).toBe('Generated with Claude Code');
+});
+test('prSchema tolerates an absent body', () => {
+  const parsed = prSchema.parse({
+    id: 1,
+    number: 2,
+    title: 't',
+    state: 'open',
+    user: null,
+    head: { sha: 'a', ref: 'main' },
+    base: { sha: 'b' },
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+    merged_at: null,
+    closed_at: null,
+  });
+  expect(parsed.body ?? null).toBeNull();
 });

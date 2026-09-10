@@ -23,6 +23,7 @@ import type {
   ChangedFile,
 } from '../domain/pull-request/types';
 import type { ReviewEvent } from '../domain/dashboard/types';
+import type { AgentMarker } from '../domain/ai-involvement/types';
 const id = () => text('id').primaryKey();
 const created = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 const updated = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
@@ -67,11 +68,16 @@ export const pullRequests = pgTable(
     state: text('state').notNull(),
     authorLogin: text('author_login').notNull(),
     headSha: text('head_sha').notNull(),
+    headRef: text('head_ref'),
     baseSha: text('base_sha').notNull(),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull(),
     mergedAt: timestamp('merged_at', { withTimezone: true }),
     closedAt: timestamp('closed_at', { withTimezone: true }),
     agentProvider: text('agent_provider').notNull().default('unknown'),
+    agentMarkers: jsonb('agent_markers')
+      .$type<AgentMarker[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     facts: jsonb('facts').$type<PullRequestFacts>().notNull(),
     sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }).notNull(),
     createdAt: created(),
