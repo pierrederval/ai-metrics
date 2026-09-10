@@ -606,6 +606,11 @@ code {
   box-shadow: none;
   backdrop-filter: none;
 }
+.grading-ungraded {
+  background: var(--panel);
+  box-shadow: none;
+  backdrop-filter: none;
+}
 .metrics-page a {
   color: var(--ink);
 }
@@ -1011,7 +1016,7 @@ code {
   .metric-coverage {
     padding: 14px;
   }
-  .metrics-page section {
+  .metrics-page section:not(:where(.grade-card, .grading-ungraded)) {
     max-width: 100%;
   }
   .chart-axis {
