@@ -66,7 +66,8 @@ export default async function Repository({
       </h1>
       <p className="page-intro">
         Review, CI, and progress for this repository.{' '}
-        <a href={githubRepositoryUrl(repo)}>GitHub ↗</a>
+        <a href={githubRepositoryUrl(repo)}>GitHub ↗</a>{' '}
+        <Link href={`/repos/${encodeURIComponent(repoId)}/grading`}>Agent readiness →</Link>
       </p>
       <BasicDashboard data={data} />
       <h2>Repository evidence</h2>
