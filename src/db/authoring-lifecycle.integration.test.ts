@@ -161,6 +161,22 @@ async function queuedRun(repositoryId: string) {
   return id;
 }
 
+// The one-active-run unique index spans both kinds, so an execute fixture
+// gets its own repository rather than sharing one with a queued plan run.
+async function queuedExecuteRun(repositoryId: string) {
+  const id = randomUUID();
+  await db().insert(authoringRuns).values({
+    id,
+    repositoryId,
+    kind: 'execute',
+    requestedBy: context.user,
+    requestedWorkspaceId: context.workspace,
+    state: 'queued',
+    authorVersion: 'readiness-floor-v01',
+  });
+  return id;
+}
+
 const remedy = {
   checkId: 'root-agent-instructions',
   path: 'AGENTS.md',
@@ -224,6 +240,11 @@ test('lists only runs that were never dispatched', async () => {
   expect(await listUndispatchedPlans()).not.toContain(runId);
 });
 
+test('does not list a queued, undispatched execute run', async () => {
+  const runId = await queuedExecuteRun(await seed());
+  expect(await listUndispatchedPlans()).not.toContain(runId);
+});
+
 test('refuses to validate a run whose repository opted back out', async () => {
   const repositoryId = await seed();
   const runId = await queuedRun(repositoryId);
@@ -247,4 +268,10 @@ test('reads back a completed plan with its remedies, and refuses one from anothe
   expect(plan?.remedies[0].path).toBe('AGENTS.md');
   expect(await getPlan(await seed(), runId)).toBeNull();
   expect((await latestPlan(repositoryId))?.id).toBe(runId);
+});
+
+test('refuses to read an execute run back as a plan, even with the correct repository id', async () => {
+  const repositoryId = await seed();
+  const runId = await queuedExecuteRun(repositoryId);
+  expect(await getPlan(repositoryId, runId)).toBeNull();
 });

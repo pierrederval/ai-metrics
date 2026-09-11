@@ -213,7 +213,7 @@ export async function listUndispatchedPlans(): Promise<string[]> {
     await db()
       .select({ id: runs.id })
       .from(runs)
-      .where(and(eq(runs.state, 'queued'), isNull(runs.dispatchedAt)))
+      .where(and(eq(runs.state, 'queued'), eq(runs.kind, 'plan'), isNull(runs.dispatchedAt)))
       .orderBy(asc(runs.createdAt))
       .limit(100)
   ).map((run) => run.id);
@@ -240,7 +240,7 @@ export async function getPlan(
   const [run] = await db()
     .select()
     .from(runs)
-    .where(and(eq(runs.repositoryId, repositoryId), eq(runs.id, runId)));
+    .where(and(eq(runs.repositoryId, repositoryId), eq(runs.id, runId), eq(runs.kind, 'plan')));
   if (!run) return null;
   const remedies = await db()
     .select()
