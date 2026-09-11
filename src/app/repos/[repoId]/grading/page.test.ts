@@ -8,6 +8,7 @@ const deps = vi.hoisted(() => ({
   get: vi.fn(),
   actEnabled: vi.fn(),
   fetchGrantedPermissions: vi.fn(),
+  latestPlan: vi.fn(),
 }));
 vi.mock('../../../../workspaces/access', () => ({ requireRepository: deps.authorize }));
 vi.mock('../../../../db/queries/grade-runs', () => ({
@@ -18,6 +19,11 @@ vi.mock('../../../../db/queries/grade-runs', () => ({
 vi.mock('../../../../db/queries/act-settings', () => ({ actEnabled: deps.actEnabled }));
 vi.mock('../../../../github/installation-permissions', () => ({
   fetchGrantedPermissions: deps.fetchGrantedPermissions,
+}));
+vi.mock('../../../../db/queries/authoring-runs', () => ({ latestPlan: deps.latestPlan }));
+vi.mock('../../../../components/act/act-entry', () => ({
+  ActEntry: ({ availability }: { availability: { available: boolean } }) =>
+    createElement('p', null, availability.available ? 'act-available' : 'act-unavailable'),
 }));
 vi.mock('../../../../components/grading/report', () => ({
   GradeControls: ({ initial }: { initial: { state: string } | null }) =>
@@ -50,6 +56,7 @@ beforeEach(() => {
   deps.get.mockResolvedValue(null);
   deps.actEnabled.mockResolvedValue(false);
   deps.fetchGrantedPermissions.mockResolvedValue({ contents: null, pullRequests: null });
+  deps.latestPlan.mockResolvedValue(null);
 });
 test('latest completed score remains visible alongside failed current attempt', async () => {
   const html = renderToStaticMarkup(await call());

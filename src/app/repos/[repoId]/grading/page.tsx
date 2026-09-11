@@ -10,6 +10,8 @@ import { actEnabled } from '../../../../db/queries/act-settings';
 import { fetchGrantedPermissions } from '../../../../github/installation-permissions';
 import { actAvailability, nothingGranted } from '../../../../domain/act/availability';
 import { availabilityMessage } from '../../../../domain/act/availability-copy';
+import { latestPlan } from '../../../../db/queries/authoring-runs';
+import { ActEntry } from '../../../../components/act/act-entry';
 export const dynamic = 'force-dynamic';
 export default async function Grading({
   params,
@@ -21,11 +23,12 @@ export default async function Grading({
   const repoId = pageRouteId((await params).repoId);
   const repo = await requireRepository(repoId);
   const { run } = await searchParams;
-  const [summaries, history, selected, enabled] = await Promise.all([
+  const [summaries, history, selected, enabled, plan] = await Promise.all([
     gradeSummaries([repoId]),
     gradeHistory(repoId),
     run ? getGrade(repoId, run) : Promise.resolve(null),
     actEnabled(repoId),
+    latestPlan(repoId),
   ]);
   if (run && !selected) notFound();
   const summary = summaries[0];
@@ -70,6 +73,13 @@ export default async function Grading({
       {/* A team that opted in should learn why Act cannot proceed; nobody
           else should be told about a switch that does nothing. */}
       {grade && enabled && message && <p className="muted">{message}</p>}
+      {grade && (
+        <ActEntry
+          repositoryId={repoId}
+          availability={availability}
+          latest={plan ? { id: plan.id, state: plan.state } : null}
+        />
+      )}
       <div className="grading-layout">
         <div>
           {grade?.score !== null && grade?.score !== undefined ? (

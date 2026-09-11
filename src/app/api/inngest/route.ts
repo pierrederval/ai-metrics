@@ -1,5 +1,7 @@
 import { gradeRepositoryFunction } from '../../../inngest/functions/grade-repository';
 import { reconcileGrades } from '../../../inngest/functions/reconcile-grades';
+import { planRepositoryFunction } from '../../../inngest/functions/plan-repository';
+import { reconcileAuthoring } from '../../../inngest/functions/reconcile-authoring';
 import { sendInvitationFunction } from '../../../inngest/functions/send-invitation';
 import { reconcileInvitations } from '../../../inngest/functions/reconcile-invitations';
 import {
@@ -22,6 +24,8 @@ export const { GET, POST, PUT } = serve({
     reconcileHistoryBackfills,
     gradeRepositoryFunction,
     reconcileGrades,
+    planRepositoryFunction,
+    reconcileAuthoring,
     sendInvitationFunction,
     reconcileInvitations,
     syncRepositoryFunction,
