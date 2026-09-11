@@ -1,8 +1,17 @@
 import 'dotenv/config';
 import { db, closeDb } from '../src/db';
-import { installations, repositories, gatePolicies } from '../src/db/schema';
+import {
+  installations,
+  repositories,
+  gatePolicies,
+  users,
+  workspaces,
+  gradingRubrics,
+  gradeRuns,
+} from '../src/db/schema';
 import { persistPr } from '../src/db/queries/persist-pr';
-import { demoFacts, demoPolicy } from '../src/demo/fixtures';
+import { demoFacts, demoGrade, demoGradeSha, demoPolicy } from '../src/demo/fixtures';
+import { readinessRubric } from '../src/domain/grading/readiness-v01';
 import { recomputeExecutedDetections } from '../src/db/queries/ai-involvement';
 import type { AgentMarker } from '../src/domain/ai-involvement/types';
 if (process.env.NODE_ENV === 'production' || process.env.DEMO_MODE !== 'true')
@@ -33,6 +42,49 @@ try {
   await db()
     .insert(gatePolicies)
     .values({ repositoryId: 'demo-repository', ...demoPolicy })
+    .onConflictDoNothing();
+  // A grade is owned by whoever asked for it: grade_runs.requestedBy and
+  // requestedWorkspaceId are both NOT NULL, so the demo needs an identity and a
+  // workspace before it can hold a readiness card. Neither is reachable — no
+  // session points at this user — and neither is on the read path either:
+  // DEMO_MODE resolves the demo workspace and its repositories without touching
+  // these tables, which is why workspace_repositories needs no row here for the
+  // card to render.
+  await db()
+    .insert(users)
+    .values({ id: 'demo-user', login: 'demo', displayName: 'Demo', credentials: 'demo-unused' })
+    .onConflictDoNothing();
+  await db()
+    .insert(workspaces)
+    .values({ id: 'demo-workspace', name: 'Demo workspace' })
+    .onConflictDoNothing();
+  await db()
+    .insert(gradingRubrics)
+    .values({
+      family: readinessRubric.family,
+      version: readinessRubric.version,
+      evaluatorVersion: readinessRubric.evaluatorVersion,
+      definition: readinessRubric,
+    })
+    .onConflictDoNothing();
+  const graded = new Date('2026-09-30T09:12:00Z');
+  await db()
+    .insert(gradeRuns)
+    .values({
+      id: 'demo-grade-run',
+      repositoryId: 'demo-repository',
+      family: readinessRubric.family,
+      rubricVersion: readinessRubric.version,
+      evaluatorVersion: readinessRubric.evaluatorVersion,
+      requestedBy: 'demo-user',
+      requestedWorkspaceId: 'demo-workspace',
+      state: 'complete',
+      sha: demoGradeSha,
+      result: demoGrade,
+      dispatchedAt: graded,
+      startedAt: graded,
+      completedAt: graded,
+    })
     .onConflictDoNothing();
   // Every fourth pull request carries a different kind of agent evidence, so the
   // seeded demo exercises branch prefixes, commit trailers, pull-request bodies,
@@ -85,6 +137,7 @@ try {
   await recomputeExecutedDetections('demo-repository');
   console.log('Seeded 21 PRs. Demo signal: /prs/demo-pr-4');
   console.log('AI involvement: /repos/demo-repository/ai-involvement');
+  console.log(`Readiness ${demoGrade.score}/100: /repos/demo-repository`);
 } finally {
   await closeDb();
 }
