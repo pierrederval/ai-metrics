@@ -163,8 +163,8 @@ difference should not be mistaken for parity.
 ```
 id, authoring_run_id → authoring_runs, check_id, path, rationale, ordinal
 
-unique  (authoring_run_id, path)
-index   (authoring_run_id, ordinal)
+unique  (authoring_run_id, check_id, path)
+unique  (authoring_run_id, ordinal)
 check   ordinal >= 0
 ```
 
@@ -173,9 +173,18 @@ check   ordinal >= 0
 `docs-markdown`, `documented-setup`, `documented-tests`. It is not a CI check
 and not a database row id.
 
-`path` is repository-relative, and unique per run: a plan never writes the same
-file twice. It is deliberately not unique per `check_id`, because an agent may
-reasonably satisfy one check with two documents.
+`path` is repository-relative. It is **not** unique per run, because one file
+routinely answers several failing checks: `documented-setup` and
+`documented-tests` are each satisfied by a heading plus a fenced block in
+`README.md`, `AGENTS.md` or any `docs/**.md`, so a repository missing all of
+agent instructions, setup and tests is answered by writing `AGENTS.md` once.
+Nor is it unique per `check_id`, because an agent may reasonably satisfy one
+check with two documents. The pair is what must not repeat: a plan never
+proposes the same change twice.
+
+An execute run therefore groups its selected remedies by path and writes each
+file once, and a remedy means *write this file so this check passes* — which
+covers amending a file that already exists as much as creating one.
 
 ### `authoring_notes`
 
@@ -199,10 +208,15 @@ row. The event is `repository/authoring.plan.requested`.
 
 `plan-repository.ts` mirrors `grade-repository.ts` — `singleton` keyed on the
 run id, `retries: 3`, `onFailure` failing the row, and a `validated()`
-authorization re-check before each step. Its steps carry the loop design's
-names from the first commit — `begin`, `pin-commit`, `explore`, `complete` —
-so that replacing the deterministic explore with the agent changes an
-implementation and never a durable step identity.
+authorization re-check before each step. Its durable steps are `begin`,
+`pin-commit` and `explore`, fixed from the first commit so that replacing the
+deterministic explore with the agent changes an implementation and never a
+step identity that Inngest memoizes.
+
+The loop design lists `complete` as a fourth step; it is folded into `explore`,
+exactly as grading folds its completion into `collect-evaluate-complete`. The
+reason is the same in both places: a retry landing between "produce the result"
+and "record it" must not be able to complete a run with nothing in it.
 
 `pin-commit` reuses `resolveReadinessSha`.
 
