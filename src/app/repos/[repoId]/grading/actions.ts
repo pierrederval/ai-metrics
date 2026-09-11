@@ -14,7 +14,10 @@ export async function runGrade(repositoryId: string): Promise<{ runId: string }>
   return { runId: run.id };
 }
 
-export async function requestPlanRun(repositoryId: string): Promise<{ runId: string }> {
+// Returns nothing: unlike runGrade, this action has no client-side caller to
+// hand a polling id to. ActEntry is a server component, and the grading page
+// re-render after the form submits recovers the new run through latestPlan.
+export async function requestPlanRun(repositoryId: string): Promise<void> {
   // requestPlan checks workspace membership, repository connection, demo mode,
   // the Act opt-in and the permissions GitHub actually granted.
   const run = await requestPlan(repositoryId);
@@ -23,5 +26,4 @@ export async function requestPlanRun(repositoryId: string): Promise<{ runId: str
   } catch {
     // Durable queued run is recovered by reconciliation; retain its polling identity.
   }
-  return { runId: run.id };
 }

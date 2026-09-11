@@ -27,15 +27,7 @@ export function ActEntry({
       </p>
     );
   return (
-    <form
-      action={
-        // React's form `action` type only allows a void-returning function,
-        // but requestPlanRun deliberately returns { runId } so a caller that
-        // invokes it directly (as its own test does) keeps the polling
-        // identity. The form submission itself never reads that value.
-        requestPlanRun.bind(null, repositoryId) as unknown as (formData: FormData) => void
-      }
-    >
+    <form action={requestPlanRun.bind(null, repositoryId)}>
       <button type="submit">Plan the fixes</button>
     </form>
   );
