@@ -44,7 +44,6 @@ beforeEach(() => {
     owner: 'owner',
     name: 'repo',
     isDemo: false,
-    installationId: 'installation-1',
   });
   deps.summaries.mockResolvedValue([{ latest: completed, status: { id: 'new', state: 'failed' } }]);
   deps.history.mockResolvedValue([completed]);
@@ -88,4 +87,40 @@ test('escaped route id is decoded before authorization', async () => {
     searchParams: Promise.resolve({}),
   });
   expect(deps.authorize).toHaveBeenCalledWith('repository:1360100266');
+});
+
+test('the permissions fetch is handed the repository id, never the raw row installationId', async () => {
+  // Regression for the Critical defect: repo.installationId is an internal
+  // row id (`installation:<githubId>`, or the demo literal), never the
+  // numeric GitHub id. fetchGrantedPermissions must resolve that itself, so
+  // the page must call it with the repository id it already has, not any
+  // field plucked off the authorized repository record.
+  deps.actEnabled.mockResolvedValue(true);
+  await call();
+  expect(deps.fetchGrantedPermissions).toHaveBeenCalledWith('repo');
+  expect(deps.fetchGrantedPermissions).not.toHaveBeenCalledWith('installation-1');
+});
+
+test('the availability line is suppressed for a repository that never opted in', async () => {
+  deps.actEnabled.mockResolvedValue(false);
+  const html = renderToStaticMarkup(await call());
+  expect(deps.fetchGrantedPermissions).not.toHaveBeenCalled();
+  expect(html).not.toContain('Opening pull requests is off');
+});
+
+test('an opted-in repository still learns why Act cannot proceed', async () => {
+  deps.actEnabled.mockResolvedValue(true);
+  deps.fetchGrantedPermissions.mockResolvedValue({ contents: 'read', pullRequests: 'read' });
+  const html = renderToStaticMarkup(await call());
+  expect(html).toContain('fieldnote needs write access');
+});
+
+test('a failed permissions fetch is logged before falling back to nothing granted', async () => {
+  deps.actEnabled.mockResolvedValue(true);
+  deps.fetchGrantedPermissions.mockRejectedValue(new Error('Installation permissions unavailable'));
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const html = renderToStaticMarkup(await call());
+  expect(errorSpy).toHaveBeenCalled();
+  expect(html).toContain('fieldnote needs write access');
+  errorSpy.mockRestore();
 });

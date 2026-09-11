@@ -87,6 +87,22 @@ export async function repositoryClient(repositoryId: string) {
   return { ...record, client: await installationClient(record.installation.githubInstallationId) };
 }
 
+// Resolves a repository row id to the numeric GitHub installation id, and
+// nothing else — no active/demo checks, no installation token. Callers that
+// only need to address the GitHub App installation (Act's permission check)
+// should use this instead of repositoryClient, which also mints an
+// installation access token they would immediately discard.
+export async function repositoryInstallation(
+  repositoryId: string,
+): Promise<{ githubInstallationId: string } | null> {
+  const [record] = await db()
+    .select({ githubInstallationId: installations.githubInstallationId })
+    .from(repositories)
+    .innerJoin(installations, eq(installations.id, repositories.installationId))
+    .where(eq(repositories.id, repositoryId));
+  return record ?? null;
+}
+
 export async function assertTrackedRepository(repositoryId: string): Promise<void> {
   const [record] = await db()
     .select({ id: repositories.id })

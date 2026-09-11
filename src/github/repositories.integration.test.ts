@@ -4,12 +4,36 @@ import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { closeDb, db } from '../db';
 import { installations, repositories } from '../db/schema';
-import { assertTrackedRepository } from './repositories';
+import { assertTrackedRepository, repositoryInstallation } from './repositories';
 
 beforeAll(async () => {
   await migrate(db(), { migrationsFolder: 'drizzle' });
 });
 afterAll(closeDb);
+
+test('repositoryInstallation resolves the numeric GitHub installation id, never the row id', async () => {
+  const installationId = randomUUID();
+  const repositoryId = randomUUID();
+  const githubInstallationId = String(Date.now());
+  await db().insert(installations).values({
+    id: installationId,
+    githubInstallationId,
+    accountLogin: 'resolve-test',
+    accountType: 'User',
+  });
+  await db().insert(repositories).values({
+    id: repositoryId,
+    installationId,
+    githubRepositoryId: repositoryId,
+    owner: 'resolve-test',
+    name: 'repository',
+    defaultBranch: 'main',
+    isPrivate: true,
+  });
+
+  await expect(repositoryInstallation(repositoryId)).resolves.toEqual({ githubInstallationId });
+  await expect(repositoryInstallation(randomUUID())).resolves.toBeNull();
+});
 
 test('worker guard requires an active tracked non-demo repository on an active installation', async () => {
   const installationId = randomUUID();

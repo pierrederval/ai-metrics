@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actAvailability, type GrantedPermissions } from './availability';
+import { actAvailability, nothingGranted, type GrantedPermissions } from './availability';
 
 const write: GrantedPermissions = { contents: 'write', pullRequests: 'write' };
 const read: GrantedPermissions = { contents: 'read', pullRequests: 'read' };
@@ -60,5 +60,11 @@ describe('actAvailability', () => {
       available: false,
       reason: 'nothing_to_fix',
     });
+  });
+
+  it('treats the shared fail-closed value as write_not_granted', () => {
+    expect(
+      actAvailability({ enabled: true, permissions: nothingGranted, failingCheckCount: 1 }),
+    ).toEqual({ available: false, reason: 'write_not_granted' });
   });
 });

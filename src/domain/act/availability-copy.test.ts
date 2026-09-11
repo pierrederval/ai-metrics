@@ -8,7 +8,7 @@ describe('availabilityMessage', () => {
 
   it('names the missing write access without blaming the reader', () => {
     expect(availabilityMessage({ available: false, reason: 'write_not_granted' })).toBe(
-      'fieldnote needs write access to contents and pull requests before it can open one. Accept the updated permissions on the GitHub App installation.',
+      'fieldnote needs write access to contents and pull requests before it can open a pull request. Accept the updated permissions on the GitHub App installation.',
     );
   });
 

@@ -17,8 +17,8 @@ export const dynamic = 'force-dynamic';
 // Settings is the required-gates form and its policy version, the import
 // control (ImportProgress + the refresh form), the collection detail
 // (RepositoryMetadata), and the gate-candidate discovery the form has always
-// offered. It loads currentPolicy, latestImport, repositoryRecord and
-// prRows:
+// offered. It loads currentPolicy, latestImport, repositoryRecord, prRows
+// and actEnabled:
 //
 // - currentPolicy + latestImport: the gate policy and the collection
 //   record, as originally scoped.
@@ -86,8 +86,8 @@ export default async function Settings({ params }: { params: Promise<{ repoId: s
 
       <h2>Pull requests</h2>
       <p className="muted">
-        With this on, fieldnote proposes a plan to fix failing readiness checks and opens a pull
-        request once you approve it. It needs write access to contents and pull requests on the
+        This records your opt-in for later. fieldnote cannot open pull requests yet — that workflow
+        does not exist. When it does, it will need write access to contents and pull requests on the
         installation.
       </p>
       {repo.canAdmin ? (

@@ -5,6 +5,12 @@
 // invited to use.
 export type GrantedPermissions = { contents: string | null; pullRequests: string | null };
 
+// The single fail-closed value: nothing granted. Every caller that cannot
+// prove otherwise (a payload that fails to parse, a suspended installation,
+// a repository that cannot be resolved, a provider error) returns this
+// exact value rather than each defining its own copy.
+export const nothingGranted: GrantedPermissions = { contents: null, pullRequests: null };
+
 export type ActAvailability =
   | { available: true }
   | { available: false; reason: 'not_enabled' | 'write_not_granted' | 'nothing_to_fix' };

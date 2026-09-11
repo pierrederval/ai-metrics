@@ -13,7 +13,5 @@ export async function resolveWebhookInstallationId(
   if (event.installationId) return event.installationId;
   const repository = repositoryIdentity.safeParse(event.payload.repository);
   if (!repository.success) return null;
-  return String(
-    await lookup({ owner: repository.data.owner.login, repo: repository.data.name }),
-  );
+  return String(await lookup({ owner: repository.data.owner.login, repo: repository.data.name }));
 }

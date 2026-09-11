@@ -8,7 +8,7 @@ import { GradeControls, GradeReport } from '../../../../components/grading/repor
 import { pageRouteId } from '../../../../lib/page-route-id';
 import { actEnabled } from '../../../../db/queries/act-settings';
 import { fetchGrantedPermissions } from '../../../../github/installation-permissions';
-import { actAvailability } from '../../../../domain/act/availability';
+import { actAvailability, nothingGranted } from '../../../../domain/act/availability';
 import { availabilityMessage } from '../../../../domain/act/availability-copy';
 export const dynamic = 'force-dynamic';
 export default async function Grading({
@@ -21,10 +21,11 @@ export default async function Grading({
   const repoId = pageRouteId((await params).repoId);
   const repo = await requireRepository(repoId);
   const { run } = await searchParams;
-  const [summaries, history, selected] = await Promise.all([
+  const [summaries, history, selected, enabled] = await Promise.all([
     gradeSummaries([repoId]),
     gradeHistory(repoId),
     run ? getGrade(repoId, run) : Promise.resolve(null),
+    actEnabled(repoId),
   ]);
   if (run && !selected) notFound();
   const summary = summaries[0];
@@ -34,14 +35,14 @@ export default async function Grading({
   // the repository has opted in — a demo repository has no real
   // installation and must not 500 this page over a fetch nobody asked for.
   // actAvailability evaluates opt-in first, so skipping the fetch changes no
-  // outcome, only whether the network is touched.
-  const enabled = await actEnabled(repoId);
+  // outcome, only whether the network is touched. This fetch depends on
+  // `enabled`, so it cannot join the Promise.all above.
   const permissions = enabled
-    ? await fetchGrantedPermissions(repo.installationId).catch(() => ({
-        contents: null,
-        pullRequests: null,
-      }))
-    : { contents: null, pullRequests: null };
+    ? await fetchGrantedPermissions(repoId).catch((error: unknown) => {
+        console.error('Act availability check failed', error);
+        return nothingGranted;
+      })
+    : nothingGranted;
   const availability = actAvailability({
     enabled,
     permissions,
@@ -66,7 +67,9 @@ export default async function Grading({
           Viewing a saved report. <Link href={href}>View latest completed report</Link>
         </p>
       )}
-      {grade && message && <p className="muted">{message}</p>}
+      {/* A team that opted in should learn why Act cannot proceed; nobody
+          else should be told about a switch that does nothing. */}
+      {grade && enabled && message && <p className="muted">{message}</p>}
       <div className="grading-layout">
         <div>
           {grade?.score !== null && grade?.score !== undefined ? (
