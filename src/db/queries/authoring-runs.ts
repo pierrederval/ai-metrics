@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../index';
 import {
   authoringRemedies,
@@ -12,7 +12,7 @@ import {
 import { requireRepository, requireWorkspace } from '../../workspaces/access';
 import { currentUser } from '../../auth/session';
 import { actAvailability, nothingGranted } from '../../domain/act/availability';
-import { floorAuthorVersion } from '../../domain/act/remedies';
+import { floorAuthorVersion, type ProposedRemedy } from '../../domain/act/remedies';
 import { actEnabled } from './act-settings';
 import { fetchGrantedPermissions } from '../../github/installation-permissions';
 import { latestGrade } from './grade-runs';
@@ -111,4 +111,141 @@ export async function requestPlan(
     if (!active) throw new Error('Plan request unavailable');
     return { id: active.id, state: active.state };
   });
+}
+
+// Trusted worker primitives; never expose these directly as browser actions.
+
+export async function loadAuthoringRun(runId: string): Promise<AuthoringRun | null> {
+  return (await db().select().from(runs).where(eq(runs.id, runId)))[0] ?? null;
+}
+
+// A plan run writes nothing to GitHub, so this deliberately does not re-fetch
+// granted permissions: write access is the execute run's gate, and a GitHub
+// outage must not fail a plan run that retries three times. Opt-in is checked,
+// because a repository switched off mid-run should stop.
+export async function validateAuthoringRun(run: AuthoringRun): Promise<void> {
+  const [available] = await db()
+    .select({ id: repositories.id })
+    .from(repositories)
+    .innerJoin(installations, eq(installations.id, repositories.installationId))
+    .innerJoin(
+      workspaceRepositories,
+      and(
+        eq(workspaceRepositories.repositoryId, repositories.id),
+        eq(workspaceRepositories.workspaceId, run.requestedWorkspaceId),
+      ),
+    )
+    .innerJoin(
+      workspaceMemberships,
+      and(
+        eq(workspaceMemberships.workspaceId, run.requestedWorkspaceId),
+        eq(workspaceMemberships.userId, run.requestedBy),
+      ),
+    )
+    .where(
+      and(
+        eq(repositories.id, run.repositoryId),
+        eq(repositories.active, true),
+        eq(repositories.isDemo, false),
+        eq(repositories.actEnabled, true),
+        eq(installations.active, true),
+      ),
+    );
+  if (!available || process.env.DEMO_MODE === 'true') throw new Error('Plan access revoked');
+}
+
+export async function beginAuthoring(runId: string): Promise<AuthoringRun | null> {
+  const run = await loadAuthoringRun(runId);
+  if (!run || !['queued', 'running'].includes(run.state)) return run;
+  await validateAuthoringRun(run);
+  await db()
+    .update(runs)
+    .set({ state: 'running', startedAt: new Date() })
+    .where(and(eq(runs.id, runId), eq(runs.state, 'queued')));
+  return loadAuthoringRun(runId);
+}
+
+export async function pinAuthoringSha(runId: string, sha: string): Promise<string | null> {
+  if (!/^[a-f0-9]{40}$/i.test(sha)) throw new Error('Invalid commit SHA');
+  await db()
+    .update(runs)
+    .set({ sha })
+    .where(and(eq(runs.id, runId), eq(runs.state, 'running'), isNull(runs.sha)));
+  return (await loadAuthoringRun(runId))?.sha ?? null;
+}
+
+// The database cannot express "a complete plan has at least one remedy" —
+// the result is child rows, not a column — so it is enforced here, and the
+// run stays running rather than completing empty.
+export async function completeAuthoringRun(
+  runId: string,
+  remedies: ProposedRemedy[],
+): Promise<void> {
+  if (!remedies.length) throw new Error('Plan proposed nothing');
+  const run = await loadAuthoringRun(runId);
+  if (!run || run.state !== 'running') return;
+  await db().transaction(async (tx) => {
+    await tx
+      .insert(authoringRemedies)
+      .values(remedies.map((remedy) => ({ id: randomUUID(), authoringRunId: runId, ...remedy })))
+      .onConflictDoNothing();
+    await tx
+      .update(runs)
+      .set({ state: 'complete', completedAt: new Date() })
+      .where(and(eq(runs.id, runId), eq(runs.state, 'running')));
+  });
+}
+
+export async function failAuthoringRun(runId: string, code = 'plan_failed'): Promise<void> {
+  // An unrecognised code is rewritten, so a provider or driver message can
+  // never reach a column a view renders.
+  const safe = ['plan_failed', 'access_revoked', 'grade_missing', 'nothing_to_fix'].includes(code)
+    ? code
+    : 'plan_failed';
+  await db()
+    .update(runs)
+    .set({ state: 'failed', errorCode: safe, completedAt: new Date() })
+    .where(and(eq(runs.id, runId), inArray(runs.state, ['queued', 'running'])));
+}
+
+export async function listUndispatchedPlans(): Promise<string[]> {
+  return (
+    await db()
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.state, 'queued'), isNull(runs.dispatchedAt)))
+      .orderBy(asc(runs.createdAt))
+      .limit(100)
+  ).map((run) => run.id);
+}
+
+// Browser-facing reads. Both authorize first.
+
+export async function latestPlan(repositoryId: string): Promise<AuthoringRun | null> {
+  await requireRepository(repositoryId);
+  const [run] = await db()
+    .select()
+    .from(runs)
+    .where(and(eq(runs.repositoryId, repositoryId), eq(runs.kind, 'plan')))
+    .orderBy(desc(runs.createdAt), desc(runs.id))
+    .limit(1);
+  return run ?? null;
+}
+
+export async function getPlan(
+  repositoryId: string,
+  runId: string,
+): Promise<{ run: AuthoringRun; remedies: Remedy[] } | null> {
+  await requireRepository(repositoryId);
+  const [run] = await db()
+    .select()
+    .from(runs)
+    .where(and(eq(runs.repositoryId, repositoryId), eq(runs.id, runId)));
+  if (!run) return null;
+  const remedies = await db()
+    .select()
+    .from(authoringRemedies)
+    .where(eq(authoringRemedies.authoringRunId, runId))
+    .orderBy(asc(authoringRemedies.ordinal));
+  return { run, remedies };
 }
