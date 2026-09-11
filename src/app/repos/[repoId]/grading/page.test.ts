@@ -6,12 +6,18 @@ const deps = vi.hoisted(() => ({
   summaries: vi.fn(),
   history: vi.fn(),
   get: vi.fn(),
+  actEnabled: vi.fn(),
+  fetchGrantedPermissions: vi.fn(),
 }));
 vi.mock('../../../../workspaces/access', () => ({ requireRepository: deps.authorize }));
 vi.mock('../../../../db/queries/grade-runs', () => ({
   gradeSummaries: deps.summaries,
   gradeHistory: deps.history,
   getGrade: deps.get,
+}));
+vi.mock('../../../../db/queries/act-settings', () => ({ actEnabled: deps.actEnabled }));
+vi.mock('../../../../github/installation-permissions', () => ({
+  fetchGrantedPermissions: deps.fetchGrantedPermissions,
 }));
 vi.mock('../../../../components/grading/report', () => ({
   GradeControls: ({ initial }: { initial: { state: string } | null }) =>
@@ -33,10 +39,18 @@ const call = (run?: string) =>
   Grading({ params: Promise.resolve({ repoId: 'repo' }), searchParams: Promise.resolve({ run }) });
 beforeEach(() => {
   vi.resetAllMocks();
-  deps.authorize.mockResolvedValue({ id: 'repo', owner: 'owner', name: 'repo', isDemo: false });
+  deps.authorize.mockResolvedValue({
+    id: 'repo',
+    owner: 'owner',
+    name: 'repo',
+    isDemo: false,
+    installationId: 'installation-1',
+  });
   deps.summaries.mockResolvedValue([{ latest: completed, status: { id: 'new', state: 'failed' } }]);
   deps.history.mockResolvedValue([completed]);
   deps.get.mockResolvedValue(null);
+  deps.actEnabled.mockResolvedValue(false);
+  deps.fetchGrantedPermissions.mockResolvedValue({ contents: null, pullRequests: null });
 });
 test('latest completed score remains visible alongside failed current attempt', async () => {
   const html = renderToStaticMarkup(await call());

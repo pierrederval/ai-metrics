@@ -6,6 +6,10 @@ import { readinessRubric } from '../../../../domain/grading/readiness-v01';
 import { GradeCard } from '../../../../components/grading/grade-card';
 import { GradeControls, GradeReport } from '../../../../components/grading/report';
 import { pageRouteId } from '../../../../lib/page-route-id';
+import { actEnabled } from '../../../../db/queries/act-settings';
+import { fetchGrantedPermissions } from '../../../../github/installation-permissions';
+import { actAvailability } from '../../../../domain/act/availability';
+import { availabilityMessage } from '../../../../domain/act/availability-copy';
 export const dynamic = 'force-dynamic';
 export default async function Grading({
   params,
@@ -26,6 +30,24 @@ export default async function Grading({
   const summary = summaries[0];
   const grade = run ? selected : summary?.latest;
   const href = `/repos/${encodeURIComponent(repoId)}/grading`;
+  // The installation lookup is a network round-trip, so it only runs once
+  // the repository has opted in — a demo repository has no real
+  // installation and must not 500 this page over a fetch nobody asked for.
+  // actAvailability evaluates opt-in first, so skipping the fetch changes no
+  // outcome, only whether the network is touched.
+  const enabled = await actEnabled(repoId);
+  const permissions = enabled
+    ? await fetchGrantedPermissions(repo.installationId).catch(() => ({
+        contents: null,
+        pullRequests: null,
+      }))
+    : { contents: null, pullRequests: null };
+  const availability = actAvailability({
+    enabled,
+    permissions,
+    failingCheckCount: grade?.checks.filter((check) => check.status === 'fail').length ?? 0,
+  });
+  const message = availabilityMessage(availability);
   return (
     <div className="metrics-page">
       {/* Identity and the back-link live in the repository layout header; the
@@ -44,6 +66,7 @@ export default async function Grading({
           Viewing a saved report. <Link href={href}>View latest completed report</Link>
         </p>
       )}
+      {grade && message && <p className="muted">{message}</p>}
       <div className="grading-layout">
         <div>
           {grade?.score !== null && grade?.score !== undefined ? (
