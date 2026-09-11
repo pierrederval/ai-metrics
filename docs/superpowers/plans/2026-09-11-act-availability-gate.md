@@ -302,57 +302,75 @@ Expected: a new file under `drizzle/` adding `act_enabled boolean NOT NULL DEFAU
 
 - [ ] **Step 3: Write the failing test**
 
-Create `src/db/queries/act-settings.integration.test.ts`:
+Create `src/db/queries/act-settings.integration.test.ts`. This follows `src/db/grade-runs.integration.test.ts` exactly: integration tests run against the dedicated `_test` database named by `TEST_DATABASE_URL`, and each file migrates it itself in `beforeAll`.
 
 ```typescript
-import { eq } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { db } from '../index';
+import { randomUUID } from 'node:crypto';
+import { inArray } from 'drizzle-orm';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { closeDb, db } from '../index';
 import { installations, repositories } from '../schema';
 import { actEnabled, setActEnabled } from './act-settings';
 
-const repoId = 'repo-act-settings';
+const fixtures: string[] = [];
 
-beforeEach(async () => {
-  await db().delete(repositories).where(eq(repositories.id, repoId));
+async function seed() {
+  const id = randomUUID();
+  fixtures.push(id);
   await db()
     .insert(installations)
-    .values({ id: 'inst-act-settings', accountLogin: 'acme' })
-    .onConflictDoNothing();
+    .values({ id, githubInstallationId: id, accountLogin: 'test', accountType: 'User' });
   await db().insert(repositories).values({
-    id: repoId,
-    installationId: 'inst-act-settings',
-    githubRepositoryId: 'gh-act-settings',
-    owner: 'acme',
+    id,
+    installationId: id,
+    githubRepositoryId: id,
+    owner: 'test',
     name: 'checkout-service',
     defaultBranch: 'main',
     isPrivate: false,
   });
+  return id;
+}
+
+beforeAll(async () => {
+  await migrate(db(), { migrationsFolder: 'drizzle' });
+});
+
+afterAll(async () => {
+  if (fixtures.length) {
+    await db().delete(repositories).where(inArray(repositories.id, fixtures));
+    await db().delete(installations).where(inArray(installations.id, fixtures));
+  }
+  await closeDb();
 });
 
 describe('act opt-in', () => {
   it('is off for a repository nobody asked about', async () => {
-    expect(await actEnabled(repoId)).toBe(false);
+    expect(await actEnabled(await seed())).toBe(false);
   });
 
   it('turns on and back off', async () => {
-    await setActEnabled(repoId, true);
-    expect(await actEnabled(repoId)).toBe(true);
-    await setActEnabled(repoId, false);
-    expect(await actEnabled(repoId)).toBe(false);
+    const id = await seed();
+    await setActEnabled(id, true);
+    expect(await actEnabled(id)).toBe(true);
+    await setActEnabled(id, false);
+    expect(await actEnabled(id)).toBe(false);
   });
 
   it('reports off for a repository that does not exist', async () => {
-    expect(await actEnabled('no-such-repo')).toBe(false);
+    expect(await actEnabled(randomUUID())).toBe(false);
   });
 });
 ```
 
-Match the setup style of the neighbouring `src/db/queries/*.integration.test.ts` files — if they share a fixture helper, use it instead of the inline inserts above.
+`installations` requires `githubInstallationId` and `accountType`; both are NOT NULL. Do not drop them.
 
 - [ ] **Step 4: Run test to verify it fails**
 
-Run: `docker compose up -d --wait && pnpm db:migrate && pnpm vitest run --config vitest.integration.config.ts src/db/queries/act-settings.integration.test.ts`
+Run: `docker compose up -d --wait && pnpm vitest run --config vitest.integration.config.ts src/db/queries/act-settings.integration.test.ts`
+
+`pnpm db:migrate` is NOT needed and migrates the wrong database — the dev one. The test migrates `TEST_DATABASE_URL` itself.
 Expected: FAIL — `Failed to resolve import "./act-settings"`.
 
 - [ ] **Step 5: Write minimal implementation**
