@@ -13,11 +13,13 @@ const mocks = vi.hoisted(() => ({
   failImport: vi.fn(),
   latestPullRequests: vi.fn(),
   assertTrackedRepository: vi.fn(),
+  recomputeExecutedDetections: vi.fn(),
 }));
 vi.mock('../../db/queries/history-backfill', () => mocks);
 vi.mock('../dispatch-history', () => mocks);
 vi.mock('../client', () => ({ inngest: { createFunction: mocks.createFunction } }));
 vi.mock('../../db/queries/repository-imports', () => mocks);
+vi.mock('../../db/queries/ai-involvement', () => mocks);
 vi.mock('../../github/sync-repository', () => mocks);
 vi.mock('../../github/repositories', () => mocks);
 vi.mock('./sync-pull-request', () => ({ syncPullRequestFunction: {} }));
@@ -65,6 +67,7 @@ test('discovers once and completes the batch', async () => {
   expect(mocks.latestPullRequests).toHaveBeenCalledTimes(1);
   expect(step.invoke).toHaveBeenCalledTimes(2);
   expect(config.singleton.key).toBe('event.data.runId');
+  expect(mocks.recomputeExecutedDetections).toHaveBeenCalledWith('repo');
 });
 test('stored batch only hydrates pending items without discovering again', async () => {
   run.snapshot.total = 3;
@@ -80,10 +83,12 @@ test('stored batch only hydrates pending items without discovering again', async
     'pr-2',
     expect.objectContaining({ data: { repositoryId: 'repo', number: 2 } }),
   );
+  expect(mocks.recomputeExecutedDetections).toHaveBeenCalledWith('repo');
 });
 test('exhausted child rejection counts a failed item and finishes partial', async () => {
   step.invoke.mockRejectedValueOnce(new Error('private token stack'));
   expect(await execute()).toMatchObject({ state: 'partial', completed: 1, failed: 1 });
+  expect(mocks.recomputeExecutedDetections).toHaveBeenCalledWith('repo');
 });
 test('terminal duplicate performs no work', async () => {
   run.snapshot.state = 'complete';
@@ -93,6 +98,7 @@ test('terminal duplicate performs no work', async () => {
   expect(mocks.latestPullRequests).not.toHaveBeenCalled();
   expect(step.invoke).not.toHaveBeenCalled();
   expect(mocks.finishImport).not.toHaveBeenCalled();
+  expect(mocks.recomputeExecutedDetections).not.toHaveBeenCalled();
 });
 test('repository/run mismatch hydrates and mutates nothing', async () => {
   await expect(execute('other')).rejects.toThrow('Import unavailable');

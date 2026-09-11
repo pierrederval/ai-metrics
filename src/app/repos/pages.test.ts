@@ -10,6 +10,7 @@ const deps = vi.hoisted(() => ({
   rows: vi.fn(),
   latest: vi.fn(),
   policy: vi.fn(),
+  detections: vi.fn(),
 }));
 vi.mock('../../auth/access', () => ({
   accessibleRepositories: deps.available,
@@ -19,6 +20,7 @@ vi.mock('../../db/queries/basic-dashboard', () => ({ loadBasicDashboard: deps.lo
 vi.mock('../../db/queries/repository-records', () => ({ repositoryRecords: deps.records }));
 vi.mock('../../db/queries/dashboard', () => ({ prRows: deps.rows, currentPolicy: deps.policy }));
 vi.mock('../../db/queries/repository-imports', () => ({ latestImport: deps.latest }));
+vi.mock('../../db/queries/ai-involvement', () => ({ loadDetections: deps.detections }));
 vi.mock('./[repoId]/actions', () => ({ saveGates: vi.fn(), refreshImport: vi.fn() }));
 vi.mock('../../lib/env', () => ({ env: () => ({ DEMO_MODE: 'false' }) }));
 vi.mock('next/navigation', () => ({
@@ -44,6 +46,7 @@ beforeEach(() => {
   deps.rows.mockResolvedValue([]);
   deps.policy.mockResolvedValue({ gates: [], version: 0 });
   deps.latest.mockResolvedValue(null);
+  deps.detections.mockResolvedValue({ detections: [], state: null });
   deps.records.mockResolvedValue([
     {
       repositoryId: 'repository:1',

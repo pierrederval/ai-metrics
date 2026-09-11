@@ -13,6 +13,7 @@
   "packageManager": "pnpm@10.27.0",
   "scripts": {
     "dev": "next dev",
+    "dev:demo": "pnpm db:migrate && DEMO_MODE=true tsx scripts/seed.ts && DEMO_MODE=true next dev",
     "build": "next build",
     "start": "next start",
     "test": "vitest run --exclude '**/*.integration.test.ts'",

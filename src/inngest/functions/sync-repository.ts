@@ -14,6 +14,7 @@ import {
   failImport,
 } from '../../db/queries/repository-imports';
 import { isActiveImport } from '../../domain/import/progress';
+import { recomputeExecutedDetections } from '../../db/queries/ai-involvement';
 export const syncRepositoryFunction = inngest.createFunction(
   {
     id: 'sync-repository',
@@ -67,6 +68,7 @@ export const syncRepositoryFunction = inngest.createFunction(
     }
     const finished = await step.run('finish', () => finishImport(runId));
     if (finished.state === 'complete' || finished.state === 'partial') {
+      await step.run('recompute-ai-involvement', () => recomputeExecutedDetections(repositoryId));
       await step.run('start-history-backfill', async () => {
         try {
           await dispatchHistoryBackfill(await ensureHistoryBackfill(repositoryId));
