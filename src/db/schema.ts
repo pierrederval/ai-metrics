@@ -54,6 +54,7 @@ export const repositories = pgTable('repositories', {
   isPrivate: boolean('is_private').notNull(),
   active: boolean('active').notNull().default(true),
   isDemo: boolean('is_demo').notNull().default(false),
+  actEnabled: boolean('act_enabled').notNull().default(false),
   trackingStartedAt: timestamp('tracking_started_at', { withTimezone: true }),
   syncStatus: text('sync_status').notNull().default('idle'),
   syncProgress: integer('sync_progress').notNull().default(0),

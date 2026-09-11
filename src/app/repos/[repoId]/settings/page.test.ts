@@ -7,6 +7,7 @@ const deps = vi.hoisted(() => ({
   latest: vi.fn(),
   record: vi.fn(),
   prRows: vi.fn(),
+  actEnabled: vi.fn(),
 }));
 vi.mock('../../../../auth/access', () => ({ requireTrackedRepository: deps.authorize }));
 vi.mock('../../../../db/queries/dashboard', () => ({
@@ -15,6 +16,7 @@ vi.mock('../../../../db/queries/dashboard', () => ({
 }));
 vi.mock('../../../../db/queries/repository-imports', () => ({ latestImport: deps.latest }));
 vi.mock('../../../../db/queries/repository-header', () => ({ repositoryRecord: deps.record }));
+vi.mock('../../../../db/queries/act-settings', () => ({ actEnabled: deps.actEnabled }));
 
 import Settings from './page';
 
@@ -57,6 +59,7 @@ beforeEach(() => {
   deps.policy.mockResolvedValue(policy);
   deps.record.mockResolvedValue(record);
   deps.prRows.mockResolvedValue([rowWithNewCheck]);
+  deps.actEnabled.mockResolvedValue(false);
   deps.latest.mockResolvedValue({
     id: 'run-1',
     repositoryId: 'repo',
@@ -129,6 +132,7 @@ test('loads the gate policy, the collection record, the repository record, and t
   expect(deps.latest).toHaveBeenCalledWith('repo');
   expect(deps.record).toHaveBeenCalledWith('repo');
   expect(deps.prRows).toHaveBeenCalledWith(['repo']);
+  expect(deps.actEnabled).toHaveBeenCalledWith('repo');
 });
 
 test('renders only one h1 worth of identity — the view starts at h2', async () => {

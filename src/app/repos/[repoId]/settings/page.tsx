@@ -2,12 +2,13 @@ import { requireTrackedRepository } from '../../../../auth/access';
 import { currentPolicy, prRows } from '../../../../db/queries/dashboard';
 import { latestImport } from '../../../../db/queries/repository-imports';
 import { repositoryRecord } from '../../../../db/queries/repository-header';
+import { actEnabled } from '../../../../db/queries/act-settings';
 import { ImportProgress } from '../../../../components/onboarding/import-progress';
 import {
   githubRepositoryUrl,
   RepositoryMetadata,
 } from '../../../../components/dashboard/repository-metadata';
-import { saveGates, refreshImport } from '../actions';
+import { saveGates, refreshImport, saveActEnabled } from '../actions';
 import { gateKey } from '../../../../domain/pull-request/types';
 import { pageRouteId } from '../../../../lib/page-route-id';
 
@@ -16,8 +17,8 @@ export const dynamic = 'force-dynamic';
 // Settings is the required-gates form and its policy version, the import
 // control (ImportProgress + the refresh form), the collection detail
 // (RepositoryMetadata), and the gate-candidate discovery the form has always
-// offered. It loads currentPolicy, latestImport, repositoryRecord and
-// prRows:
+// offered. It loads currentPolicy, latestImport, repositoryRecord, prRows
+// and actEnabled:
 //
 // - currentPolicy + latestImport: the gate policy and the collection
 //   record, as originally scoped.
@@ -37,11 +38,12 @@ export const dynamic = 'force-dynamic';
 export default async function Settings({ params }: { params: Promise<{ repoId: string }> }) {
   const repoId = pageRouteId((await params).repoId),
     repo = await requireTrackedRepository(repoId);
-  const [policy, latest, record, rows] = await Promise.all([
+  const [policy, latest, record, rows, actOn] = await Promise.all([
     currentPolicy(repoId),
     latestImport(repoId),
     repositoryRecord(repoId),
     prRows([repoId]),
+    actEnabled(repoId),
   ]);
   const candidates = [
     ...new Map(
@@ -80,6 +82,24 @@ export default async function Settings({ params }: { params: Promise<{ repoId: s
           ))}
           <button>Save policy and recompute PRs</button>
         </form>
+      )}
+
+      <h2>Pull requests</h2>
+      <p className="muted">
+        This records your opt-in for later. fieldnote cannot open pull requests yet — that workflow
+        does not exist. When it does, it will need write access to contents and pull requests on the
+        installation.
+      </p>
+      {repo.canAdmin ? (
+        <form action={saveActEnabled.bind(null, repoId)}>
+          <label>
+            <input type="checkbox" name="actEnabled" defaultChecked={actOn} /> Open readiness pull
+            requests for this repository
+          </label>
+          <button>Save</button>
+        </form>
+      ) : (
+        <p>{actOn ? 'On.' : 'Off.'}</p>
       )}
 
       <h2>Collection detail</h2>
