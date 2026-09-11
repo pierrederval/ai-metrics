@@ -669,6 +669,78 @@ export const gradeRuns = pgTable(
   ],
 );
 
+export const authoringRuns = pgTable(
+  'authoring_runs',
+  {
+    id: id(),
+    repositoryId: text('repository_id')
+      .notNull()
+      .references(() => repositories.id),
+    // Only 'plan' is written in this slice; 'execute' is accepted by the
+    // constraint so the one-active-run index means the right thing when
+    // execute runs arrive, without a later backfill.
+    kind: text('kind').$type<'plan' | 'execute'>().notNull(),
+    requestedBy: text('requested_by')
+      .notNull()
+      .references(() => users.id),
+    requestedWorkspaceId: text('requested_workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    retryOf: text('retry_of').references((): AnyPgColumn => authoringRuns.id),
+    state: text('state').$type<'queued' | 'running' | 'complete' | 'failed'>().notNull(),
+    sha: text('sha'),
+    // Provenance, always recorded: something produced this plan.
+    authorVersion: text('author_version').notNull(),
+    // Null means no model authored this plan — true for the deterministic
+    // floor, and true when a sandbox failed and the floor stood in for it.
+    model: text('model'),
+    sandboxId: text('sandbox_id'),
+    errorCode: text('error_code'),
+    dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+    createdAt: created(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (t) => [
+    check('authoring_runs_state', sql`${t.state} IN ('queued','running','complete','failed')`),
+    check('authoring_runs_kind', sql`${t.kind} IN ('plan','execute')`),
+    // A plan's result is child rows, so "has at least one remedy" cannot be a
+    // check constraint. completeAuthoringRun() enforces that; this enforces
+    // what it can.
+    check(
+      'authoring_runs_complete',
+      sql`(${t.state} = 'complete' AND ${t.sha} IS NOT NULL AND ${t.completedAt} IS NOT NULL) OR ${t.state} <> 'complete'`,
+    ),
+    uniqueIndex('authoring_runs_one_active')
+      .on(t.repositoryId)
+      .where(sql`${t.state} IN ('queued','running')`),
+    index('authoring_runs_latest').on(t.repositoryId, t.createdAt.desc()),
+  ],
+);
+
+export const authoringRemedies = pgTable(
+  'authoring_remedies',
+  {
+    id: id(),
+    authoringRunId: text('authoring_run_id')
+      .notNull()
+      .references(() => authoringRuns.id),
+    // A readiness check id as it appears in GradeResult.checks[].id, e.g.
+    // 'root-agent-instructions'. Not a CI check, not a row id.
+    checkId: text('check_id').notNull(),
+    path: text('path').notNull(),
+    rationale: text('rationale').notNull(),
+    ordinal: integer('ordinal').notNull(),
+  },
+  (t) => [
+    // One file routinely answers several failing checks, so path is not
+    // unique on its own. The pair is what must not repeat.
+    uniqueIndex('authoring_remedies_change').on(t.authoringRunId, t.checkId, t.path),
+    uniqueIndex('authoring_remedies_order').on(t.authoringRunId, t.ordinal),
+    check('authoring_remedies_ordinal', sql`${t.ordinal} >= 0`),
+  ],
+);
+
 export const repoAiDetections = pgTable(
   'repo_ai_detections',
   {
