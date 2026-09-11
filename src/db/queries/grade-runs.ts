@@ -142,25 +142,6 @@ function completed(run: GradeRun): CompletedGrade | null {
     ? { ...run.result, id: run.id, sha: run.sha, computedAt: run.completedAt }
     : null;
 }
-// Trusted worker primitive: no session and no workspace, because a background
-// job has neither. Callers must have authorized by another route first —
-// validateGradeRun or validateAuthoringRun.
-export async function latestCompletedGrade(repositoryId: string): Promise<CompletedGrade | null> {
-  const [run] = await db()
-    .select()
-    .from(runs)
-    .where(
-      and(
-        eq(runs.repositoryId, repositoryId),
-        eq(runs.family, readinessRubric.family),
-        eq(runs.state, 'complete'),
-      ),
-    )
-    .orderBy(desc(runs.createdAt), desc(runs.id))
-    .limit(1);
-  return run ? completed(run) : null;
-}
-
 export async function latestGrade(repositoryId: string): Promise<CompletedGrade | null> {
   await requireRepository(repositoryId);
   return latestCompletedGrade(repositoryId);
@@ -232,6 +213,24 @@ export async function gradeSummaries(repositoryIds: string[]): Promise<GradeSumm
 // Trusted worker primitives; never expose these directly as browser actions.
 export async function loadGradeRun(runId: string) {
   return (await db().select().from(runs).where(eq(runs.id, runId)))[0] ?? null;
+}
+// Trusted worker primitive: no session and no workspace, because a background
+// job has neither. Callers must have authorized by another route first —
+// validateGradeRun or validateAuthoringRun.
+export async function latestCompletedGrade(repositoryId: string): Promise<CompletedGrade | null> {
+  const [run] = await db()
+    .select()
+    .from(runs)
+    .where(
+      and(
+        eq(runs.repositoryId, repositoryId),
+        eq(runs.family, readinessRubric.family),
+        eq(runs.state, 'complete'),
+      ),
+    )
+    .orderBy(desc(runs.createdAt), desc(runs.id))
+    .limit(1);
+  return run ? completed(run) : null;
 }
 export async function validateGradeRun(run: GradeRun) {
   const [available] = await db()

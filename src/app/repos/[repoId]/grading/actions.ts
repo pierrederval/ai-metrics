@@ -24,6 +24,6 @@ export async function requestPlanRun(repositoryId: string): Promise<void> {
   try {
     await dispatchAuthoringPlan(run.id);
   } catch {
-    // Durable queued run is recovered by reconciliation; retain its polling identity.
+    // Durable queued run is recovered by reconciliation.
   }
 }

@@ -95,6 +95,12 @@ export async function requestPlan(
       })
       .onConflictDoNothing()
       .returning();
+    // Deliberately not filtered by kind: authoring_runs_one_active, the partial
+    // unique index this recovers from, spans both plan and execute runs, and
+    // filtering by kind here would find no row and throw 'Plan request
+    // unavailable' spuriously. Once execute runs exist, an in-flight execute
+    // run must be detected here and refused with its own message, not
+    // returned to the caller as "the plan already in flight".
     const active =
       inserted ??
       (
@@ -102,10 +108,7 @@ export async function requestPlan(
           .select()
           .from(runs)
           .where(
-            and(
-              eq(runs.repositoryId, repositoryId),
-              inArray(runs.state, ['queued', 'running']),
-            ),
+            and(eq(runs.repositoryId, repositoryId), inArray(runs.state, ['queued', 'running'])),
           )
       )[0];
     if (!active) throw new Error('Plan request unavailable');
@@ -123,6 +126,14 @@ export async function loadAuthoringRun(runId: string): Promise<AuthoringRun | nu
 // granted permissions: write access is the execute run's gate, and a GitHub
 // outage must not fail a plan run that retries three times. Opt-in is checked,
 // because a repository switched off mid-run should stop.
+//
+// This also does not check that the run's recorded authorVersion still
+// matches floorAuthorVersion, unlike validateGradeRun's rubric/evaluator
+// version check. That is deliberate and, today, harmless: there is one
+// constant, and a deploy would have to land inside the seconds between
+// queueing and explore. It stops being harmless once authorVersion records
+// the agent and prompt version — a stale value then is a provenance record
+// that lies about which agent wrote a plan.
 export async function validateAuthoringRun(run: AuthoringRun): Promise<void> {
   const [available] = await db()
     .select({ id: repositories.id })

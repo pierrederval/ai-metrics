@@ -30,7 +30,9 @@ export function PlanView({ run, remedies }: { run: AuthoringRun; remedies: Remed
       </ul>
       <p className="muted">
         Planned at {run.sha?.slice(0, 7)} ·{' '}
-        {run.model ? `Written by ${run.model}` : 'No model wrote this plan — it was derived from the grade.'}
+        {run.model
+          ? `Written by ${run.model}`
+          : 'No model wrote this plan — it was derived from the grade.'}
       </p>
     </section>
   );

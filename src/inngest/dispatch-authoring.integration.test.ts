@@ -52,17 +52,15 @@ async function seedRun(
   kind: 'plan' | 'execute' = 'plan',
 ) {
   const id = randomUUID();
-  await db()
-    .insert(authoringRuns)
-    .values({
-      id,
-      repositoryId,
-      kind,
-      requestedBy: owner,
-      requestedWorkspaceId: workspace,
-      state,
-      authorVersion: floorAuthorVersion,
-    });
+  await db().insert(authoringRuns).values({
+    id,
+    repositoryId,
+    kind,
+    requestedBy: owner,
+    requestedWorkspaceId: workspace,
+    state,
+    authorVersion: floorAuthorVersion,
+  });
   return { id };
 }
 

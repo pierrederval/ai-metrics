@@ -3,7 +3,15 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { inArray } from 'drizzle-orm';
 import { db, closeDb } from './index';
-import { authoringRemedies, authoringRuns, installations, repositories, users, workspaces, workspaceMemberships } from './schema';
+import {
+  authoringRemedies,
+  authoringRuns,
+  installations,
+  repositories,
+  users,
+  workspaces,
+  workspaceMemberships,
+} from './schema';
 
 const owner = randomUUID();
 const workspace = randomUUID();
@@ -13,22 +21,30 @@ const runIds: string[] = [];
 beforeAll(async () => {
   await migrate(db(), { migrationsFolder: 'drizzle' });
   await db().insert(users).values({ id: owner, login: 'author', credentials: 'fixture' });
-  await db().insert(workspaces).values({ id: workspace, name: 'Authoring', defaultForUserId: owner });
-  await db().insert(workspaceMemberships).values({ workspaceId: workspace, userId: owner, role: 'member' });
+  await db()
+    .insert(workspaces)
+    .values({ id: workspace, name: 'Authoring', defaultForUserId: owner });
+  await db()
+    .insert(workspaceMemberships)
+    .values({ workspaceId: workspace, userId: owner, role: 'member' });
 });
 
 afterAll(async () => {
   if (fixtures.length) {
-    await db()
-      .delete(authoringRemedies)
-      .where(inArray(authoringRemedies.authoringRunId, runIds));
+    await db().delete(authoringRemedies).where(inArray(authoringRemedies.authoringRunId, runIds));
     await db().delete(authoringRuns).where(inArray(authoringRuns.repositoryId, fixtures));
     await db().delete(repositories).where(inArray(repositories.id, fixtures));
     await db().delete(installations).where(inArray(installations.id, fixtures));
   }
-  await db().delete(workspaceMemberships).where(inArray(workspaceMemberships.workspaceId, [workspace]));
-  await db().delete(workspaces).where(inArray(workspaces.id, [workspace]));
-  await db().delete(users).where(inArray(users.id, [owner]));
+  await db()
+    .delete(workspaceMemberships)
+    .where(inArray(workspaceMemberships.workspaceId, [workspace]));
+  await db()
+    .delete(workspaces)
+    .where(inArray(workspaces.id, [workspace]));
+  await db()
+    .delete(users)
+    .where(inArray(users.id, [owner]));
   await closeDb();
 });
 

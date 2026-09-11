@@ -40,7 +40,7 @@ That is the boundary the names exist to make visible.
 - An **authoring run** is either a **plan run** or an **execute run**; at most one authoring run per repository is queued or running at a time.
 - An **execute run** fulfils exactly one **plan run**.
 - A **plan run** produces one or more **remedies** and zero or more **notes**.
-- A **remedy** addresses exactly one **readiness check** and names exactly one path; a run never names the same path twice.
+- A **remedy** addresses exactly one **readiness check** and names exactly one path; a run never proposes the same change — the same check and path together — twice, though one path may answer several checks.
 - An **execute run** opens at most one **authored pull request**.
 - A **grade run** is the only source of a remedy's rationale until an agent supplies a better one.
 

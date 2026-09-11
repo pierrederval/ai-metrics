@@ -117,28 +117,24 @@ beforeEach(() => {
 async function seed(actEnabled = true) {
   const id = randomUUID();
   fixtures.push(id);
-  await db()
-    .insert(installations)
-    .values({
-      id,
-      githubInstallationId: id,
-      accountLogin: 'octo',
-      accountType: 'Organization',
-      active: true,
-    });
-  await db()
-    .insert(repositories)
-    .values({
-      id,
-      installationId: id,
-      githubRepositoryId: id,
-      owner: 'octo',
-      name: 'repo',
-      defaultBranch: 'main',
-      isPrivate: false,
-      active: true,
-      actEnabled,
-    });
+  await db().insert(installations).values({
+    id,
+    githubInstallationId: id,
+    accountLogin: 'octo',
+    accountType: 'Organization',
+    active: true,
+  });
+  await db().insert(repositories).values({
+    id,
+    installationId: id,
+    githubRepositoryId: id,
+    owner: 'octo',
+    name: 'repo',
+    defaultBranch: 'main',
+    isPrivate: false,
+    active: true,
+    actEnabled,
+  });
   await db()
     .insert(workspaceRepositories)
     .values({ workspaceId: context.workspace, repositoryId: id, connectedBy: context.user });
@@ -202,7 +198,10 @@ test('completes a run and stores its remedies in order', async () => {
   const runId = await queuedRun(await seed());
   await beginAuthoring(runId);
   await pinAuthoringSha(runId, sha);
-  await completeAuthoringRun(runId, [remedy, { ...remedy, checkId: 'root-readme', path: 'README.md', ordinal: 1 }]);
+  await completeAuthoringRun(runId, [
+    remedy,
+    { ...remedy, checkId: 'root-readme', path: 'README.md', ordinal: 1 },
+  ]);
   const run = await loadAuthoringRun(runId);
   expect(run?.state).toBe('complete');
   expect(run?.completedAt).toBeInstanceOf(Date);

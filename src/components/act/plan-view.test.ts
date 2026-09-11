@@ -34,9 +34,7 @@ test('names each remedy by its path and the readiness check it answers', () => {
 });
 
 test('shows the rationale the grade observed, verbatim', () => {
-  expect(render({ run, remedies })).toContain(
-    'No nonempty root AGENTS.md or CLAUDE.md was found.',
-  );
+  expect(render({ run, remedies })).toContain('No nonempty root AGENTS.md or CLAUDE.md was found.');
 });
 
 test('disables every checkbox, because approving is not built yet', () => {

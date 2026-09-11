@@ -17,9 +17,7 @@ export function ActEntry({
   if (!availability.available) return null;
   const href = `/repos/${encodeURIComponent(repositoryId)}/act/${encodeURIComponent(latest?.id ?? '')}`;
   if (latest?.state === 'queued' || latest?.state === 'running')
-    return (
-      <p className="muted">Planning the fixes. This page will show the plan when it is ready.</p>
-    );
+    return <p className="muted">Planning the fixes. Reload to see the plan when it is ready.</p>;
   if (latest?.state === 'complete')
     return (
       <p>

@@ -97,28 +97,24 @@ beforeEach(() => {
 async function seed(actEnabled = true) {
   const id = randomUUID();
   fixtures.push(id);
-  await db()
-    .insert(installations)
-    .values({
-      id,
-      githubInstallationId: id,
-      accountLogin: 'octo',
-      accountType: 'Organization',
-      active: true,
-    });
-  await db()
-    .insert(repositories)
-    .values({
-      id,
-      installationId: id,
-      githubRepositoryId: id,
-      owner: 'octo',
-      name: 'repo',
-      defaultBranch: 'main',
-      isPrivate: false,
-      active: true,
-      actEnabled,
-    });
+  await db().insert(installations).values({
+    id,
+    githubInstallationId: id,
+    accountLogin: 'octo',
+    accountType: 'Organization',
+    active: true,
+  });
+  await db().insert(repositories).values({
+    id,
+    installationId: id,
+    githubRepositoryId: id,
+    owner: 'octo',
+    name: 'repo',
+    defaultBranch: 'main',
+    isPrivate: false,
+    active: true,
+    actEnabled,
+  });
   await db()
     .insert(workspaceRepositories)
     .values({ workspaceId: context.workspace, repositoryId: id, connectedBy: context.user });
