@@ -142,8 +142,10 @@ function completed(run: GradeRun): CompletedGrade | null {
     ? { ...run.result, id: run.id, sha: run.sha, computedAt: run.completedAt }
     : null;
 }
-export async function latestGrade(repositoryId: string): Promise<CompletedGrade | null> {
-  await requireRepository(repositoryId);
+// Trusted worker primitive: no session and no workspace, because a background
+// job has neither. Callers must have authorized by another route first —
+// validateGradeRun or validateAuthoringRun.
+export async function latestCompletedGrade(repositoryId: string): Promise<CompletedGrade | null> {
   const [run] = await db()
     .select()
     .from(runs)
@@ -157,6 +159,11 @@ export async function latestGrade(repositoryId: string): Promise<CompletedGrade 
     .orderBy(desc(runs.createdAt), desc(runs.id))
     .limit(1);
   return run ? completed(run) : null;
+}
+
+export async function latestGrade(repositoryId: string): Promise<CompletedGrade | null> {
+  await requireRepository(repositoryId);
+  return latestCompletedGrade(repositoryId);
 }
 export async function gradeHistory(repositoryId: string): Promise<CompletedGrade[]> {
   await requireRepository(repositoryId);
