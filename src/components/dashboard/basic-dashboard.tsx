@@ -116,10 +116,22 @@ export function BasicDashboard({ data }: { data: DashboardData }) {
     </>
   );
 }
-export function InvalidRange({ message, href }: { message: string; href: string }) {
+export function InvalidRange({
+  message,
+  href,
+  headingLevel: Heading = 'h1',
+}: {
+  message: string;
+  href: string;
+  /** Defaults to h1: correct for the two route-root callers (dashboard, repos
+   * directory). A view nested under a layout that already renders its own h1
+   * — the Agents view under the repository layout — must pass 'h2' so this
+   * error state never produces a second h1 on the page. */
+  headingLevel?: 'h1' | 'h2';
+}) {
   return (
     <div className="metrics-page">
-      <h1>Invalid date range</h1>
+      <Heading>Invalid date range</Heading>
       <p role="alert">{message}</p>
       <a href={href}>Return to Last 7 days</a>
     </div>

@@ -1,0 +1,43 @@
+/* Treatment copied from the approved preview's .cohortcard, .cohort/
+   .agentcell and .num rules (docs/superpowers/previews/
+   2026-09-10-repository-page-architecture.html) — that file's figures are
+   invented, but its visual system for this card is the approved reference.
+   The shared .bigcard/.bigcard .t chrome lives in src/app/style.css, kept
+   there rather than duplicated per-component (agent-share.tsx and
+   agents-involved.tsx use it too; agent-share.css itself is deleted). */
+
+.cohortcard {
+  gap: 12px;
+}
+.cohortcard .scroll {
+  margin: 0;
+}
+.cohortcard table {
+  min-width: 380px;
+}
+.cohortcard th {
+  padding: 9px 11px;
+}
+.cohortcard td {
+  padding: 10px 11px;
+}
+.cohort td.agentcell {
+  border-left: 3px solid transparent;
+  font-weight: 700;
+  font-size: 13px;
+}
+/* CSS hook only — never render user-visible text saying "human" here. */
+.cohort td.agentcell.human {
+  border-left-color: var(--line);
+  font-weight: 400;
+  font-style: italic;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ratedetail {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}

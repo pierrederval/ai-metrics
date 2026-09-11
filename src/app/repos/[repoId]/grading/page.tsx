@@ -27,14 +27,11 @@ export default async function Grading({
   const grade = run ? selected : summary?.latest;
   const href = `/repos/${encodeURIComponent(repoId)}/grading`;
   return (
-    <>
-      <Link href={`/repos/${encodeURIComponent(repoId)}`}>
-        ← {repo.owner}/{repo.name}
-      </Link>
-      <div className="eyebrow" style={{ marginTop: 28 }}>
-        Repository / Readiness
-      </div>
-      <h1>A record of readiness.</h1>
+    <div className="metrics-page">
+      {/* Identity and the back-link live in the repository layout header; the
+          tagline is demoted to h2 as this tab panel's own heading. */}
+      <div className="eyebrow panel-eyebrow">Repository / Readiness</div>
+      <h2>A record of readiness.</h2>
       <p className="page-intro">Understand the foundations your agents build on.</p>
       <GradeControls
         key={repoId}
@@ -55,6 +52,7 @@ export default async function Grading({
               repositoryName={`${repo.owner} / ${repo.name}`}
               sha={grade.sha}
               rubricVersion={grade.rubricVersion}
+              checks={grade.checks}
             />
           ) : (
             <section className="grading-ungraded">
@@ -96,6 +94,6 @@ export default async function Grading({
           />
         )}
       </div>
-    </>
+    </div>
   );
 }

@@ -217,6 +217,43 @@ section {
   margin: 14px 0 8px;
   font-variant-numeric: lining-nums tabular-nums;
 }
+/* Shared card chrome for the Agents view's sibling stat cards (agents
+   involved, agent share, cohort comparison, and any future card in that
+   grid) — kept here, not duplicated per-component, so one edit to the
+   shared treatment can't silently desync between them. .v and .s started
+   out scoped to agent-share.css, but agents-involved.tsx now needs the
+   identical figure/detail-line treatment, so they moved here rather than
+   being copied a second time. agent-share.css itself is deleted (Task 7):
+   once .v/.s moved here it held nothing but a comment pointing back to
+   this block, and no rules of its own. */
+.bigcard {
+  background: var(--glass);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 6px 20px #203f3610;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.bigcard .t {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.bigcard .v {
+  font:
+    400 30px Georgia,
+    serif;
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+}
+.bigcard .s {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
 .summary-strip {
   display: flex;
   flex-wrap: wrap;
@@ -558,9 +595,19 @@ code {
   border-radius: 16px;
   padding: clamp(16px, 2.5vw, 30px);
 }
-.metrics-page section {
+/* Flattens the global glass <section> chrome onto the metrics palette. The two
+   sections that arrive with a treatment of their own are excluded: the grade
+   card's border carries the grade colour, and the ungraded placeholder's dashed
+   border is what says "nothing here yet". :not(:where(...)) keeps this at the
+   specificity it had before the Agents and Readiness views joined the class. */
+.metrics-page section:not(:where(.grade-card, .grading-ungraded)) {
   background: var(--panel);
   border: 1px solid var(--line);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.grading-ungraded {
+  background: var(--panel);
   box-shadow: none;
   backdrop-filter: none;
 }
@@ -592,13 +639,29 @@ code {
   gap: 3px;
   margin-left: auto;
 }
-.metrics-page .range-presets a {
+/* .projection-toggle (Delivery's basic-outcomes / gate-policy-projection
+   switch on the pull-request table) shares .range-presets' link styling
+   below — same "pick one of a few route-scoped views" control, just
+   switching table columns instead of a date window — but NOT its
+   `margin-left: auto`: .range-presets lives inside the .metric-range flex
+   row, where that pushes it to the row's end; .projection-toggle is a
+   direct block child of .metrics-page, where auto-margin has no row to
+   push against and resolves to 0. It gets its own block-level spacing. */
+.metrics-page .projection-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 10px 0 16px;
+}
+.metrics-page .range-presets a,
+.metrics-page .projection-toggle a {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 12px;
 }
-.metrics-page .range-presets a[aria-current] {
+.metrics-page .range-presets a[aria-current],
+.metrics-page .projection-toggle a[aria-current] {
   background: var(--ink);
   color: var(--paper);
 }
@@ -926,16 +989,6 @@ code {
 .repository-metadata small {
   display: block;
 }
-.advanced-analysis {
-  margin: 32px 0;
-  border-top: 1px solid var(--line);
-  padding-top: 18px;
-}
-.advanced-analysis > summary {
-  font:
-    23px Georgia,
-    serif;
-}
 @media (max-width: 1050px) {
   .daily-chart {
     grid-template-columns: 1fr;
@@ -963,7 +1016,7 @@ code {
   .metric-coverage {
     padding: 14px;
   }
-  .metrics-page section {
+  .metrics-page section:not(:where(.grade-card, .grading-ungraded)) {
     max-width: 100%;
   }
   .chart-axis {
@@ -1362,134 +1415,11 @@ code {
   }
 }
 
-/* AI involvement: repository-page rail and its detail route. */
-.ai-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
-  gap: 24px;
-  align-items: start;
-  margin-top: 22px;
-}
-.ai-maincol {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-@media (max-width: 760px) {
-  .ai-content {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ai-rail {
-    order: -1;
-  }
-}
-.ai-rail {
-  background: var(--glass);
-  border-radius: 12px;
-  box-shadow: 0 6px 20px #203f3610;
-  padding: 17px 18px 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-self: start;
-}
-.ai-rail-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-.ai-rail-title {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 700;
-}
-.ai-rail-ver {
-  font-size: 10px;
-  color: var(--muted);
-}
-.ai-rail-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.ai-rail-row {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid #203f3612;
-}
-.ai-rail-row:last-child {
-  border-bottom: 0;
-}
-.ai-rail-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-}
-.ai-rail-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ai-rail-state {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.ai-rail-state.ran {
-  color: var(--ran);
-}
-.ai-rail-state.setup {
-  color: var(--setup);
-}
-.ai-rail-more {
-  font-size: 11px;
-  color: var(--muted);
-  padding-top: 2px;
-}
-.ai-rail-foot {
-  border-top: 1px solid var(--line);
-  padding-top: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.ai-rail-stamp {
-  font-size: 10.5px;
-  color: var(--muted);
-  line-height: 1.45;
-}
-.ai-rail-link {
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 700;
-  white-space: nowrap;
-}
-.ai-rail-empty {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.ai-rail-empty b {
-  color: var(--ink);
-  font-weight: 700;
-}
+/* AI involvement detail route. .ai-content and .ai-maincol were the old
+   page.tsx's two-column wrapper around the rail, and .ai-rail* was the rail
+   itself: Task 6 replaced the rail with AgentsInvolved on the Agents view and
+   nothing renders it any more, so its rules are deleted rather than left with
+   no caller. Git history keeps them. */
 .agent-mark {
   width: 20px;
   height: 20px;
@@ -1607,4 +1537,65 @@ code {
   margin-bottom: 6px;
   font-family: Georgia, serif;
   font-weight: 400;
+}
+
+/* Repository route layout: the persistent header and tab bar sit above the
+   panel that each of the five views renders into. Kept here with the other
+   route-level page layouts (.metrics-page, .agents-view) rather than in a
+   component file, because it positions the routes themselves. */
+.repo-layout {
+  display: flex;
+  flex-direction: column;
+}
+.repo-panel {
+  padding-top: 22px;
+  min-width: 0;
+}
+/* Every one of the five views opens with an eyebrow at the same offset. One
+   definition of that gap, rather than the same inline marginTop copy-pasted
+   into five route files; scoped to its own class so the shared .eyebrow used
+   elsewhere (the dashboard, the repositories directory, the evidence report)
+   keeps its own spacing. */
+.eyebrow.panel-eyebrow {
+  margin-top: 28px;
+}
+
+/* The Agents view: the readiness card fixed at 330px beside a column of
+   agents-involved / agent-share / cohort-comparison cards. align-items:
+   start (not stretch, grid's default) is required, not optional — card
+   height varies with the flavour line and the number of failing checks, and
+   the right column is deliberately never height-matched to it. */
+.agents-view {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 18px;
+}
+.agents-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* GradeBanner is the phone-width stand-in for GradeCard (grade-banner.css):
+   both are always rendered here, and this decides which one shows. Hidden
+   by default; swapped in below phone width, where the full card "consumes
+   most of the first screen" (see the design doc's Responsive behaviour
+   section). */
+.agents-view .grade-banner {
+  display: none;
+}
+@media (max-width: 720px) {
+  .agents-view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .agents-view .grade-card {
+    display: none;
+  }
+  .agents-view .grade-banner {
+    display: flex;
+  }
 }

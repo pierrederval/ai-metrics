@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { requireTrackedRepository } from '../../../../auth/access';
 import { loadDetections } from '../../../../db/queries/ai-involvement';
 import { catalogue } from '../../../../domain/ai-involvement/catalogue';
@@ -120,10 +119,9 @@ export default async function AiInvolvement({ params }: { params: Promise<{ repo
   const { detections, state } = await loadDetections(repo.id);
   return (
     <div className="metrics-page">
-      <Link href={`/repos/${encodeURIComponent(repoId)}`}>Back to repository</Link>
-      <h1>
-        {repo.owner}/{repo.name}
-      </h1>
+      {/* Identity and the back-link live in the repository layout header. */}
+      <div className="eyebrow panel-eyebrow">Repository / Involvement</div>
+      <h2>AI involvement</h2>
       <p className="page-intro">
         Every AI signal we can prove in this repository, with the evidence behind it. Detector v0.1.
       </p>

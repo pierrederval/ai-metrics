@@ -30,7 +30,7 @@ test('a null pull-request body yields no markers', () => {
 });
 
 test('a pull-request body marker records its source', () => {
-  expect(matchPullRequestBody('Generated with [Claude Code](https://claude.com/claude-code)')).toEqual(
-    [{ agent: 'claude-code', source: 'pr-body', ref: 'body' }],
-  );
+  expect(
+    matchPullRequestBody('Generated with [Claude Code](https://claude.com/claude-code)'),
+  ).toEqual([{ agent: 'claude-code', source: 'pr-body', ref: 'body' }]);
 });

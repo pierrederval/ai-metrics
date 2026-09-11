@@ -1,29 +1,34 @@
 import Link from 'next/link';
-import { loadBasicDashboard } from '../../../db/queries/basic-dashboard';
-import { repositoryRecords } from '../../../db/queries/repository-records';
+import { requireTrackedRepository } from '../../../auth/access';
+import { latestGrade } from '../../../db/queries/grade-runs';
 import { loadDetections } from '../../../db/queries/ai-involvement';
-import { AiInvolvementRail } from '../../../components/ai-involvement/rail';
-import { BasicDashboard, InvalidRange } from '../../../components/dashboard/basic-dashboard';
-import {
-  githubRepositoryUrl,
-  RepositoryMetadata,
-} from '../../../components/dashboard/repository-metadata';
+import { loadCohorts } from '../../../db/queries/cohorts';
+import { GradeCard } from '../../../components/grading/grade-card';
+import { GradeBanner } from '../../../components/grading/grade-banner';
+import { AgentsInvolved } from '../../../components/agents/agents-involved';
+import { AgentShare } from '../../../components/agents/agent-share';
+import { CohortComparison } from '../../../components/cohorts/cohort-comparison';
+import { InvalidRange } from '../../../components/dashboard/basic-dashboard';
 import {
   readRange,
+  rangeEnd,
   rangeQuery,
   type RangePageProps,
 } from '../../../components/dashboard/range-query';
-import { latestImport } from '../../../db/queries/repository-imports';
-import { ImportProgress } from '../../../components/onboarding/import-progress';
-import { saveGates, refreshImport } from './actions';
-import { gateKey } from '../../../domain/pull-request/types';
-import { requireTrackedRepository } from '../../../auth/access';
-import { currentPolicy, prRows } from '../../../db/queries/dashboard';
-import { MetricCards } from '../../../components/metrics';
-import { PrTable } from '../../../components/pr-table';
-import { failureBreakdown } from '../../../metrics/aggregate';
 import { pageRouteId } from '../../../lib/page-route-id';
+
 export const dynamic = 'force-dynamic';
+
+// This is the view the product exists to produce: whether the repository is
+// a place agents can work (the readiness card), which agents actually work
+// there (the agents-involved card), and how well each performs (agent share
+// and the cohort comparison). It loads exactly the latest grade run, the
+// detections and the cohort aggregation — nothing that belongs to Delivery
+// (the dashboard aggregation, the pull-request records) or Settings (the
+// gate policy, the import record). The repository identity, breadcrumb,
+// facts line, actions and coverage strip are all rendered once by the
+// layout, so this view never renders a second <h1>; its own heading starts
+// at <h2>.
 export default async function Repository({
   params,
   searchParams,
@@ -39,184 +44,59 @@ export default async function Repository({
       <InvalidRange
         message={(error as Error).message}
         href={`/repos/${encodeURIComponent(repoId)}`}
+        headingLevel="h2"
       />
     );
   }
-  const data = await loadBasicDashboard([repo.id], range);
-  const [record] = await repositoryRecords([repo.id]);
-  const involvement = await loadDetections(repo.id);
+  const [grade, involvement, table] = await Promise.all([
+    latestGrade(repo.id),
+    loadDetections(repo.id),
+    loadCohorts(repo.id, range),
+  ]);
   const query = rangeQuery(range, search);
-  const rows = await prRows([repoId]),
-    policy = await currentPolicy(repoId),
-    latest = await latestImport(repoId);
-  const candidates = [
-    ...new Map(
-      [...policy.gates, ...rows.flatMap((r) => r.pr.facts.checks)].map((g) => [
-        gateKey(g),
-        { appId: g.appId, name: g.name },
-      ]),
-    ).values(),
-  ];
-  const failures = failureBreakdown(
-    rows.map((r) => r.pr),
-    policy,
-  );
   return (
     <div className="metrics-page">
-      <Link href={`/repos${query}`}>← All repositories</Link>
-      <h1>
-        {repo.owner}/{repo.name}
-      </h1>
+      <div className="eyebrow panel-eyebrow">Repository / Agents</div>
+      <h2>Is this repository working for agents?</h2>
       <p className="page-intro">
-        Review, CI, and progress for this repository.{' '}
-        <a href={githubRepositoryUrl(repo)}>GitHub ↗</a>{' '}
-        <Link href={`/repos/${encodeURIComponent(repoId)}/grading`}>Agent readiness →</Link>{' '}
-        <Link href={`/repos/${encodeURIComponent(repoId)}/ai-involvement`}>AI involvement →</Link>
+        {range.days} UTC days ending {rangeEnd(range)}. The full KPI history for this same range,
+        and the pull-request table across all accessible history, are on{' '}
+        <Link href={`/repos/${encodeURIComponent(repoId)}/delivery${query}`}>Delivery</Link>.
       </p>
-      <BasicDashboard data={data} />
-      <div className="ai-content">
-        <div className="ai-maincol">
-          <h2>Repository evidence</h2>
-          <section>
-            <RepositoryMetadata record={record} githubUrl={githubRepositoryUrl(repo)} />
-          </section>
-          <h2>Recent pull requests</h2>
-          <p className="muted">
-            Latest source activity across accessible history; the date range above applies to
-            metrics.
-          </p>
-          {record.prs.length ? (
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Pull request</th>
-                    <th>Status</th>
-                    <th>Source activity (UTC)</th>
-                    <th>GitHub</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {record.prs.map((pr) => (
-                    <tr key={pr.id}>
-                      <td>
-                        <Link href={`/prs/${encodeURIComponent(pr.id)}`}>
-                          #{pr.number} {pr.title}
-                        </Link>
-                      </td>
-                      <td>{pr.state}</td>
-                      <td>
-                        <time dateTime={pr.sourceUpdatedAt}>
-                          {pr.sourceUpdatedAt.slice(0, 16).replace('T', ' ')}
-                        </time>
-                      </td>
-                      <td>
-                        <a href={`${githubRepositoryUrl(repo)}/pull/${pr.number}`}>View PR ↗</a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p>No accessible PR records imported yet.</p>
-          )}
-        </div>
-        <AiInvolvementRail
-          detections={involvement.detections}
-          state={involvement.state}
-          repoId={repoId}
-        />
-      </div>
-      <details className="advanced-analysis">
-        <summary>Advanced gate analysis</summary>
-        <p>
-          Separate gate-policy projections · policy v{policy.version}. These metrics use your
-          configured gates and do not define the basic dashboard above.
-        </p>
-        {latest ? (
+      <div className="agents-view">
+        {grade?.score !== null && grade?.score !== undefined ? (
           <>
-            <p className="muted">
-              Initial import: latest 100 pull requests by creation date. New activity is updated as
-              it arrives.
-            </p>
-            {latest.state === 'complete' ? (
-              <p>{`Imported batch: ${latest.total ?? 'unknown'} PRs.`}</p>
-            ) : (
-              <ImportProgress
-                key={latest.id}
-                initial={latest}
-                repository={repo}
-                canAdmin={repo.canAdmin}
-              />
-            )}
+            {/* Both render; src/app/style.css shows exactly one per
+                viewport width — the full card above phone width, the
+                banner below it. See the .agents-view rules there. */}
+            <GradeCard
+              score={grade.score}
+              repositoryName={`${repo.owner} / ${repo.name}`}
+              sha={grade.sha}
+              rubricVersion={grade.rubricVersion}
+              checks={grade.checks}
+            />
+            <GradeBanner score={grade.score} />
           </>
         ) : (
-          <p className="muted">Existing imported history</p>
+          <section className="grading-ungraded">
+            <h2>Not graded yet.</h2>
+            <p>
+              A score appears only after all evidence is collected. Run the grader from{' '}
+              <Link href={`/repos/${encodeURIComponent(repoId)}/grading`}>Readiness</Link>.
+            </p>
+          </section>
         )}
-        <div>
-          {repo.canAdmin && (!latest || latest.state === 'complete') && (
-            <form action={refreshImport.bind(null, repoId)}>
-              <button>Refresh latest 100 PRs</button>
-            </form>
-          )}
+        <div className="agents-col">
+          <AgentsInvolved
+            detections={involvement.detections}
+            state={involvement.state}
+            repoId={repoId}
+          />
+          <AgentShare attributed={table.attributedPullRequests} total={table.totalPullRequests} />
+          <CohortComparison table={table} />
         </div>
-        {rows.length > 0 ? (
-          <MetricCards metrics={rows.map((r) => r.metrics.projection)} />
-        ) : (
-          <p>No pull requests to show yet.</p>
-        )}
-        <h2>Required gates</h2>
-        <p>
-          {policy.gates.map((g) => `${g.name} (app ${g.appId})`).join(', ') ||
-            'Not configured — outcomes remain unknown.'}
-        </p>
-        {repo.canAdmin && (
-          <form action={saveGates.bind(null, repoId)}>
-            {candidates.map((g) => (
-              <label key={gateKey(g)}>
-                <input
-                  type="checkbox"
-                  name="gate"
-                  value={JSON.stringify(g)}
-                  defaultChecked={policy.gates.some((p) => gateKey(p) === gateKey(g))}
-                />{' '}
-                {g.name} (app {g.appId})
-              </label>
-            ))}
-            <button>Save policy and recompute PRs</button>
-          </form>
-        )}
-        <h2>Failures by check name</h2>
-        <div className="scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Gate</th>
-                <th>Failures</th>
-                <th>Affected PRs</th>
-                <th>Failure rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {failures.map((f) => (
-                <tr key={`${f.appId}:${f.checkName}`}>
-                  <td>
-                    {f.checkName} <small>app {f.appId}</small>
-                  </td>
-                  <td>{f.failureCount}</td>
-                  <td>{f.affectedPrCount}</td>
-                  <td>
-                    {(f.failureRate * 100).toFixed(1)}% / {f.total} executions
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <h2>Gate-policy PR records</h2>
-        <PrTable rows={rows} />
-      </details>
+      </div>
     </div>
   );
 }

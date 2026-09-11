@@ -1,11 +1,5 @@
 export type AgentId =
-  | 'claude-code'
-  | 'codex'
-  | 'copilot'
-  | 'cursor'
-  | 'devin'
-  | 'gemini'
-  | 'unidentified';
+  'claude-code' | 'codex' | 'copilot' | 'cursor' | 'devin' | 'gemini' | 'unidentified';
 
 export type DetectionKind = 'coding-agent' | 'llm-in-ci';
 
@@ -13,7 +7,8 @@ export type DetectionSignal = 'executed' | 'configured' | 'declared';
 
 export type MarkerSource = 'commit-trailer' | 'pr-body';
 
-export type EvidenceSource = MarkerSource | 'check-app' | 'commit-author' | 'pr-author' | 'review-author' | 'branch-prefix';
+export type EvidenceSource =
+  MarkerSource | 'check-app' | 'commit-author' | 'pr-author' | 'review-author' | 'branch-prefix';
 
 export interface AgentMarker {
   agent: AgentId;

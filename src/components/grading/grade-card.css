@@ -151,22 +151,87 @@
 .grade-card-scale-labels span:last-child {
   transform: translateX(-100%);
 }
-.grade-card-level,
 .grade-card-commit {
   font-size: 11px;
   color: #526b60;
   line-height: 1.6;
-}
-.grade-card-level {
-  margin: 16px 0 8px;
 }
 .grade-card-finish {
   font-size: 10px;
   font-weight: bold;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  margin: 0 0 10px;
+  margin: 0 0 15px;
   color: #42544e;
+}
+.grade-card-flavour {
+  font:
+    italic 11.5px Georgia,
+    serif;
+  line-height: 1.55;
+  color: #42544e;
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #203f3618;
+}
+.grade-card-move {
+  background: #ffffff5c;
+  border-radius: 8px;
+  padding: 10px 11px 11px;
+  box-shadow: inset 0 0 0 1px #ffffffa8;
+  margin: 0 0 12px;
+}
+.grade-card-move-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9.5px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #526b60;
+  margin-bottom: 7px;
+}
+.grade-card-move-top b {
+  color: var(--grade);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: none;
+}
+.grade-card-move ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.grade-card-move li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #2f453d;
+}
+.grade-card-move li em {
+  font-style: normal;
+}
+.grade-card-move li span {
+  font-weight: bold;
+  color: var(--grade);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+/* The perfect-score line stands alone, with nothing beneath it to introduce,
+   so it is set as a statement in the card's own voice — not as the tiny
+   uppercase micro-label .grade-card-move-top uses to head the moves list. */
+.grade-card-no-move {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #2f453d;
+  margin: 0 0 12px;
 }
 .grade-card-rubric {
   display: flex;

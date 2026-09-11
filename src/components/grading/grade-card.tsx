@@ -1,27 +1,26 @@
 import { useId, type CSSProperties } from 'react';
 import { gradePresentation } from '../../domain/grading/presentation';
+import { finishNames } from '../../domain/grading/finish-names';
+import { flavourLine } from '../../domain/grading/flavour';
+import { nextTier } from '../../domain/grading/next-tier';
+import type { CheckResult } from '../../domain/grading/types';
 import './grade-card.css';
-const finishes = {
-  common: 'Common · Flat finish',
-  shimmer: 'Shimmer · Light holo',
-  bronze: 'Bronze · Holographic',
-  silver: 'Silver · Holographic',
-  gold: 'Gold · Holographic',
-  rainbow: 'Prismatic · Perfect score',
-};
 export function GradeCard({
   score,
   repositoryName,
   sha,
   rubricVersion,
+  checks,
 }: {
   score: number;
   repositoryName: string;
   sha: string;
   rubricVersion: string;
+  checks: CheckResult[];
 }) {
   const grade = gradePresentation(score);
   const gradient = useId();
+  const next = nextTier(score, checks);
   return (
     <section
       className="grade-card"
@@ -89,8 +88,28 @@ export function GradeCard({
             </span>
           ))}
         </div>
-        <p className="grade-card-level">Level 1 · Foundations</p>
-        <p className="grade-card-finish">{finishes[grade.finish]}</p>
+        <p className="grade-card-finish">{finishNames[grade.finish]}</p>
+        <p className="grade-card-flavour">{flavourLine(score)}</p>
+        {next ? (
+          <div className="grade-card-move">
+            <div className="grade-card-move-top">
+              <span>Next tier</span>
+              <b>
+                {next.targetFinish} at {next.targetScore}
+              </b>
+            </div>
+            <ul>
+              {next.moves.map((move) => (
+                <li key={move.id}>
+                  <em>{move.title}</em>
+                  <span>+{move.points}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="grade-card-no-move">No higher tier.</p>
+        )}
         <div className="grade-card-rubric">
           <span>Rubric</span>
           <strong>Readiness v{rubricVersion}</strong>

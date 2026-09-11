@@ -1,0 +1,921 @@
+<title>Agents First</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* ============================================================
+     REVIEW SHELL — theme aware, cooler than the app so each
+     app frame reads as an artefact rather than as more UI.
+     ============================================================ */
+  :root {
+    --shell-bg: #e3e7e1;
+    --shell-panel: #eef1ec;
+    --shell-ink: #262f2b;
+    --shell-muted: #62706a;
+    --shell-line: #c9d1ca;
+    --shell-mark: #35566b;
+    --shell-mark-soft: #35566b1a;
+    --shell-bad: #9d4a2c;
+    --shell-bad-soft: #9d4a2c14;
+    --shell-shadow: 0 18px 40px #1c2b2418, 0 2px 6px #1c2b2412;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --shell-bg: #141816; --shell-panel: #1e2422; --shell-ink: #dfe5e0;
+      --shell-muted: #93a09a; --shell-line: #313a36; --shell-mark: #8fbdd4;
+      --shell-mark-soft: #8fbdd422; --shell-bad: #e0906f; --shell-bad-soft: #e0906f1c;
+      --shell-shadow: 0 18px 44px #00000060, 0 2px 6px #00000040;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --shell-bg: #141816; --shell-panel: #1e2422; --shell-ink: #dfe5e0;
+    --shell-muted: #93a09a; --shell-line: #313a36; --shell-mark: #8fbdd4;
+    --shell-mark-soft: #8fbdd422; --shell-bad: #e0906f; --shell-bad-soft: #e0906f1c;
+    --shell-shadow: 0 18px 44px #00000060, 0 2px 6px #00000040;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--shell-bg);
+    color: var(--shell-ink);
+    font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    padding-inline: 20px;
+    padding-block: 44px 96px;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
+  .lede { display: flex; flex-direction: column; gap: 12px; max-width: 64ch; }
+  .kicker { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--shell-muted); }
+  .lede h1 {
+    font-size: clamp(27px, 4.2vw, 38px); line-height: 1.12; margin: 0;
+    font-weight: 600; letter-spacing: -0.7px; text-wrap: balance;
+  }
+  .lede p { margin: 0; color: var(--shell-muted); }
+  code {
+    font: 0.86em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow-wrap: anywhere;
+  }
+  .lede code, .step-head code, .note code, .movetable code, .impl code {
+    background: var(--shell-mark-soft); padding: 1px 5px; border-radius: 4px;
+  }
+
+  .step { display: flex; flex-direction: column; gap: 16px; }
+  .step-head { display: flex; flex-direction: column; gap: 6px; }
+  .step-num {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--shell-mark); font-weight: 600;
+  }
+  .step h2 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.35px; }
+  .step-head p { margin: 0; color: var(--shell-muted); font-size: 14px; max-width: 72ch; }
+
+  /* ---- the diagnosis: current page inventory ---- */
+  .diagnosis {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+  .job {
+    background: var(--shell-panel); border: 1px solid var(--shell-line);
+    border-radius: 10px; padding: 15px 16px 17px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .job h3 {
+    margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.2px;
+  }
+  .job .verb { color: var(--shell-mark); font-weight: 600; }
+  .job ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 5px; }
+  .job li { font-size: 12.5px; line-height: 1.5; color: var(--shell-muted); }
+  .job .where { font-size: 11px; color: var(--shell-muted); border-top: 1px solid var(--shell-line); padding-top: 8px; }
+  .job.clash { border-color: var(--shell-bad); background: var(--shell-bad-soft); }
+  .job.clash .verb { color: var(--shell-bad); }
+  .job.clash .where { color: var(--shell-bad); border-top-color: var(--shell-bad); }
+
+  /* ---- move table ---- */
+  .movetable { overflow-x: auto; }
+  .movetable table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px; }
+  .movetable th {
+    text-align: left; font-size: 10px; letter-spacing: 1.1px; text-transform: uppercase;
+    color: var(--shell-muted); font-weight: 600; padding: 0 14px 9px 0;
+    border-bottom: 1px solid var(--shell-line);
+  }
+  .movetable td {
+    padding: 11px 14px 11px 0; border-bottom: 1px solid var(--shell-line);
+    vertical-align: top; line-height: 1.5;
+  }
+  .movetable tr:last-child td { border-bottom: 0; }
+  .movetable .to { font-weight: 500; }
+  .movetable .why { color: var(--shell-muted); }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .6px;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+    background: var(--shell-mark-soft); color: var(--shell-mark);
+  }
+  .tag.exists { background: #2f6b5218; color: #2f6b52; }
+  :root:not([data-theme="light"]) .tag.exists { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .tag.exists { background: #7fc0a233; color: #7fc0a2; }
+  }
+  :root[data-theme="dark"] .tag.exists { background: #7fc0a233; color: #7fc0a2; }
+
+  /* ============================================================
+     APP FRAME — tokens verbatim from src/app/style.css.
+     Light only, as the application is; painted explicitly.
+     ============================================================ */
+  .frame {
+    --paper: #f4f7f3; --sidebar: #e6ece7; --ink: #203f36; --muted: #526b60;
+    --accent: #be421f; --line: #bfcfc4; --glass: rgba(244, 248, 240, 0.62);
+    --ran: #2f6b52; --setup: #986817;
+    border-radius: 14px; overflow: hidden; box-shadow: var(--shell-shadow);
+    border: 1px solid var(--shell-line); background: #f0f5ef;
+    color: var(--ink); font-family: Arial, Helvetica, sans-serif;
+  }
+  .frame-chrome {
+    display: flex; align-items: center; gap: 8px; padding: 11px 16px;
+    background: var(--sidebar); border-bottom: 1px solid var(--line);
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #bfcfc4; flex: none; }
+  .frame-url {
+    margin-left: 8px; font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .frame-body {
+    padding: 24px clamp(16px, 3.5vw, 38px) 32px;
+    background:
+      linear-gradient(90deg, #e6ece7 0%, rgba(230,236,231,.94) 7%, rgba(230,236,231,0) 48%),
+      radial-gradient(ellipse at 12% 38%, #c8ddce 0%, transparent 62%),
+      radial-gradient(ellipse at 100% 78%, #ecd3c3 0%, transparent 57%), #f0f5ef;
+  }
+  .frame p { font-size: 13.5px; line-height: 1.6; margin: 0; }
+  .frame a { color: var(--ink); text-underline-offset: 4px; }
+  .frame .muted { color: var(--muted); }
+
+  /* ---- THE NEW HEADER ---- */
+  .crumb { font-size: 12px; color: var(--muted); }
+  .crumb a { color: var(--muted); }
+  .rhead { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+  .rhead-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .rhead-id { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .rhead-id h1 {
+    font: 400 clamp(26px, 3vw, 36px) Georgia, "Times New Roman", serif;
+    letter-spacing: -1.1px; margin: 0; line-height: 1.1; overflow-wrap: anywhere;
+  }
+  .rhead-id h1 .owner { color: var(--muted); }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+  .facts span { display: inline-flex; align-items: center; gap: 5px; }
+  .facts .sep { opacity: .45; }
+  .rhead-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    background: var(--accent); color: #fff; border: 0; padding: 9px 14px;
+    border-radius: 6px; font: 12px Arial, Helvetica, sans-serif; cursor: pointer; line-height: 1.4;
+  }
+  .btn.ghost {
+    background: transparent; color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
+
+  /* coverage strip — the designer's addition */
+  .coverage {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--glass); border-radius: 10px; padding: 11px 15px;
+    box-shadow: 0 6px 20px #203f3610; font-size: 12.5px;
+  }
+  .cov-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ran); flex: none; }
+  .cov-dot.partial { background: var(--setup); }
+  .coverage b { color: var(--ink); font-weight: 700; }
+  .coverage .cov-detail { color: var(--muted); }
+  .coverage .cov-link { margin-left: auto; font-size: 12px; color: var(--accent); font-weight: 700; white-space: nowrap; }
+
+  /* tabs */
+  .tabs {
+    display: flex; gap: 2px; margin-top: 22px; border-bottom: 1px solid var(--line);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    font: 13px Arial, Helvetica, sans-serif; color: var(--muted);
+    padding: 10px 15px 11px; border-bottom: 2px solid transparent;
+    white-space: nowrap; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); font-weight: 700; border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tab .count {
+    font-size: 10px; background: #203f3612; color: var(--muted);
+    padding: 1px 6px; border-radius: 999px; font-variant-numeric: tabular-nums;
+  }
+
+  /* tab panels */
+  .panel { padding-top: 22px; display: flex; flex-direction: column; gap: 18px; }
+  .frame h2 {
+    font: 400 22px Georgia, "Times New Roman", serif; letter-spacing: -.4px; margin: 0;
+  }
+  .sectionhead { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .sectionhead .aside { font-size: 12px; color: var(--muted); }
+  .card {
+    background: var(--glass); border-radius: 12px; padding: 18px 20px;
+    box-shadow: 0 6px 20px #203f3610;
+  }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+  .kpi { background: var(--glass); border-radius: 12px; padding: 16px 18px 18px; box-shadow: 0 6px 20px #203f3610; }
+  .kpi small { display: block; font-size: 11.5px; color: var(--muted); }
+  .kpi strong {
+    display: block; font: 36px Georgia, serif; letter-spacing: -1px;
+    margin: 10px 0 6px; font-variant-numeric: lining-nums tabular-nums;
+  }
+  .kpi .delta { font-size: 11.5px; color: var(--muted); }
+  .kpi .delta.up { color: var(--ran); }
+
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .chart { background: var(--glass); border-radius: 12px; padding: 15px 16px; box-shadow: 0 6px 20px #203f3610; }
+  .chart small { font-size: 11px; color: var(--muted); display: block; margin-bottom: 10px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 46px; }
+  .spark i { flex: 1; background: #2f6b5259; border-radius: 2px 2px 0 0; display: block; }
+  .spark i.warn { background: #98681759; }
+  .spark i.bad { background: #be421f59; }
+
+  .lens { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .lenscard {
+    background: var(--glass); border-radius: 12px; padding: 16px 18px;
+    box-shadow: 0 6px 20px #203f3610; display: flex; flex-direction: column; gap: 10px;
+  }
+  .lenscard .lens-t { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .lenscard .lens-v { font: 400 20px Georgia, serif; color: var(--ink); letter-spacing: -.3px; }
+  .lenscard .lens-s { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .lenscard .lens-l { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: auto; }
+
+  .frame table { width: 100%; border-collapse: collapse; font-size: 12px; background: #f4f8f06e; min-width: 520px; }
+  .frame th {
+    font-size: 10px; letter-spacing: .6px; color: var(--muted); font-weight: 600;
+    background: #e6ece780; text-align: left; padding: 11px 13px;
+    border-bottom: 1px solid #203f3620; white-space: nowrap;
+  }
+  .frame td { padding: 12px 13px; border-bottom: 1px solid #203f3620; line-height: 1.45; vertical-align: top; }
+  .scroll { overflow-x: auto; border-radius: 10px; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .setting { display: flex; flex-direction: column; gap: 6px; }
+  .setting h3 { margin: 0; font: 400 17px Georgia, serif; letter-spacing: -.2px; }
+  .setting p { font-size: 12.5px; color: var(--muted); }
+  .gaterow { display: flex; align-items: center; gap: 9px; font-size: 12.5px; padding: 7px 0; border-bottom: 1px solid #203f3612; }
+  .gaterow:last-of-type { border-bottom: 0; }
+  .gaterow input { accent-color: var(--accent); }
+  .gaterow code { font-size: 11px; color: var(--muted); background: none; padding: 0; }
+
+  .dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 22px; }
+  .dl div { display: flex; flex-direction: column; gap: 3px; }
+  .dl dt { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .dl dd { margin: 0; font-size: 13px; }
+  .dl dd small { display: block; color: var(--muted); font-size: 11px; }
+
+  /* annotation callouts on the frame */
+  .note {
+    border-left: 3px solid var(--shell-mark); padding: 2px 0 2px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .note h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .note p { margin: 0; font-size: 14px; color: var(--shell-muted); }
+  .note ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+  .note li { font-size: 14px; line-height: 1.55; color: var(--shell-muted); }
+  .note b { color: var(--shell-ink); font-weight: 600; }
+
+  .impl {
+    background: var(--shell-panel); border: 1px solid var(--shell-line);
+    border-radius: 12px; padding: 20px clamp(15px, 3vw, 24px);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .impl h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.3px; }
+  .impl pre {
+    margin: 0; overflow-x: auto; font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--shell-mark-soft); padding: 13px 15px; border-radius: 8px; line-height: 1.65;
+  }
+  .impl p { margin: 0; font-size: 14px; color: var(--shell-muted); }
+
+
+  /* ---- the rarity card, reproduced from src/components/grading/grade-card.css ---- */
+  .agenthero { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 720px) { .agenthero { grid-template-columns: minmax(0, 1fr); } }
+  .herostack { display: flex; flex-direction: column; gap: 14px; }
+
+  .grade-card {
+    --grade: #697e8d;
+    width: 100%; max-width: 330px; align-self: start; padding: 8px;
+    border: 1px solid var(--grade); border-radius: 16px; color: #203f36;
+    box-sizing: border-box; isolation: isolate;
+    background: linear-gradient(125deg, #667481, #d8e0e6 15%, #fff 27%, #9daebc 40%, #e9eaf6 55%, #879baa 69%, #f9ffff 82%, #afbdc7);
+    border-color: #8a9ca9;
+    box-shadow: 0 14px 32px #64778740, inset 0 0 0 2px #ffffffb0;
+  }
+  .grade-card-inner {
+    position: relative; overflow: hidden; padding: 22px;
+    border: 1px solid #ffffffb0; border-radius: 10px;
+    background: linear-gradient(135deg, #f6f9fbea, #dfe7eeeb);
+    box-shadow: inset 0 0 24px #ffffff70;
+  }
+  .grade-card-inner:before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(125deg, transparent 0 24px, #ffffff50 25px, #b2d4e729 27px, transparent 30px 50px),
+      linear-gradient(120deg, transparent 15%, #b1ddd34d 30%, #edc9f15e 43%, #f7e6ac70 50%, #a5dbe65e 58%, transparent 75%);
+    opacity: .65;
+  }
+  .grade-card-inner > * { position: relative; }
+  .grade-card-heading {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: #526b60;
+  }
+  .grade-card-symbols { display: flex; flex-shrink: 0; gap: 2px; color: var(--grade); }
+  .grade-card h2 { font: 26px Georgia, serif; letter-spacing: -1px; margin: 16px 0 10px; }
+  .grade-card-scoreline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .grade-card-score {
+    font: bold 68px Georgia, serif; letter-spacing: -4px; margin: 0 0 24px;
+    color: var(--grade); text-shadow: 0 1px #fff;
+  }
+  .grade-card-score small { font: 16px Arial, sans-serif; letter-spacing: 0; color: #526b60; }
+  .grade-card-rating {
+    font-size: 12px; font-weight: bold; padding: 7px 9px; border-radius: 20px;
+    background: #ffffff9c; color: #203f36; white-space: nowrap;
+  }
+  .grade-card-scale {
+    position: relative; display: grid; grid-template-columns: 50fr 20fr 10fr 10fr 10fr;
+    height: 9px; margin-top: 8px;
+  }
+  .grade-card-scale i:nth-child(1) { background: #fff; box-shadow: inset 0 0 0 1px #c4c9c5; border-radius: 3px 0 0 3px; }
+  .grade-card-scale i:nth-child(2) { background: #548eae; }
+  .grade-card-scale i:nth-child(3) { background: #895333; }
+  .grade-card-scale i:nth-child(4) { background: #b5c3cf; }
+  .grade-card-scale i:nth-child(5) { background: #e0b735; border-radius: 0 3px 3px 0; }
+  .grade-card-pointer { position: absolute; top: -15px; transform: translateX(-50%); color: var(--grade); }
+  .grade-card-scale-labels { position: relative; height: 14px; margin-top: 8px; font-size: 9px; color: #526b60; }
+  .grade-card-scale-labels span { position: absolute; transform: translateX(-50%); }
+  .grade-card-scale-labels span:first-child { transform: none; }
+  .grade-card-scale-labels span:last-child { transform: translateX(-100%); }
+  .grade-card-level, .grade-card-commit { font-size: 11px; color: #526b60; line-height: 1.6; }
+  .grade-card-level { margin: 16px 0 8px; }
+  .grade-card-finish {
+    font-size: 10px; font-weight: bold; letter-spacing: .8px; text-transform: uppercase;
+    margin: 0 0 15px; color: #42544e;
+  }
+  .grade-card-rubric {
+    display: flex; gap: 10px; justify-content: space-between; padding: 12px 0;
+    border-top: 1px solid #203f3625; border-bottom: 1px solid #203f3625; font-size: 11px;
+  }
+  .grade-card-commit { margin: 12px 0 0; }
+
+  /* ---- flavour line and the "attack" block ---- */
+  .grade-card-flavour {
+    font: italic 11.5px Georgia, serif; line-height: 1.55; color: #42544e;
+    margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid #203f3618;
+  }
+  .grade-card-move {
+    background: #ffffff5c; border-radius: 8px; padding: 10px 11px 11px;
+    box-shadow: inset 0 0 0 1px #ffffffa8; margin: 0 0 12px;
+  }
+  .grade-card-move-top {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    font-size: 9.5px; letter-spacing: 1.1px; text-transform: uppercase; color: #526b60;
+    margin-bottom: 7px;
+  }
+  .grade-card-move-top b { color: var(--grade); font-size: 11px; letter-spacing: .3px; text-transform: none; }
+  .grade-card-move ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .grade-card-move li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    font-size: 11.5px; line-height: 1.4; color: #2f453d;
+  }
+  .grade-card-move li em { font-style: normal; }
+  .grade-card-move li span {
+    font-weight: bold; color: var(--grade); font-variant-numeric: tabular-nums; flex: none;
+  }
+
+  /* ---- agent-first landing components ---- */
+  .agentgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .bigcard {
+    background: var(--glass); border-radius: 12px; padding: 18px 20px 20px;
+    box-shadow: 0 6px 20px #203f3610; display: flex; flex-direction: column; gap: 11px;
+  }
+  .bigcard .t { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .bigcard .v { font: 400 30px Georgia, serif; letter-spacing: -.8px; line-height: 1.05; }
+  .bigcard .v span { font-size: 15px; color: var(--muted); }
+  .bigcard .s { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .bigcard .l { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: auto; }
+  .scorebar { height: 7px; border-radius: 4px; background: #203f3614; overflow: hidden; }
+  .scorebar i { display: block; height: 100%; background: var(--ran); border-radius: 4px; }
+  .agentchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 11px; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+    background: #2f6b5216; color: var(--ran); box-shadow: inset 0 0 0 1px #2f6b5233;
+  }
+  .chip.idle { background: #98681716; color: var(--setup); box-shadow: inset 0 0 0 1px #98681733; }
+  .chip.none { background: #526b6012; color: var(--muted); box-shadow: inset 0 0 0 1px #526b6026; }
+  .cohortcard { gap: 12px; }
+  .cohortcard .scroll { margin: 0; }
+  .cohortcard table { min-width: 380px; }
+  .cohortcard th { padding: 9px 11px; }
+  .cohortcard td { padding: 10px 11px; }
+  .cohort td.agentcell { border-left: 3px solid transparent; font-weight: 700; font-size: 13px; }
+  .cohort td.agentcell.lead { border-left-color: var(--ran); }
+  .cohort td.agentcell.lag { border-left-color: var(--accent); }
+  .cohort td.agentcell.human { border-left-color: var(--line); font-weight: 400; font-style: italic; }
+  .bar { display: flex; align-items: center; gap: 8px; }
+  .bar .track { flex: 1; height: 6px; border-radius: 3px; background: #203f3614; min-width: 46px; }
+  .bar .track i { display: block; height: 100%; border-radius: 3px; background: var(--ran); }
+  .bar .track i.warn { background: var(--setup); }
+  .bar .track i.bad { background: var(--accent); }
+
+  @media (max-width: 560px) { .frame-body { padding-inline: 14px; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="lede">
+    <div class="kicker">Repository page · redesign proposal</div>
+    <h1>Agents first</h1>
+    <p>
+      The repository page carries seven concerns in one column and hides half behind an accordion
+      that mixes settings with analysis. Worse, it leads with generic delivery metrics — as though
+      this were a DORA dashboard. It is a tool for improving coding agents, so the first thing you
+      see should be <b>how the agents are doing</b>, and the delivery numbers should be sliced by
+      which agent did the work.
+    </p>
+  </header>
+
+  <!-- ============ 1. DIAGNOSIS ============ -->
+  <section class="step">
+    <div class="step-head">
+      <div class="step-num">The diagnosis</div>
+      <h2>Four jobs, one scroll</h2>
+      <p>
+        Everything currently on <code>/repos/[repoId]</code>, grouped by what a reader is actually
+        trying to do. The problem is not the amount of information — it is that four different
+        intentions are interleaved, so no section has an obvious home.
+      </p>
+    </div>
+    <div class="diagnosis">
+      <div class="job">
+        <h3><span class="verb">Monitor</span> — how are we doing?</h3>
+        <ul>
+          <li>3 KPI cards</li>
+          <li>3 daily charts</li>
+          <li>Date range picker</li>
+        </ul>
+        <div class="where">Top of page</div>
+      </div>
+      <div class="job">
+        <h3><span class="verb">Inspect</span> — what happened?</h3>
+        <ul>
+          <li>Recent pull requests</li>
+          <li>Failures by check name</li>
+          <li>Gate-policy PR records</li>
+        </ul>
+        <div class="where">Split: one above, two inside the accordion</div>
+      </div>
+      <div class="job">
+        <h3><span class="verb">Trust</span> — is this evidence complete?</h3>
+        <ul>
+          <li>Last successful fetch</li>
+          <li>Collection attempt / state</li>
+          <li>Accessible history, import, backfill</li>
+        </ul>
+        <div class="where">Six definition rows, mid-page</div>
+      </div>
+      <div class="job clash">
+        <h3><span class="verb">Configure</span> — change how it measures</h3>
+        <ul>
+          <li>Required gates form</li>
+          <li>Refresh latest 100 PRs</li>
+          <li>Policy version</li>
+        </ul>
+        <div class="where">Inside “Advanced gate analysis” — an accordion that also holds analysis</div>
+      </div>
+    </div>
+    <div class="note">
+      <p>
+        The accordion is the tell. <b>“Advanced gate analysis”</b> contains a configuration form, an
+        import control, two data tables and a set of metric cards. A label that has to cover
+        configuration and analysis at once is a label covering for a missing structure. In the
+        redesign it does not get renamed — it disappears, because every one of its children has a
+        real home.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 2. THE HEADER + TABS (interactive) ============ -->
+  <section class="step">
+    <div class="step-head">
+      <div class="step-num">The proposal</div>
+      <h2>Agents lead. Delivery supports. Configuration gets out of the way.</h2>
+      <p>
+        Click the tabs — Agents and Delivery are mocked in full, Settings too. The header and tab
+        bar persist across all five, because repository identity and evidence coverage are true
+        regardless of which view you are in.
+      </p>
+    </div>
+
+    <div class="frame">
+      <div class="frame-chrome" aria-hidden="true">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="frame-url" id="url">localhost:3000/repos/demo-repository</span>
+      </div>
+      <div class="frame-body">
+
+        <div class="crumb"><a href="#0">All repositories</a> <span aria-hidden="true">/</span> checkout-service</div>
+
+        <div class="rhead">
+          <div class="rhead-top">
+            <div class="rhead-id">
+              <h1><span class="owner">demo/</span>checkout-service</h1>
+              <div class="facts">
+                <span>Public</span><span class="sep" aria-hidden="true">·</span>
+                <span>default branch <code style="background:none;padding:0">main</code></span><span class="sep" aria-hidden="true">·</span>
+                <span>21 pull requests accessible</span><span class="sep" aria-hidden="true">·</span>
+                <span>Free plan</span>
+              </div>
+            </div>
+            <div class="rhead-actions">
+              <button type="button" class="btn ghost">GitHub &#8599;</button>
+              <button type="button" class="btn">Refresh data</button>
+            </div>
+          </div>
+
+          <div class="coverage">
+            <span class="cov-dot" aria-hidden="true"></span>
+            <b>Evidence complete</b>
+            <span class="cov-detail">
+              Review and CI both detected · last fetched 4 minutes ago · background history current
+            </span>
+            <a class="cov-link" href="#0">Collection detail &#8594;</a>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Repository views">
+          <button class="tab" role="tab" aria-selected="true" data-tab="agents">Agents</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="readiness">Readiness <span class="count">80</span></button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="ai">Involvement <span class="count">3</span></button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="delivery">Delivery</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="settings">Settings</button>
+        </div>
+
+        <div class="panel" id="panel"><!-- injected --></div>
+      </div>
+    </div>
+
+    <div class="note">
+      <h3>Four decisions worth arguing about</h3>
+      <ul>
+        <li>
+          <b>The cohort table is the product.</b> “Copilot pull requests take twice as many attempts
+          to go green as Codex ones” is the sentence this tool exists to produce, and nothing on the
+          page says it today. Your own <code>docs/future.md</code> already called for it: <i>compare
+          first-pass rate and attempts-to-green by provider while preserving an explicit unknown
+          cohort.</i> The unattributed rows stay their own cohort and are never folded into a total.
+        </li>
+        <li>
+          <b>The rarity card is the hero, and it needed a flavour line.</b> A trading card puts the
+          species line under the name and the attack under that — the finish tells you how rare it
+          is, the text tells you what it does. <code>Silver · Holographic</code> on its own is
+          decoration. Saying what Silver <i>means</i>, then listing the two moves that reach Gold and
+          what each is worth, makes it information — and gives the card the height it needed to sit
+          level with the column beside it.
+        </li>
+        <li>
+          <b>Readiness and involvement stay separate.</b> Readiness asks whether the repository is
+          a place an agent can work; involvement asks which agents actually do. A repository can
+          score 96 and have no agent ever touch it — that gap is worth seeing, not averaging into
+          one number.
+        </li>
+        <li>
+          <b>The coverage strip sits above every number it qualifies.</b> This product’s claim is
+          that missing evidence stays unknown rather than guessed. That claim currently lives in six
+          definition rows halfway down the page, below the figures it applies to.
+        </li>
+        <li>
+          <b>The date range belongs to Agents and Delivery, not the page.</b> Today it sits in the
+          header, implying it filters the PR table and the gate policy. It does not.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 3. WHERE EVERYTHING GOES ============ -->
+  <section class="step">
+    <div class="step-head">
+      <div class="step-num">The move</div>
+      <h2>Where each piece lands</h2>
+      <p>Nothing is deleted. Every section on the page today has a destination.</p>
+    </div>
+    <div class="movetable">
+      <table>
+        <thead>
+          <tr><th scope="col">Today</th><th scope="col">Goes to</th><th scope="col">Why</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>KPI cards, daily charts, date range</td>
+            <td class="to">Delivery <span class="tag">new route</span></td>
+            <td class="why">Still valuable, no longer the headline. The same figures reappear on Agents, split by cohort.</td>
+          </tr>
+          <tr>
+            <td>Recent pull requests</td>
+            <td class="to">Delivery</td>
+            <td class="why">Full width, plus an Agent column — which is new, and only possible because the branch now stores markers per pull request.</td>
+          </tr>
+          <tr>
+            <td>Failures by check name</td>
+            <td class="to">Delivery</td>
+            <td class="why">Analysis of the same records. It was in the accordion only because nothing else fit there.</td>
+          </tr>
+          <tr>
+            <td>Gate-policy PR records</td>
+            <td class="to">Delivery</td>
+            <td class="why">A second projection of one table should be a toggle on that table, not a separate list in a drawer.</td>
+          </tr>
+          <tr>
+            <td>AI involvement rail</td>
+            <td class="to">Agents card + Involvement <span class="tag exists">route exists</span></td>
+            <td class="why">Promoted from a sidebar card to one of the three things you see first.</td>
+          </tr>
+          <tr>
+            <td>Agent readiness link</td>
+            <td class="to">Agents card + Readiness <span class="tag exists">route exists</span></td>
+            <td class="why">Promoted from a link inside a paragraph to the landing view's first card.</td>
+          </tr>
+          <tr>
+            <td class="to">Cohort comparison <span class="tag">new</span></td>
+            <td class="to">Agents</td>
+            <td class="why">Did not exist. First-pass green and attempts-to-green per agent, with an explicit unattributed cohort.</td>
+          </tr>
+          <tr>
+            <td>Repository evidence (6 rows)</td>
+            <td class="to">Header strip + Settings</td>
+            <td class="why">The verdict goes up top where it qualifies the numbers; the six timestamps go to Settings for when someone is debugging collection.</td>
+          </tr>
+          <tr>
+            <td>Required gates form, policy version</td>
+            <td class="to">Settings <span class="tag">new route</span></td>
+            <td class="why">Configuration is not analysis. This is the split the accordion was papering over.</td>
+          </tr>
+          <tr>
+            <td>Refresh latest 100 PRs</td>
+            <td class="to">Header action + Settings</td>
+            <td class="why">Wanted from anywhere, so it belongs in the persistent header.</td>
+          </tr>
+          <tr>
+            <td>Import progress</td>
+            <td class="to">Coverage strip</td>
+            <td class="why">An import in flight is exactly the "do not trust these numbers yet" state the strip exists to report.</td>
+          </tr>
+          <tr>
+            <td><b>"Advanced gate analysis" accordion</b></td>
+            <td class="to">Deleted</td>
+            <td class="why">Every child has a home. The container was never a concept, only a place to put things.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 4. IMPLEMENTATION ============ -->
+  <section class="step">
+    <div class="step-head">
+      <div class="step-num">The copy</div>
+      <h2>What each finish means</h2>
+      <p>
+        Six tiers already exist in <code>gradePresentation()</code> with labels, colours and symbol
+        counts. None of them has a sentence. These are the sentences — one flavour line per tier,
+        written from the agent's point of view rather than the grader's.
+      </p>
+    </div>
+    <div class="movetable">
+      <table>
+        <thead>
+          <tr><th scope="col">Score</th><th scope="col">Finish</th><th scope="col">Flavour line</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="to">0–49<br><span class="why">Bad</span></td><td class="to">Common · Flat</td>
+            <td class="why">An agent will guess. There is no reliable way to build this, test it, or find the thing it needs to change.</td></tr>
+          <tr><td class="to">50–69<br><span class="why">Mediocre</span></td><td class="to">Shimmer · Light holo</td>
+            <td class="why">An agent can start, but will stop to ask questions a document should already answer.</td></tr>
+          <tr><td class="to">70–79<br><span class="why">Good</span></td><td class="to">Bronze · Holographic</td>
+            <td class="why">Enough context to work from. Verifying the change still takes trial and error.</td></tr>
+          <tr><td class="to">80–89<br><span class="why">Very good</span></td><td class="to">Silver · Holographic</td>
+            <td class="why">Readable, testable, navigable. An agent can find its way around and verify its own work without asking a human first.</td></tr>
+          <tr><td class="to">90–99<br><span class="why">Excellent</span></td><td class="to">Gold · Holographic</td>
+            <td class="why">An agent can land a change unaided. Documentation and verification both hold under pressure.</td></tr>
+          <tr><td class="to">100<br><span class="why">Excellent</span></td><td class="to">Prismatic · Perfect</td>
+            <td class="why">Nothing the rubric asks for is missing. Rare by construction — reserved for exactly 100.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        The <b>Next tier</b> block is generated, not written: the rubric already returns per-check
+        points and a pass or fail, so the failing checks sorted by points are the moves, and the
+        distance to the next threshold is arithmetic. At Prismatic the block is replaced by a single
+        line, because there is no next tier.
+      </p>
+    </div>
+  </section>
+
+  <section class="impl">
+    <h2>What this costs to build</h2>
+    <p>
+      Next.js nested layouts give you the persistent header and tab bar for free. One new layout
+      owns the header; each tab is a page beneath it. Two of the five already exist and move
+      unchanged.
+    </p>
+    <pre>src/app/repos/[repoId]/
+  layout.tsx          NEW   header, coverage strip, tab bar
+  page.tsx            EDIT  becomes Agents — readiness + involvement + cohorts
+  delivery/
+    page.tsx          NEW   KPIs, charts, PR table, failures (moved markup)
+  ai-involvement/
+    page.tsx          KEEP  unchanged
+  grading/
+    page.tsx          KEEP  unchanged
+  settings/
+    page.tsx          NEW   gate policy form + collection detail</pre>
+    <p>
+      The two new pages are mostly <b>moved</b> markup — the gate form, failure table and PR table
+      already exist and keep their server actions.
+    </p>
+    <p>
+      <b>The cohort table is the one genuinely new thing, and it is closer than it looks.</b>
+      The branch just merged stores <code>agent_markers</code> and <code>head_ref</code> on every
+      pull request, and <code>detectExecuted</code> already derives which pull-request ids belong to
+      each agent — it just aggregates them away. What is missing is the per-pull-request projection:
+      writing that agent set back onto the PR, which is the <code>agent_provider</code> column that
+      has sat unused since the first migration. Then the existing metric aggregation groups by it.
+      That is slice four, and this design is the argument for building it.
+    </p>
+  </section>
+
+</div>
+
+<script>
+  var panels = {
+    agents: [
+      '<div class="sectionhead"><h2>Is this repository working for agents?</h2><span class="aside">last 7 days · 1 Sep – 7 Sep 2026 (UTC)</span></div>',
+      '<div class="agenthero">',
+      '  <section class="grade-card" data-finish="silver" aria-label="Agent readiness: 80 out of 100, Very good">',
+      '    <div class="grade-card-inner">',
+      '      <div class="grade-card-heading"><span>demo/checkout-service</span>',
+      '        <span class="grade-card-symbols" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12 1 3.4 7 7.6 1.1-5.5 5.4 1.3 7.6-6.8-3.6-6.8 3.6 1.3-7.6L1 9.1 8.6 8z"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12 1 3.4 7 7.6 1.1-5.5 5.4 1.3 7.6-6.8-3.6-6.8 3.6 1.3-7.6L1 9.1 8.6 8z"/></svg></span></div>',
+      '      <h2>Agent Readiness</h2>',
+      '      <div class="grade-card-scoreline">',
+      '        <div class="grade-card-score">80<small> / 100</small></div>',
+      '        <span class="grade-card-rating">Very good</span>',
+      '      </div>',
+      '      <div class="grade-card-scale"><i></i><i></i><i></i><i></i><i></i>',
+      '        <svg class="grade-card-pointer" style="left:80%" width="14" height="12" viewBox="0 0 14 12" aria-hidden="true"><path fill="currentColor" d="M0 0h14L7 10z"/></svg>',
+      '      </div>',
+      '      <div class="grade-card-scale-labels" aria-hidden="true">',
+      '        <span style="left:0%">0</span><span style="left:50%">50</span><span style="left:70%">70</span><span style="left:80%">80</span><span style="left:90%">90</span><span style="left:100%">100</span>',
+      '      </div>',
+      '      <p class="grade-card-level">Level 1 &#183; Foundations</p>',
+      '      <p class="grade-card-finish">Silver &#183; Holographic</p>',
+      '      <p class="grade-card-flavour">Readable, testable, navigable. An agent can find its way around this repository and verify its own work without asking a human first.</p>',
+      '      <div class="grade-card-move">',
+      '        <div class="grade-card-move-top"><span>Next tier</span><b>Prismatic at 100</b></div>',
+      '        <ul>',
+      '          <li><em>Document how to run the tests</em><span>+20</span></li>',
+      '        </ul>',
+      '      </div>',
+      '      <div class="grade-card-rubric"><span>Rubric</span><strong>Readiness v0.1</strong></div>',
+      '      <p class="grade-card-commit">Commit 3b8c366</p>',
+      '    </div>',
+      '  </section>',
+      '  <div class="herostack">',
+      '    <div class="bigcard"><span class="t">Agents involved</span><span class="v">3<span> have run</span></span>',
+      '      <div class="agentchips"><span class="chip">Codex</span><span class="chip">Copilot</span><span class="chip">Claude Code</span></div>',
+      '      <span class="s">None configured but idle. No LLM steps in CI.</span>',
+      '      <a class="l" href="#0">See the evidence &#8594;</a></div>',
+      '    <div class="bigcard"><span class="t">Agent share of work</span><span class="v">76%</span>',
+      '      <span class="s">16 of 21 pull requests carry agent evidence. 5 show none.</span>',
+      '      <a class="l" href="#0">See pull requests &#8594;</a></div>',
+      '    <div class="bigcard cohortcard">',
+      '      <span class="t">How each agent is doing</span>',
+      '      <div class="scroll"><table class="cohort"><thead><tr>',
+      '<th>Cohort</th><th>PRs</th><th>First-pass green</th><th>Attempts to green</th><th>Clean green</th>',
+      '</tr></thead><tbody>',
+      '<tr><td class="agentcell lead">Codex</td><td class="num">6</td>',
+      '  <td><div class="bar"><span class="num">83%</span><span class="track"><i style="width:83%"></i></span></div></td>',
+      '  <td class="num">1.2</td><td class="num">5 of 6</td></tr>',
+      '<tr><td class="agentcell">Claude Code</td><td class="num">5</td>',
+      '  <td><div class="bar"><span class="num">60%</span><span class="track"><i class="warn" style="width:60%"></i></span></div></td>',
+      '  <td class="num">1.8</td><td class="num">3 of 5</td></tr>',
+      '<tr><td class="agentcell lag">GitHub Copilot</td><td class="num">5</td>',
+      '  <td><div class="bar"><span class="num">40%</span><span class="track"><i class="bad" style="width:40%"></i></span></div></td>',
+      '  <td class="num">2.4</td><td class="num">2 of 5</td></tr>',
+      '<tr><td class="agentcell human">No agent evidence</td><td class="num">5</td>',
+      '  <td><div class="bar"><span class="num">80%</span><span class="track"><i style="width:80%"></i></span></div></td>',
+      '  <td class="num">1.2</td><td class="num">4 of 5</td></tr>',
+      '</tbody></table></div>',
+      '    </div>',
+      '  </div>',
+      '</div>',
+'__COHORT_TABLE__',
+            '<div class="card"><p class="muted"><b>Copilot pull requests take twice as many attempts to go green as Codex ones, and half as many pass first time.</b> That is the sentence this whole tool exists to produce &#8212; and it now sits on the first screen, beside the card, with no scrolling. The unattributed cohort stays separate and is never folded into a total.</p></div>'
+    ].join(''),
+
+    delivery: [
+      '<div class="sectionhead"><h2>Last 7 days</h2><span class="aside">1 Sep – 7 Sep 2026 (UTC) · change range</span></div>',
+      '<div class="kpis">',
+      '  <div class="kpi"><small>PRs merged</small><strong>14</strong><span class="delta up">+3 vs prior 7 days</span></div>',
+      '  <div class="kpi"><small>First-pass green</small><strong>71%</strong><span class="delta up">+6 pts</span></div>',
+      '  <div class="kpi"><small>CI success rate</small><strong>88%</strong><span class="delta">12% passed only after a rerun</span></div>',
+      '</div>',
+      '<div class="sectionhead"><h2>Progress, day by day</h2></div>',
+      '<div class="charts">',
+      '  <div class="chart"><small>PRs merged</small><div class="spark"><i style="height:30%"></i><i style="height:55%"></i><i style="height:20%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:65%"></i><i style="height:50%"></i></div></div>',
+      '  <div class="chart"><small>First-pass green</small><div class="spark"><i style="height:60%"></i><i style="height:75%"></i><i class="warn" style="height:35%"></i><i style="height:85%"></i><i style="height:70%"></i><i style="height:78%"></i><i style="height:66%"></i></div></div>',
+      '  <div class="chart"><small>CI success</small><div class="spark"><i style="height:88%"></i><i class="warn" style="height:62%"></i><i class="bad" style="height:40%"></i><i style="height:92%"></i><i style="height:85%"></i><i class="warn" style="height:70%"></i><i style="height:90%"></i></div></div>',
+      '</div>',
+      '<div class="sectionhead"><h2>Pull requests</h2><span class="aside">all 21 accessible · basic outcomes / gate-policy projection</span></div>',
+      '<div class="scroll"><table><thead><tr><th>Pull request</th><th>Agent</th><th>Status</th><th>First pass</th><th>Attempts</th></tr></thead><tbody>',
+      '<tr><td>#21 Add checkout validation</td><td>Codex</td><td>open</td><td>&#8212;</td><td class="num">1</td></tr>',
+      '<tr><td>#20 Repair payment retry</td><td>Claude Code</td><td>closed</td><td>Yes</td><td class="num">1</td></tr>',
+      '<tr><td>#19 Handle inventory race</td><td>Copilot</td><td>closed</td><td>No</td><td class="num">3</td></tr>',
+      '<tr><td>#18 Update checkout harness</td><td class="muted">none</td><td>closed</td><td>Yes</td><td class="num">1</td></tr>',
+      '</tbody></table></div>',
+      '<div class="sectionhead"><h2>Failures by check name</h2></div>',
+      '<div class="scroll"><table><thead><tr><th>Gate</th><th>Failures</th><th>Affected PRs</th><th>Failure rate</th></tr></thead><tbody>',
+      '<tr><td>playwright <small class="muted">app 15368</small></td><td class="num">9</td><td class="num">6</td><td class="num">20.5% / 44</td></tr>',
+      '<tr><td>unit <small class="muted">app 15368</small></td><td class="num">3</td><td class="num">3</td><td class="num">7.0% / 43</td></tr>',
+      '</tbody></table></div>'
+    ].join(''),
+
+
+    ai: [
+      '<div class="sectionhead"><h2>AI involvement</h2><span class="aside">Detector v0.1 · scanned 10 Sept 2026</span></div>',
+      '<div class="card"><p class="muted">This tab is the page that already exists at <code style="background:none;padding:0">/repos/[repoId]/ai-involvement</code>, unchanged. It moves from a buried link to a peer of the other views.</p></div>'
+    ].join(''),
+
+    readiness: [
+      '<div class="sectionhead"><h2>Agent readiness</h2><span class="aside">Rubric v0.1 &#183; graded at 3b8c366</span></div>',
+      '<div class="card"><p class="muted">This tab is the page that already exists at <code style="background:none;padding:0">/repos/[repoId]/grading</code>, unchanged &#8212; the card plus the per-check report and its evidence line ranges.</p></div>'
+    ].join(''),
+
+    settings: [
+      '<div class="sectionhead"><h2>Required gates</h2><span class="aside">Policy v3</span></div>',
+      '<div class="card"><div class="setting">',
+      '  <p>Only the checks you select define first-pass and CI outcomes. Everything else is collected but does not change a verdict. Saving recomputes every pull request.</p>',
+      '  <div style="margin-top:12px">',
+      '    <label class="gaterow"><input type="checkbox" id="g-unit" checked> unit <code>app 15368</code></label>',
+      '    <label class="gaterow"><input type="checkbox" id="g-play" checked> playwright <code>app 15368</code></label>',
+      '    <label class="gaterow"><input type="checkbox" id="g-lint"> lint <code>app 15368</code></label>',
+      '  </div>',
+      '  <div style="margin-top:14px"><button type="button" class="btn">Save policy and recompute</button></div>',
+      '</div></div>',
+      '<div class="sectionhead"><h2>Collection detail</h2><span class="aside">for debugging evidence gaps</span></div>',
+      '<div class="card"><dl class="dl">',
+      '  <div><dt>Last successful fetch</dt><dd>10 Sep 2026 14:02 <small>webhook delivery</small></dd></div>',
+      '  <div><dt>Latest attempt</dt><dd>complete · 10 Sep 14:02 <small>webhook delivery</small></dd></div>',
+      '  <div><dt>Latest imported PR activity</dt><dd>10 Sep 2026 14:02</dd></div>',
+      '  <div><dt>Accessible history</dt><dd>21 PRs · Free</dd></div>',
+      '  <div><dt>Latest 100 import</dt><dd>complete</dd></div>',
+      '  <div><dt>Background history</dt><dd>current</dd></div>',
+      '</dl></div>',
+      '<div class="sectionhead"><h2>Data</h2></div>',
+      '<div class="card"><div class="setting">',
+      '  <p>Re-import the latest 100 pull requests from GitHub. Existing records are updated in place; nothing is deleted.</p>',
+      '  <div style="margin-top:12px"><button type="button" class="btn ghost">Refresh latest 100 PRs</button></div>',
+      '</div></div>'
+    ].join('')
+  };
+
+  var routes = {
+    agents: 'localhost:3000/repos/demo-repository',
+    delivery: 'localhost:3000/repos/demo-repository/delivery',
+    prs: 'localhost:3000/repos/demo-repository/pull-requests',
+    ai: 'localhost:3000/repos/demo-repository/ai-involvement',
+    readiness: 'localhost:3000/repos/demo-repository/grading',
+    settings: 'localhost:3000/repos/demo-repository/settings'
+  };
+
+  var panel = document.getElementById('panel');
+  var url = document.getElementById('url');
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+
+  function show(key) {
+    if (!panels[key]) return;
+    panel.innerHTML = panels[key];
+    url.textContent = routes[key];
+    tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.dataset.tab === key)); });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { show(t.dataset.tab); });
+    t.addEventListener('keydown', function (e) {
+      var i = tabs.indexOf(t);
+      if (e.key === 'ArrowRight') { tabs[(i + 1) % tabs.length].focus(); tabs[(i + 1) % tabs.length].click(); }
+      if (e.key === 'ArrowLeft') { tabs[(i - 1 + tabs.length) % tabs.length].focus(); tabs[(i - 1 + tabs.length) % tabs.length].click(); }
+    });
+  });
+  show('agents');
+</script>

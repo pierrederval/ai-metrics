@@ -1,0 +1,42 @@
+/* Compact stand-in for GradeCard at phone width (see .agents-view rules in
+   src/app/style.css, which decide when this is visible instead of the
+   card). Carries only what the spec asks for: score, tier and symbols — no
+   scale, no flavour line, no next-tier block. */
+.grade-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--grade);
+  border-radius: 10px;
+  background: #eee;
+  color: #203f36;
+}
+.grade-banner-score {
+  font:
+    bold 22px Georgia,
+    serif;
+  letter-spacing: -1px;
+  color: var(--grade);
+}
+.grade-banner-score small {
+  font:
+    11px Arial,
+    sans-serif;
+  letter-spacing: 0;
+  color: #526b60;
+}
+.grade-banner-rating {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: #ffffff9c;
+}
+.grade-banner-symbols {
+  display: flex;
+  gap: 2px;
+  color: var(--grade);
+  margin-left: auto;
+}

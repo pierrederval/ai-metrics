@@ -3,6 +3,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CompletedGrade } from '../../db/queries/grade-runs';
 import { runGrade } from '../../app/repos/[repoId]/grading/actions';
+import { checkTitles } from '../../domain/grading/check-titles';
 import './grade-card.css';
 type Status = { id: string; state: 'queued' | 'running' | 'complete' | 'failed' };
 export function GradeControls({
@@ -113,13 +114,6 @@ export function GradeControls({
     </div>
   );
 }
-const titles: Record<string, string> = {
-  'root-agent-instructions': 'Agent instructions',
-  'root-readme': 'Project documentation',
-  'docs-markdown': 'Documentation',
-  'documented-setup': 'Setup instructions',
-  'documented-tests': 'Validation commands',
-};
 export function GradeReport({
   grade,
   owner,
@@ -145,7 +139,7 @@ export function GradeReport({
       {grade.checks.map((check) => (
         <article className="grading-check" key={check.id}>
           <h3>
-            <span>{titles[check.id] ?? check.id}</span>
+            <span>{checkTitles[check.id] ?? check.id}</span>
             <span>
               {check.status === 'pass' ? 'Pass' : 'Missing'} · {check.points} / {check.maxPoints}
             </span>

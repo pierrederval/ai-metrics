@@ -10,6 +10,7 @@ import { DateRange } from './date-range';
 vi.mock('next/navigation', () => ({
   usePathname: () => '/dashboard',
   useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 const now = new Date('2026-09-08T12:00:00Z');
 function data(days = 30): DashboardData {

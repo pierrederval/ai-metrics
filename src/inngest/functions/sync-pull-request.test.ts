@@ -52,9 +52,7 @@ test('a recompute failure does not fail an otherwise healthy hydration', async (
   mocks.runForegroundHydration.mockResolvedValueOnce('hydrated-id');
   mocks.recomputeExecutedDetections.mockRejectedValueOnce(new Error('boom'));
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
-  await expect(handler({ event: { data }, runId: 'execution', step })).resolves.toBe(
-    'hydrated-id',
-  );
+  await expect(handler({ event: { data }, runId: 'execution', step })).resolves.toBe('hydrated-id');
   expect(mocks.finishForegroundHydration).not.toHaveBeenCalled();
   log.mockRestore();
 });
