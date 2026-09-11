@@ -1,0 +1,1 @@
+ALTER TABLE "repositories" ADD COLUMN "act_enabled" boolean DEFAULT false NOT NULL;
