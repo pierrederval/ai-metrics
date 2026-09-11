@@ -19,6 +19,7 @@ export async function dispatchAuthoringPlan(
     .where(
       and(
         eq(authoringRuns.id, runId),
+        eq(authoringRuns.kind, 'plan'),
         eq(authoringRuns.state, 'queued'),
         isNull(authoringRuns.dispatchedAt),
       ),
@@ -31,6 +32,7 @@ export async function dispatchAuthoringPlan(
     .where(
       and(
         eq(authoringRuns.id, runId),
+        eq(authoringRuns.kind, 'plan'),
         eq(authoringRuns.state, 'queued'),
         isNull(authoringRuns.dispatchedAt),
       ),
