@@ -142,6 +142,12 @@ test('returns the run already in flight rather than queueing a second', async ()
   expect(second.id).toBe(first.id);
 });
 
+test('concurrent clicks share one active run', async () => {
+  const repositoryId = await seed();
+  const [a, b] = await Promise.all([requestPlan(repositoryId), requestPlan(repositoryId)]);
+  expect(a.id).toBe(b.id);
+});
+
 test('refuses a repository that has not opted in', async () => {
   const repositoryId = await seed(false);
   await expect(requestPlan(repositoryId)).rejects.toThrow('Act unavailable');
