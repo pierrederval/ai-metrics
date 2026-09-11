@@ -17,8 +17,10 @@ export const historySyncData = z.object({
 export const recomputeData = z.object({ prId: z.string().min(1) });
 export const invitationSendData = z.object({ deliveryId: z.string().min(1) });
 export const gradeRequestedData = z.object({ runId: z.string().min(1) });
+export const authoringPlanRequestedData = z.object({ runId: z.string().min(1) });
 export interface ReliabilityEvents {
   'repository/grade.requested': z.infer<typeof gradeRequestedData>;
+  'repository/authoring.plan.requested': z.infer<typeof authoringPlanRequestedData>;
   'workspace/invitation.send.requested': z.infer<typeof invitationSendData>;
   'github/webhook.received': z.infer<typeof eventData>;
   'github/history.sync.requested': z.infer<typeof historySyncData>;
