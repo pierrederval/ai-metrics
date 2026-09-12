@@ -63,3 +63,28 @@ test('parks no content behind a scroll observer', async () => {
   const html = renderToStaticMarkup(await Landing());
   expect(html).not.toMatch(/opacity:\s*0\b/);
 });
+
+// The hero animates, and the rest of this block is about what that costs when
+// the animation never runs. The server renders the frame HeroClimb starts on,
+// and every one of these assertions describes that frame.
+
+test('keeps the tagline as the headline, whether or not the climb ever plays', async () => {
+  const html = renderToStaticMarkup(await Landing());
+  expect(html).toMatch(/<h1[^>]*>Get your ultimate harness\.<\/h1>/);
+});
+
+test('names all three beats at rest, not just the one the climb starts on', async () => {
+  const html = renderToStaticMarkup(await Landing());
+  for (const beat of ['Self-monitor.', 'Self-act.', 'Self-train.']) {
+    expect(html).toContain(beat);
+  }
+});
+
+// A hero whose card is blank until JavaScript fills it in is a hero that is
+// blank to a crawler. It rests on a real grade, with a real tier on it.
+test('rests the hero card on a grade the rubric can actually issue', async () => {
+  const html = renderToStaticMarkup(await Landing());
+  expect(html).toContain('data-finish="shimmer"');
+  expect(html).toContain('Mediocre');
+  expect(html).toContain('Shimmer · Light holo');
+});

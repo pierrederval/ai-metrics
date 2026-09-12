@@ -101,7 +101,12 @@
   color: var(--fn-color-ink-inverse);
 }
 
-/* ---- Hero ------------------------------------------------------------- */
+/* ---- Hero ------------------------------------------------------------- *
+ * The hero animates. Everything it animates is legible standing still: the
+ * beats are three words on the page at rest, told apart by colour rather than
+ * by opacity, and the card rests on a real Shimmer grade rather than on
+ * nothing. With no JavaScript the hero is the tagline, the three beats and a
+ * card at 61 — a weaker pitch than the animated one, and a complete one.     */
 .mk-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
@@ -152,12 +157,6 @@
   max-width: 330px;
 }
 
-/* The tilt. Transform only, so it cannot reflow anything around it. */
-.mk-tilt {
-  transition: transform 220ms ease-out;
-  will-change: transform;
-}
-
 /* The sheen crossing the foil. Applied to the hero card only — the product's
    cards stay still.
  *
@@ -193,6 +192,116 @@
   100% {
     transform: translateX(360%);
   }
+}
+
+/* The three beats. Muted until reached, accent while being earned, ink once
+   earned — three states on the semantic tokens, no local colour. */
+.mk-beats {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fn-space-5);
+  margin: 0 0 var(--fn-space-5);
+  padding: 0;
+  font: 400 var(--fn-text-subtitle) var(--fn-font-display);
+  letter-spacing: -0.5px;
+}
+.mk-beats li {
+  color: var(--fn-color-ink-muted);
+  transition: color 420ms ease;
+}
+.mk-beats li[data-state='active'] {
+  color: var(--fn-color-accent);
+}
+.mk-beats li[data-state='done'] {
+  color: var(--fn-color-ink);
+}
+
+/* The tier crossing.
+ *
+ * The card's own text is styled by the design system; the landing page dresses
+ * it from out here, the way the sheen above already does. Each line arrives a
+ * beat after the one above it, so a new tier reads as the card settling into
+ * it rather than as four strings blinking at once.
+ *
+ * Restarting an animation needs the animation-name to change, and the name is
+ * all that differs between mk-tier-a and mk-tier-b. HeroClimb alternates
+ * data-tier on every threshold crossed, which swaps one for the other. The
+ * pair is the mechanism, not a duplicate someone forgot to delete.
+ *
+ * The floor is 0.35, not 0. A cascade that fades from nothing leaves half the
+ * card blank for the length of the stagger, four times over a ten-second
+ * climb, and an empty card reads as a broken one rather than as a card
+ * changing tier. The text dips and lifts; it never leaves.
+ *
+ * Gated on data-climbing so the resting card — the server's render, and the
+ * page with JavaScript off — is simply there, with nothing fading in. */
+.mk-hero-card[data-climbing='true'] .grade-card-rating,
+.mk-hero-card[data-climbing='true'] .grade-card-finish,
+.mk-hero-card[data-climbing='true'] .grade-card-flavour,
+.mk-hero-card[data-climbing='true'] .grade-card-move,
+.mk-hero-card[data-climbing='true'] .grade-card-no-move {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1);
+  animation-fill-mode: both;
+}
+.mk-hero-card[data-climbing='true'] .grade-card-finish {
+  animation-delay: 60ms;
+}
+.mk-hero-card[data-climbing='true'] .grade-card-flavour {
+  animation-delay: 120ms;
+}
+.mk-hero-card[data-climbing='true'] .grade-card-move,
+.mk-hero-card[data-climbing='true'] .grade-card-no-move {
+  animation-delay: 180ms;
+}
+.mk-hero-card[data-climbing='true'][data-tier='0'] .grade-card-rating,
+.mk-hero-card[data-climbing='true'][data-tier='0'] .grade-card-finish,
+.mk-hero-card[data-climbing='true'][data-tier='0'] .grade-card-flavour,
+.mk-hero-card[data-climbing='true'][data-tier='0'] .grade-card-move,
+.mk-hero-card[data-climbing='true'][data-tier='0'] .grade-card-no-move {
+  animation-name: mk-tier-a;
+}
+.mk-hero-card[data-climbing='true'][data-tier='1'] .grade-card-rating,
+.mk-hero-card[data-climbing='true'][data-tier='1'] .grade-card-finish,
+.mk-hero-card[data-climbing='true'][data-tier='1'] .grade-card-flavour,
+.mk-hero-card[data-climbing='true'][data-tier='1'] .grade-card-move,
+.mk-hero-card[data-climbing='true'][data-tier='1'] .grade-card-no-move {
+  animation-name: mk-tier-b;
+}
+@keyframes mk-tier-a {
+  from {
+    opacity: 0.35;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mk-tier-b {
+  from {
+    opacity: 0.35;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The foil, the grade colour and the score all cross-fade underneath that
+   cascade, so a tier change is a short sequence rather than a single frame. */
+.mk-hero-card .grade-card,
+.mk-hero-card .grade-card-inner,
+.mk-hero-card .grade-card-score,
+.mk-hero-card .grade-card-pointer {
+  transition:
+    background 400ms ease,
+    border-color 400ms ease,
+    box-shadow 400ms ease,
+    color 400ms ease,
+    left 220ms ease-out;
 }
 
 /* ---- Sections --------------------------------------------------------- */
@@ -413,16 +522,29 @@
 }
 
 /* ---- Motion opt-out ---------------------------------------------------- *
- * The sheen and the tilt are both decoration. Under prefers-reduced-motion
- * they stop entirely rather than slowing down — the card reads exactly the
- * same standing still, which is how you know they were decoration.           */
+ * The sheen and the climb are both decoration. Under prefers-reduced-motion
+ * they stop entirely rather than slowing down — HeroClimb renders its last
+ * frame instead of playing to it, so the card reads exactly the same standing
+ * still, which is how you know they were decoration.                         */
 @media (prefers-reduced-motion: reduce) {
   .mk-hero-card .grade-card-inner::after {
     animation: none;
     background: none;
   }
-  .mk-tilt {
+  .mk-beats li {
     transition: none;
-    transform: none !important;
+  }
+  .mk-hero-card[data-climbing='true'] .grade-card-rating,
+  .mk-hero-card[data-climbing='true'] .grade-card-finish,
+  .mk-hero-card[data-climbing='true'] .grade-card-flavour,
+  .mk-hero-card[data-climbing='true'] .grade-card-move,
+  .mk-hero-card[data-climbing='true'] .grade-card-no-move {
+    animation: none;
+  }
+  .mk-hero-card .grade-card,
+  .mk-hero-card .grade-card-inner,
+  .mk-hero-card .grade-card-score,
+  .mk-hero-card .grade-card-pointer {
+    transition: none;
   }
 }
