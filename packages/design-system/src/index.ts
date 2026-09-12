@@ -1,4 +1,18 @@
-/* The package's public surface. Primitives arrive in Task 3, the grade card in
-   Task 4. Until then the package ships styles only, and `export {}` keeps this
-   a module rather than a script. */
-export {};
+/* The package's public surface.
+ *
+ * Admission test for anything exported here: the app renders it AND the
+ * landing page renders it. That is what keeps charts, the PR table, the
+ * repository picker, import progress, cohort comparison, the grading report,
+ * the sidebar, the workspace switcher and the account menu out — they are
+ * product surfaces, not system parts.
+ *
+ * The grade card joins them in Task 4.
+ */
+export { Brand } from './brand';
+export { Button } from './button';
+export { Badge } from './badge';
+export { Surface } from './surface';
+export { StatCard } from './stat-card';
+export { Notice } from './notice';
+export { Field } from './field';
+export { DataTable } from './data-table';
