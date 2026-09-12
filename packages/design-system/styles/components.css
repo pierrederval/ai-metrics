@@ -1,0 +1,248 @@
+/* The primitives' classes, moved out of src/app/style.css.
+ *
+ * Admission test for anything here: the app renders it AND the landing page
+ * renders it. That test is what keeps charts, the PR table, the repository
+ * picker, import progress and the sidebar out — those are product surfaces,
+ * not system parts.
+ *
+ * Several rules keep the bare element selector they had in style.css
+ * (`section`, `button`, `input`, `label`) alongside an `.fn-` class. The
+ * element selector is what the app's existing markup relies on; the class is
+ * what a caller writes when it wants the treatment deliberately. Dropping the
+ * element selector would mean touching hundreds of lines of app markup for no
+ * behavioural gain, which is not what this task is for.
+ *
+ * Every rule references the semantic tier. No literal appears here — the
+ * boundary test in ../boundary.test.ts enforces it.
+ */
+
+/* ---- Brand ------------------------------------------------------------ */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-decoration: none;
+  margin-bottom: var(--fn-space-7);
+  color: var(--fn-color-ink);
+}
+.brand:hover {
+  color: var(--fn-color-ink);
+}
+.brand-mark {
+  width: var(--fn-space-7);
+  height: var(--fn-space-7);
+  color: var(--fn-color-accent);
+  margin-bottom: var(--fn-space-3);
+}
+.brand-name {
+  font: 34px var(--fn-font-display);
+  letter-spacing: -1.3px;
+}
+.brand-caption {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: var(--fn-space-2);
+}
+
+/* ---- Button ----------------------------------------------------------- */
+button,
+.fn-button {
+  background: var(--fn-color-accent);
+  color: var(--fn-color-ink-inverse);
+  border: 0;
+  padding: 11px var(--fn-space-4);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.5;
+}
+button:hover,
+.fn-button:hover {
+  background: var(--fn-color-accent-hover);
+}
+/* The landing page's calls to action, which need to carry across a hero. The
+   product has no use for this size yet; the ladder and the signup block do. */
+.fn-button-lg {
+  padding: var(--fn-space-4) var(--fn-space-5);
+  font-size: var(--fn-text-body);
+  border-radius: var(--fn-radius-md);
+}
+.fn-button-secondary {
+  background: var(--fn-color-ink);
+  color: var(--fn-color-ink-inverse);
+}
+.fn-button-secondary:hover {
+  background: var(--fn-color-ink-hover);
+}
+.quiet-button,
+.fn-button-quiet {
+  background: transparent;
+  color: var(--fn-color-ink-muted);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.quiet-button:hover,
+.fn-button-quiet:hover {
+  background: transparent;
+  color: var(--fn-color-accent);
+}
+
+/* ---- Badge ------------------------------------------------------------ *
+ * Was `.ai-pill` with `.ran` / `.setup` / `.none`. The tones are named for
+ * what they mean to a reader rather than for what the AI-involvement route
+ * happened to call them, because the landing page uses the same three to say
+ * shipped / scoring shipped / designed.                                     */
+.fn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fn-text-label);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--fn-radius-pill);
+  white-space: nowrap;
+}
+.fn-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.fn-badge-positive {
+  background: var(--fn-color-positive-surface);
+  color: var(--fn-color-positive);
+  box-shadow: inset 0 0 0 1px var(--fn-color-positive-ring);
+}
+.fn-badge-caution {
+  background: var(--fn-color-caution-tint);
+  color: var(--fn-color-caution);
+  box-shadow: inset 0 0 0 1px var(--fn-color-caution-ring);
+}
+.fn-badge-neutral {
+  background: var(--fn-color-neutral-tint);
+  color: var(--fn-color-ink-muted);
+  box-shadow: inset 0 0 0 1px var(--fn-color-neutral-ring);
+}
+
+/* ---- Surface ---------------------------------------------------------- */
+section,
+.fn-surface {
+  background: var(--fn-color-surface-glass);
+  border: 0;
+  border-radius: var(--fn-radius-lg);
+  padding: var(--fn-space-5);
+  margin: var(--fn-space-4) 0;
+  box-shadow: var(--fn-elevation-card);
+}
+@supports (backdrop-filter: blur(16px)) {
+  section,
+  .fn-surface {
+    background: var(--fn-color-surface-glass-blurred);
+    backdrop-filter: blur(16px);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  section,
+  .fn-surface {
+    backdrop-filter: none;
+    background: var(--fn-color-surface-opaque);
+  }
+}
+
+/* ---- StatCard --------------------------------------------------------- *
+ * Was `.bigcard`. The legacy `.t` / `.v` / `.s` children keep their names:
+ * six call sites in the app render them, and renaming buys nothing here.    */
+.bigcard,
+.fn-stat-card {
+  background: var(--fn-color-surface-glass);
+  border-radius: var(--fn-radius-lg);
+  padding: 18px 20px 20px;
+  box-shadow: var(--fn-elevation-card);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.bigcard .t,
+.fn-stat-card .t {
+  font-size: var(--fn-text-label);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--fn-color-ink-muted);
+  font-weight: 700;
+}
+.bigcard .v,
+.fn-stat-card .v {
+  font: 400 var(--fn-text-figure) var(--fn-font-display);
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+}
+.bigcard .s,
+.fn-stat-card .s {
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+  line-height: 1.5;
+}
+
+/* ---- Notice ----------------------------------------------------------- */
+.notice,
+.fn-notice {
+  padding: var(--fn-space-4) 20px;
+  background: var(--fn-color-caution-surface);
+  border-left: 3px solid var(--fn-color-caution);
+  border-radius: 0 var(--fn-radius-md) var(--fn-radius-md) 0;
+}
+
+/* ---- Field ------------------------------------------------------------ */
+input,
+.fn-field input {
+  padding: 9px;
+  border: 1px solid var(--fn-color-border);
+  border-radius: var(--fn-radius-sm);
+  background: var(--fn-color-surface);
+  accent-color: var(--fn-color-accent);
+}
+label,
+.fn-field label {
+  display: block;
+  margin: var(--fn-space-3) 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ---- DataTable -------------------------------------------------------- *
+ * The wrapper only. The table chrome itself is an element default and lives
+ * in base.css, because a bare <table> in the app already gets it.           */
+.scroll,
+.fn-data-table {
+  overflow-x: auto;
+  border-radius: 10px;
+  margin: var(--fn-space-4) 0;
+}
+
+/* ---- Responsive ------------------------------------------------------- */
+@media (max-width: 650px) {
+  .brand {
+    display: grid;
+    grid-template-columns: 40px auto;
+    column-gap: 10px;
+    margin-bottom: 18px;
+  }
+  .brand-mark {
+    grid-row: span 2;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+  }
+  .brand-name {
+    font-size: 28px;
+  }
+  .brand-caption {
+    margin-top: 3px;
+    font-size: 7px;
+  }
+}

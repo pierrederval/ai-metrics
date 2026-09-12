@@ -1,40 +1,20 @@
+/* App-shell rules. The palette, the reset and the element defaults now live in
+   @fieldnote/design-system (imported in layout.tsx, before this file), so the
+   only colours named here are the aliases below — and Task 2 removes those
+   too, leaving this file with no colour literal at all.
+   The short names stay for now as aliases onto the semantic tier, so the
+   hundreds of `var(--ink)` call sites below keep working while the migration
+   happens one rule at a time rather than all at once. */
 :root {
-  --paper: #f4f7f3;
-  --sidebar: #e6ece7;
-  --ink: #203f36;
-  --muted: #526b60;
-  --accent: #be421f;
-  --line: #bfcfc4;
-  --glass: rgba(244, 248, 240, 0.62);
-  --ran: #2f6b52;
-  --setup: #986817;
-  color: var(--ink);
-  background: var(--sidebar);
-  font-family: Arial, Helvetica, sans-serif;
-  font-synthesis: none;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-}
-a {
-  color: var(--ink);
-  text-underline-offset: 4px;
-}
-a:hover {
-  color: var(--accent);
-}
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
+  --paper: var(--fn-color-surface);
+  --sidebar: var(--fn-color-ground);
+  --ink: var(--fn-color-ink);
+  --muted: var(--fn-color-ink-muted);
+  --accent: var(--fn-color-accent);
+  --line: var(--fn-color-border);
+  --glass: var(--fn-color-surface-glass);
+  --ran: var(--fn-color-positive);
+  --setup: var(--fn-color-caution);
 }
 .app-shell {
   min-height: 100vh;
@@ -50,36 +30,6 @@ textarea {
   position: sticky;
   top: 0;
   height: 100dvh;
-}
-.brand {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-decoration: none;
-  margin-bottom: 48px;
-  color: var(--ink);
-}
-.brand:hover {
-  color: var(--ink);
-}
-.brand-mark {
-  width: 48px;
-  height: 48px;
-  color: var(--accent);
-  margin-bottom: 12px;
-}
-.brand-name {
-  font:
-    34px Georgia,
-    'Times New Roman',
-    serif;
-  letter-spacing: -1.3px;
-}
-.brand-caption {
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-top: 8px;
 }
 nav {
   display: grid;
@@ -120,9 +70,15 @@ main {
   min-width: 0;
   padding: 34px clamp(24px, 4vw, 64px) 64px;
   background:
-    linear-gradient(90deg, #e6ece7 0%, rgba(230, 236, 231, 0.94) 7%, rgba(230, 236, 231, 0) 48%),
-    radial-gradient(ellipse at 12% 38%, #c8ddce 0%, transparent 62%),
-    radial-gradient(ellipse at 100% 78%, #ecd3c3 0%, transparent 57%), #f0f5ef;
+    linear-gradient(
+      90deg,
+      var(--fn-color-wash-edge) 0%,
+      var(--fn-color-wash-edge-fade) 7%,
+      var(--fn-color-wash-edge-clear) 48%
+    ),
+    radial-gradient(ellipse at 12% 38%, var(--fn-color-wash-cool) 0%, transparent 62%),
+    radial-gradient(ellipse at 100% 78%, var(--fn-color-wash-warm) 0%, transparent 57%),
+    var(--fn-color-wash-base);
 }
 .page-topline {
   display: flex;
@@ -130,68 +86,16 @@ main {
   gap: 16px;
   padding-bottom: 26px;
   margin-bottom: 30px;
-  border-bottom: 1px solid #203f3615;
+  border-bottom: 1px solid var(--fn-color-hairline);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.3px;
-  color: var(--muted);
-}
-h1,
-h2,
-h3 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 400;
-}
-h1 {
-  font-size: clamp(32px, 3.3vw, 48px);
-  letter-spacing: -1.4px;
-  margin: 12px 0;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-}
-h2 {
-  font-size: 27px;
-  letter-spacing: -0.5px;
-  margin: 34px 0 16px;
-}
-h3 {
-  font-size: 22px;
-}
-p,
-small {
-  line-height: 1.65;
-}
-p {
-  font-size: 14px;
-}
-small,
-.muted {
-  color: var(--muted);
-}
-.eyebrow {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
   color: var(--muted);
 }
 .page-intro {
   color: var(--muted);
   max-width: 640px;
   margin-bottom: 28px;
-}
-section {
-  background: var(--glass);
-  border: 0;
-  border-radius: 12px;
-  padding: 24px;
-  margin: 16px 0;
-  box-shadow: 0 6px 20px #203f3610;
-}
-@supports (backdrop-filter: blur(16px)) {
-  section {
-    background: rgba(244, 248, 240, 0.43);
-    backdrop-filter: blur(16px);
-  }
 }
 .cards {
   display: grid;
@@ -226,34 +130,6 @@ section {
    being copied a second time. agent-share.css itself is deleted (Task 7):
    once .v/.s moved here it held nothing but a comment pointing back to
    this block, and no rules of its own. */
-.bigcard {
-  background: var(--glass);
-  border-radius: 12px;
-  padding: 18px 20px 20px;
-  box-shadow: 0 6px 20px #203f3610;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-}
-.bigcard .t {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 700;
-}
-.bigcard .v {
-  font:
-    400 30px Georgia,
-    serif;
-  letter-spacing: -0.8px;
-  line-height: 1.05;
-}
-.bigcard .s {
-  font-size: 12.5px;
-  color: var(--muted);
-  line-height: 1.5;
-}
 .summary-strip {
   display: flex;
   flex-wrap: wrap;
@@ -288,83 +164,8 @@ section {
   font-size: 24px;
   color: var(--accent);
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  background: #f4f8f06e;
-}
-td,
-th {
-  padding: 15px;
-  text-align: left;
-  border-bottom: 1px solid #203f3620;
-  line-height: 1.5;
-}
-th {
-  font-size: 10px;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-  font-weight: 600;
-  background: #e6ece780;
-}
-tbody tr:hover {
-  background: #ffffff35;
-}
-.scroll {
-  overflow-x: auto;
-  border-radius: 10px;
-  margin: 16px 0;
-}
-.notice {
-  padding: 16px 20px;
-  background: #f3e8ca;
-  border-left: 3px solid #986817;
-  border-radius: 0 8px 8px 0;
-}
 .timeline {
   border-left: 3px solid var(--accent);
-}
-button {
-  background: var(--accent);
-  color: white;
-  border: 0;
-  padding: 11px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1.5;
-}
-button:hover {
-  background: #a6381a;
-}
-.quiet-button {
-  background: transparent;
-  color: var(--muted);
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-.quiet-button:hover {
-  background: transparent;
-  color: var(--accent);
-}
-input {
-  padding: 9px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--paper);
-  accent-color: var(--accent);
-}
-label {
-  display: block;
-  margin: 12px 0;
-  font-size: 13px;
-  line-height: 1.6;
-}
-code {
-  overflow-wrap: anywhere;
-  font-size: 0.9em;
 }
 .skip-link {
   position: fixed;
@@ -403,25 +204,6 @@ code {
     padding: 18px 20px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
-  }
-  .brand {
-    display: grid;
-    grid-template-columns: 40px auto;
-    column-gap: 10px;
-    margin-bottom: 18px;
-  }
-  .brand-mark {
-    grid-row: span 2;
-    width: 38px;
-    height: 38px;
-    margin: 0;
-  }
-  .brand-name {
-    font-size: 28px;
-  }
-  .brand-caption {
-    margin-top: 3px;
-    font-size: 7px;
   }
   nav {
     display: flex;
@@ -463,12 +245,6 @@ code {
   }
   .repository-card {
     padding: 20px;
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  section {
-    backdrop-filter: none;
-    background: #f0f4ed;
   }
 }
 
@@ -582,14 +358,25 @@ code {
 
 /* Basic dashboards use the approved Fieldnote paper and local metric semantics. */
 .metrics-page {
-  --paper: #f4f2e9;
-  --panel: #fffef9;
-  --ink: #253e34;
-  --muted: #68736a;
-  --line: #dce0d4;
-  --metric-green: #416951;
-  --metric-amber: #c49a48;
-  --metric-rust: #995735;
+  /* This route is a nested theme: it re-points the palette for its own subtree
+     rather than adding a second set of classes. It re-points the semantic tier
+     itself, because the element defaults in @fieldnote/design-system's base
+     layer read that tier — without these, a <small>, a <th> or a link inside
+     this scope would keep the global ink while everything around it moved to
+     the warm metrics paper. The short names below are then aliases onto the
+     scoped semantic tier, exactly as they are at :root. */
+  --fn-color-ink: var(--fn-pine-800);
+  --fn-color-ink-muted: var(--fn-pine-500);
+  --fn-color-border: var(--fn-sand-200);
+  --fn-color-surface: var(--fn-sand-50);
+  --paper: var(--fn-color-surface);
+  --panel: var(--fn-color-panel);
+  --ink: var(--fn-color-ink);
+  --muted: var(--fn-color-ink-muted);
+  --line: var(--fn-color-border);
+  --metric-green: var(--fn-color-chart-positive);
+  --metric-amber: var(--fn-color-chart-caution);
+  --metric-rust: var(--fn-color-chart-critical);
   color: var(--ink);
   background: var(--paper);
   border-radius: 16px;
@@ -763,10 +550,10 @@ code {
   border-radius: 12px;
   background: var(--paper);
   color: var(--ink);
-  box-shadow: 0 20px 80px #203f3633;
+  box-shadow: var(--fn-elevation-dialog);
 }
 .history-dialog::backdrop {
-  background: #102a2266;
+  background: var(--fn-color-scrim);
 }
 .metric-coverage .history-dialog p {
   font-size: 14px;
@@ -876,7 +663,7 @@ code {
 }
 .metrics-page .day-position:hover,
 .metrics-page .day-position[aria-pressed='true'] {
-  background: #253e3410;
+  background: var(--fn-color-chart-hover);
 }
 .day-position:focus-visible {
   z-index: 1;
@@ -1042,8 +829,9 @@ code {
   justify-content: center;
   padding: 64px 24px;
   background:
-    radial-gradient(ellipse at 15% 40%, #c8ddce, transparent 62%),
-    radial-gradient(ellipse at 100% 80%, #ecd3c3, transparent 57%), #f0f5ef;
+    radial-gradient(ellipse at 15% 40%, var(--fn-color-wash-cool), transparent 62%),
+    radial-gradient(ellipse at 100% 80%, var(--fn-color-wash-warm), transparent 57%),
+    var(--fn-color-wash-base);
 }
 .signin-panel {
   width: 100%;
@@ -1051,8 +839,8 @@ code {
   padding: 44px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f4f7f3c9;
-  box-shadow: 0 20px 60px #203f3608;
+  background: var(--fn-color-surface-raised);
+  box-shadow: var(--fn-elevation-panel);
 }
 .signin-panel .brand {
   justify-content: center;
@@ -1081,13 +869,13 @@ code {
   margin: 28px 0 20px;
   border-radius: 5px;
   background: var(--ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   text-decoration: none;
   font-size: 14px;
 }
 .signin-github:hover {
-  color: white;
-  background: #315b4d;
+  color: var(--fn-color-ink-inverse);
+  background: var(--fn-color-ink-hover);
 }
 .signin-panel hr,
 .shell-menu hr {
@@ -1134,8 +922,8 @@ code {
 }
 .shell-menu > button:hover,
 .shell-menu > button[aria-expanded='true'] {
-  background: #f8faf6;
-  border-color: #8da99b;
+  background: var(--fn-color-surface-hover);
+  border-color: var(--fn-color-border-strong);
 }
 .workspace-name {
   overflow: hidden;
@@ -1148,8 +936,8 @@ code {
   width: 25px;
   height: 25px;
   flex-shrink: 0;
-  background: #d4e2d6;
-  border: 1px solid #b5c9bb;
+  background: var(--fn-color-badge-surface);
+  border: 1px solid var(--fn-color-badge-border);
   border-radius: 5px;
   font-size: 11px;
   font-weight: bold;
@@ -1172,7 +960,7 @@ code {
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--paper);
-  box-shadow: 0 12px 28px #203f361c;
+  box-shadow: var(--fn-elevation-menu);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -1194,7 +982,7 @@ code {
 }
 .shell-menu-options button:hover,
 .shell-menu-options a:hover {
-  background: #e1e9df;
+  background: var(--fn-color-surface-sunken);
 }
 .account-menu {
   flex-shrink: 0;
@@ -1212,7 +1000,7 @@ code {
   height: 32px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #c8ddce;
+  background: var(--fn-color-avatar-surface);
   font-size: 11px;
   color: var(--ink);
 }
@@ -1243,7 +1031,7 @@ code {
 }
 .owner-badge {
   background: var(--accent);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   font-weight: 600;
 }
 .member-badge {
@@ -1265,7 +1053,7 @@ code {
 }
 .settings-tabs a[aria-current='page'] {
   background: var(--ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
 }
 .settings-tabs > span {
   margin-left: auto;
@@ -1279,9 +1067,9 @@ code {
 .settings-panel {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f4f7f3c9;
+  background: var(--fn-color-surface-raised);
   padding: 28px;
-  box-shadow: 0 8px 24px #203f3608;
+  box-shadow: var(--fn-elevation-panel-soft);
   margin: 0 0 24px;
 }
 .settings-panel h2 {
@@ -1306,7 +1094,7 @@ code {
   border: 1px solid var(--line);
   border-radius: 4px;
   color: var(--ink);
-  background: #ffffff99;
+  background: var(--fn-color-field-surface);
   min-width: 0;
 }
 .settings-form button {
@@ -1320,7 +1108,7 @@ code {
 }
 .settings-form button:hover {
   background: var(--ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
 }
 .settings-form button:disabled {
   opacity: 0.6;
@@ -1328,7 +1116,7 @@ code {
 }
 .form-error {
   width: 100%;
-  color: #a1361c;
+  color: var(--fn-color-danger);
   font-size: 12px;
   margin: 4px 0;
 }
@@ -1389,7 +1177,7 @@ code {
 }
 .status-failed,
 .status-expired {
-  color: #a1361c;
+  color: var(--fn-color-danger);
 }
 .settings-link {
   display: inline-block;
@@ -1469,40 +1257,6 @@ code {
   letter-spacing: 0.9px;
   text-transform: uppercase;
   color: var(--muted);
-}
-.ai-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.ai-pill::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.ai-pill.ran {
-  background: #2f6b5218;
-  color: var(--ran);
-  box-shadow: inset 0 0 0 1px #2f6b5240;
-}
-.ai-pill.setup {
-  background: #98681718;
-  color: var(--setup);
-  box-shadow: inset 0 0 0 1px #98681740;
-}
-.ai-pill.none {
-  background: #526b6014;
-  color: var(--muted);
-  box-shadow: inset 0 0 0 1px #526b6033;
 }
 .ai-evidence > * + * {
   margin-top: 12px;

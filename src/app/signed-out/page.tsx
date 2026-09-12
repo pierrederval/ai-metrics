@@ -1,4 +1,4 @@
-import { Brand } from '../../components/brand';
+import { Brand } from '@fieldnote/design-system';
 export const metadata = { title: 'Sign in' };
 export default function SignedOut() {
   return (

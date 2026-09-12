@@ -1,0 +1,243 @@
+/* Every custom property fieldnote has, in three tiers.
+ *
+ *   reference → names the palette. The ONLY tier allowed a colour literal.
+ *   finish    → one colour per grade band, lifted from gradePresentation().
+ *   semantic  → what components actually reference.
+ *
+ * Components reference the semantic tier only. The one documented exception is
+ * the grade card, which reads `--grade` (set inline from the domain) and whose
+ * foil gradients stay in grade-card.css — an eight-to-nine stop gradient only
+ * means anything whole, and naming twenty-odd stops here would be bookkeeping
+ * rather than a system.
+ *
+ * Every value below is lifted unchanged from src/app/style.css or
+ * src/domain/grading/presentation.ts. Colour and type are pixel-identical to
+ * the approved baseline in docs/design/fieldnote/README.md; nothing here is a
+ * redesign. Alpha variants keep their own reference entry rather than being
+ * rebuilt with color-mix(), so the computed colour is byte-for-byte what it
+ * was before extraction.
+ */
+:root {
+  /* ---------------------------------------------------------------- *
+   * Reference tier — the palette.                                     *
+   * ---------------------------------------------------------------- */
+
+  /* Pine: the ink greens. */
+  --fn-pine-900: #203f36;
+  --fn-pine-800: #253e34;
+  --fn-pine-700: #315b4d;
+  --fn-pine-600: #526b60;
+  --fn-pine-500: #68736a;
+  --fn-pine-400: #8da99b;
+  --fn-pine-ink-deep: #102a22;
+
+  /* Mist: the pale greens, from border weight up to the sidebar wash. */
+  --fn-mist-350: #b5c9bb;
+  --fn-mist-300: #bfcfc4;
+  --fn-mist-280: #c8ddce;
+  --fn-mist-260: #d4e2d6;
+  --fn-mist-240: #e1e9df;
+  --fn-mist-200: #e6ece7;
+
+  /* Paper: the near-whites. Higher number is darker. */
+  --fn-paper-0: #fffef9;
+  --fn-paper-25: #f8faf6;
+  --fn-paper-50: #f4f7f3;
+  --fn-paper-75: #f4f8f0;
+  --fn-paper-100: #f0f5ef;
+  --fn-paper-150: #f0f4ed;
+
+  /* Sand: the warm paper the basic dashboards sit on. */
+  --fn-sand-50: #f4f2e9;
+  --fn-sand-200: #dce0d4;
+
+  /* Ember: the accent rust. */
+  --fn-ember-600: #be421f;
+  --fn-ember-700: #a6381a;
+  --fn-ember-800: #a1361c;
+
+  /* Clay: the warm wash and the metric rust. */
+  --fn-clay-300: #ecd3c3;
+  --fn-clay-600: #995735;
+
+  /* Moss: the "ran" / positive greens. */
+  --fn-moss-600: #416951;
+  --fn-moss-700: #2f6b52;
+
+  /* Amber: the "setup" / caution yellows. */
+  --fn-amber-100: #f3e8ca;
+  --fn-amber-500: #c49a48;
+  --fn-amber-700: #986817;
+
+  /* Alpha overlays. The suffix is the alpha as a percentage, so `a20` is the
+     same colour at 20% — kept as literals because the base-plus-alpha form is
+     what the approved baseline actually renders. */
+  --fn-pine-900-a03: #203f3608;
+  --fn-pine-900-a06: #203f3610;
+  --fn-pine-900-a08: #203f3615;
+  --fn-pine-900-a11: #203f361c;
+  --fn-pine-900-a13: #203f3620;
+  --fn-pine-900-a20: #203f3633;
+  --fn-pine-800-a06: #253e3410;
+  --fn-pine-ink-deep-a40: #102a2266;
+  --fn-pine-600-a08: #526b6014;
+  --fn-pine-600-a20: #526b6033;
+  --fn-moss-700-a09: #2f6b5218;
+  --fn-moss-700-a25: #2f6b5240;
+  --fn-amber-700-a09: #98681718;
+  --fn-amber-700-a25: #98681740;
+  --fn-mist-200-a50: #e6ece780;
+  --fn-paper-50-a79: #f4f7f3c9;
+  --fn-paper-75-a43: #f4f8f06e;
+  --fn-white-a21: #ffffff35;
+  --fn-white-a60: #ffffff99;
+  --fn-white-a61: #ffffff9c;
+
+  /* A neutral grey, not on the pine/mist ramp. It is what the grade banner has
+     always sat on; it is recorded rather than corrected, because the approved
+     baseline is not up for redesign here. */
+  --fn-grey-100: #eee;
+
+  /* Two surface washes that are stated as rgba() in the baseline rather than
+     hex, and stay that way so the computed value does not move. */
+  --fn-glass-62: rgba(244, 248, 240, 0.62);
+  --fn-glass-43: rgba(244, 248, 240, 0.43);
+  --fn-mist-200-rgba-94: rgba(230, 236, 231, 0.94);
+  --fn-mist-200-rgba-0: rgba(230, 236, 231, 0);
+
+  /* ---------------------------------------------------------------- *
+   * Finish tier — one colour per grade band.                          *
+   * Lifted from gradePresentation(). The identifier `rainbow` is the   *
+   * domain's; `prismatic` is the name users read. Both appear here on  *
+   * purpose: the token follows the user-facing name, the data          *
+   * attribute follows the domain one.                                  *
+   * ---------------------------------------------------------------- */
+  --fn-grade-common: #b54740;
+  --fn-grade-shimmer: #548eae;
+  --fn-grade-bronze: #895333;
+  --fn-grade-silver: #697e8d;
+  --fn-grade-gold: #a77a13;
+  --fn-grade-prismatic: #7359a3;
+
+  /* ---------------------------------------------------------------- *
+   * Semantic tier — what components reference.                        *
+   * ---------------------------------------------------------------- */
+
+  /* Ink */
+  --fn-color-ink: var(--fn-pine-900);
+  --fn-color-ink-muted: var(--fn-pine-600);
+  --fn-color-ink-hover: var(--fn-pine-700);
+  --fn-color-ink-inverse: #fff;
+
+  /* Ground and surfaces */
+  --fn-color-ground: var(--fn-mist-200);
+  --fn-color-surface: var(--fn-paper-50);
+  --fn-color-surface-raised: var(--fn-paper-50-a79);
+  --fn-color-surface-glass: var(--fn-glass-62);
+  --fn-color-surface-glass-blurred: var(--fn-glass-43);
+  --fn-color-surface-opaque: var(--fn-paper-150);
+  --fn-color-surface-hover: var(--fn-paper-25);
+  --fn-color-surface-sunken: var(--fn-mist-240);
+  /* The flat panel a nested theme puts its content on, where the glass
+     treatment would fight the theme's own paper. */
+  --fn-color-panel: var(--fn-paper-0);
+  /* Small tinted plates: the workspace initial, the account avatar. Distinct
+     roles that happen to sit a step apart on the mist ramp, so distinct
+     tokens — collapsing them would be tidier and wrong. */
+  --fn-color-badge-surface: var(--fn-mist-260);
+  --fn-color-badge-border: var(--fn-mist-350);
+  --fn-color-avatar-surface: var(--fn-mist-280);
+
+  /* The page wash under `main`, and the public entry panel. Three stops plus a
+     base, which is why these are four tokens rather than one. */
+  --fn-color-wash-base: var(--fn-paper-100);
+  --fn-color-wash-edge: var(--fn-mist-200);
+  --fn-color-wash-edge-fade: var(--fn-mist-200-rgba-94);
+  --fn-color-wash-edge-clear: var(--fn-mist-200-rgba-0);
+  --fn-color-wash-cool: var(--fn-mist-280);
+  --fn-color-wash-warm: var(--fn-clay-300);
+
+  /* Lines */
+  --fn-color-border: var(--fn-mist-300);
+  --fn-color-border-strong: var(--fn-pine-400);
+  --fn-color-hairline: var(--fn-pine-900-a08);
+  --fn-color-rule: var(--fn-pine-900-a13);
+
+  /* Accent */
+  --fn-color-accent: var(--fn-ember-600);
+  --fn-color-accent-hover: var(--fn-ember-700);
+  --fn-color-danger: var(--fn-ember-800);
+
+  /* Status */
+  --fn-color-positive: var(--fn-moss-700);
+  --fn-color-positive-surface: var(--fn-moss-700-a09);
+  --fn-color-positive-ring: var(--fn-moss-700-a25);
+  --fn-color-caution: var(--fn-amber-700);
+  --fn-color-caution-surface: var(--fn-amber-100);
+  --fn-color-caution-tint: var(--fn-amber-700-a09);
+  --fn-color-caution-ring: var(--fn-amber-700-a25);
+  --fn-color-neutral-tint: var(--fn-pine-600-a08);
+  --fn-color-neutral-ring: var(--fn-pine-600-a20);
+
+  /* Tables */
+  --fn-color-table-surface: var(--fn-paper-75-a43);
+  --fn-color-table-head: var(--fn-mist-200-a50);
+  --fn-color-row-hover: var(--fn-white-a21);
+
+  /* Fields */
+  --fn-color-field-surface: var(--fn-white-a60);
+
+  /* Charts. The three outcome colours the daily charts, the legend and the KPI
+     lines all read — named for what they mean, not for the hue, so "recovered"
+     stays amber whatever amber becomes. */
+  --fn-color-chart-positive: var(--fn-moss-600);
+  --fn-color-chart-caution: var(--fn-amber-500);
+  --fn-color-chart-critical: var(--fn-clay-600);
+  --fn-color-chart-hover: var(--fn-pine-800-a06);
+
+  /* The grade banner, the phone-width stand-in for the card. Its own two
+     surfaces, because it sits on neither the glass nor the paper. */
+  --fn-color-banner-surface: var(--fn-grey-100);
+  --fn-color-banner-pill: var(--fn-white-a61);
+
+  /* Overlay */
+  --fn-color-scrim: var(--fn-pine-ink-deep-a40);
+
+  /* ---- Type ---- */
+  --fn-font-display: Georgia, 'Times New Roman', serif;
+  --fn-font-ui: Arial, Helvetica, sans-serif;
+  --fn-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --fn-text-display: clamp(32px, 3.3vw, 48px);
+  --fn-text-title: 27px;
+  --fn-text-subtitle: 22px;
+  --fn-text-figure: 30px;
+  --fn-text-body: 14px;
+  --fn-text-detail: 12.5px;
+  --fn-text-label: 10px;
+
+  /* ---- Space: fourteen ad-hoc values collapsed onto eight steps. ---- */
+  --fn-space-1: 4px;
+  --fn-space-2: 8px;
+  --fn-space-3: 12px;
+  --fn-space-4: 16px;
+  --fn-space-5: 24px;
+  --fn-space-6: 32px;
+  --fn-space-7: 48px;
+  --fn-space-8: 64px;
+
+  /* ---- Radii, by role rather than by size. ---- */
+  --fn-radius-sm: 5px;
+  --fn-radius-md: 8px;
+  --fn-radius-lg: 12px;
+  --fn-radius-card: 16px;
+  --fn-radius-pill: 999px;
+
+  /* ---- Elevation. Each is a different distance off the page, so each is its
+     own token rather than one shadow reused at four sizes. ---- */
+  --fn-elevation-card: 0 6px 20px var(--fn-pine-900-a06);
+  --fn-elevation-menu: 0 12px 28px var(--fn-pine-900-a11);
+  --fn-elevation-panel-soft: 0 8px 24px var(--fn-pine-900-a03);
+  --fn-elevation-panel: 0 20px 60px var(--fn-pine-900-a03);
+  --fn-elevation-dialog: 0 20px 80px var(--fn-pine-900-a20);
+}
