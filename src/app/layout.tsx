@@ -1,3 +1,7 @@
+// The package first, so its layers are established before the app's own
+// unlayered rules — which then win over anything in fn.* without having to
+// escalate specificity to do it.
+import '@fieldnote/design-system/styles';
 import './style.css';
 export const metadata = {
   title: { default: 'Fieldnote — Engineering records', template: '%s · Fieldnote' },
