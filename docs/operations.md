@@ -52,6 +52,12 @@ The [dashboard validation report](validation-dashboard-metrics.md) records a
 build with synthetic, non-secret configuration. It is a validation record, not
 a deployment check.
 
+## Deployment
+
+Production runs on Railway; see [railway.md](railway.md) for that project, its
+pre-deploy migration, and its PR environments. [vercel.md](vercel.md) records
+the configuration the repository carries for a serverless deployment instead.
+
 ## Enable GitHub integration
 
 Follow [docs/github-app.md](github-app.md), set `DEMO_MODE=false`, and fill

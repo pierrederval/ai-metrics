@@ -17,12 +17,24 @@ const integration = z.object({
   INNGEST_EVENT_KEY: z.string().optional(),
   INNGEST_SIGNING_KEY: z.string().optional(),
 });
+// Vercel assigns deployment hostnames at deploy time and does not interpolate
+// environment variables, so a preview's APP_URL cannot be written by hand. An
+// explicit APP_URL always wins; otherwise the deployment names itself. Previews
+// use the stable per-branch hostname, never the per-deployment one, because the
+// OAuth callback must match a URL registered on the GitHub App.
+export function platformAppUrl(input: Record<string, string | undefined>) {
+  const host =
+    input.VERCEL_ENV === 'production'
+      ? (input.VERCEL_PROJECT_PRODUCTION_URL ?? input.VERCEL_URL)
+      : (input.VERCEL_BRANCH_URL ?? input.VERCEL_URL);
+  return host ? `https://${host}` : undefined;
+}
 export function parseEnv(input: Record<string, string | undefined>) {
   const result = base.parse(input);
   if (result.DEMO_MODE === 'true' && result.NODE_ENV === 'production')
     throw new Error('Demo authentication is forbidden in production');
   if (result.DEMO_MODE === 'true') return { ...result, integration: null };
-  const config = integration.parse(input);
+  const config = integration.parse({ ...input, APP_URL: input.APP_URL ?? platformAppUrl(input) });
   if (config.INNGEST_DEV !== '1' && (!config.INNGEST_EVENT_KEY || !config.INNGEST_SIGNING_KEY))
     throw new Error('Inngest production keys required');
   if (

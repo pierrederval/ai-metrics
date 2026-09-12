@@ -17,6 +17,11 @@ import { processGithubEvent } from '../../../inngest/functions/process-github-ev
 import { reconcileEvents } from '../../../inngest/functions/reconcile';
 import { recomputePrFunction } from '../../../inngest/functions/recompute-pr';
 export const runtime = 'nodejs';
+// Inngest invokes one HTTP request per step, so this bounds a single step, not a
+// whole run. The longest step hydrates one pull request through the GitHub
+// collector while holding an advisory lock. Serverless platforms cap this by
+// plan; lower it to 60 on a plan that does not allow 300.
+export const maxDuration = 300;
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
