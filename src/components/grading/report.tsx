@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { CompletedGrade } from '../../db/queries/grade-runs';
 import { runGrade } from '../../app/repos/[repoId]/grading/actions';
 import { checkTitles } from '../../domain/grading/check-titles';
-import './grade-card.css';
+import './report.css';
 type Status = { id: string; state: 'queued' | 'running' | 'complete' | 'failed' };
 export function GradeControls({
   repositoryId,

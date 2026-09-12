@@ -5,8 +5,6 @@
  * repository picker, import progress, cohort comparison, the grading report,
  * the sidebar, the workspace switcher and the account menu out — they are
  * product surfaces, not system parts.
- *
- * The grade card joins them in Task 4.
  */
 export { Brand } from './brand';
 export { Button } from './button';
@@ -16,3 +14,11 @@ export { StatCard } from './stat-card';
 export { Notice } from './notice';
 export { Field } from './field';
 export { DataTable } from './data-table';
+export { GradeCard } from './grade-card';
+export { GradeBanner } from './grade-banner';
+export type {
+  GradeCardProps,
+  GradeFinish,
+  GradeMove,
+  GradeNextTier,
+} from './grade-card';

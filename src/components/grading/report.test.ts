@@ -5,7 +5,8 @@ import type { CompletedGrade } from '../../db/queries/grade-runs';
 import type { CheckResult } from '../../domain/grading/types';
 vi.stubGlobal('React', React);
 vi.mock('../../app/repos/[repoId]/grading/actions', () => ({ runGrade: vi.fn() }));
-import { GradeCard } from './grade-card';
+import { GradeCard } from '@fieldnote/design-system';
+import { gradeCardProps } from './grade-presentation';
 import { GradeReport } from './report';
 const sha = 'a'.repeat(40);
 const grade: CompletedGrade = {
@@ -58,13 +59,16 @@ test.each([0, 49, 50, 69, 70, 79, 80, 89, 90, 99, 100])(
   'card %s uses accessible SVG markers and real-position thresholds',
   (score) => {
     const html = renderToStaticMarkup(
-      createElement(GradeCard, {
-        score,
-        repositoryName: '<script>repo</script>',
-        sha,
-        rubricVersion: '0.1.0',
-        checks: grade.checks,
-      }),
+      createElement(
+        GradeCard,
+        gradeCardProps({
+          score,
+          repositoryName: '<script>repo</script>',
+          sha,
+          rubricVersion: '0.1.0',
+          checks: grade.checks,
+        }),
+      ),
     );
     expect(html).toContain(`${score} out of 100`);
     expect(html).not.toContain('<script>');
@@ -113,13 +117,16 @@ test.each([
   'score %s renders the %s finish with its flavour line',
   (score, finish, flavourSnippet) => {
     const html = renderToStaticMarkup(
-      createElement(GradeCard, {
-        score,
-        repositoryName: 'demo/repo',
-        sha,
-        rubricVersion: '0.1.0',
-        checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
-      }),
+      createElement(
+        GradeCard,
+        gradeCardProps({
+          score,
+          repositoryName: 'demo/repo',
+          sha,
+          rubricVersion: '0.1.0',
+          checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
+        }),
+      ),
     );
     expect(html).toContain(`data-finish="${finish}"`);
     expect(html).toContain(flavourSnippet);

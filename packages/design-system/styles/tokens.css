@@ -93,6 +93,11 @@
   --fn-white-a60: #ffffff99;
   --fn-white-a61: #ffffff9c;
 
+  /* A neutral grey, not on the pine/mist ramp. It is what the grade banner has
+     always sat on; it is recorded rather than corrected, because the approved
+     baseline is not up for redesign here. */
+  --fn-grey-100: #eee;
+
   /* Two surface washes that are stated as rgba() in the baseline rather than
      hex, and stay that way so the computed value does not move. */
   --fn-glass-62: rgba(244, 248, 240, 0.62);
@@ -189,6 +194,11 @@
   --fn-color-chart-caution: var(--fn-amber-500);
   --fn-color-chart-critical: var(--fn-clay-600);
   --fn-color-chart-hover: var(--fn-pine-800-a06);
+
+  /* The grade banner, the phone-width stand-in for the card. Its own two
+     surfaces, because it sits on neither the glass nor the paper. */
+  --fn-color-banner-surface: var(--fn-grey-100);
+  --fn-color-banner-pill: var(--fn-white-a61);
 
   /* Overlay */
   --fn-color-scrim: var(--fn-pine-ink-deep-a40);
