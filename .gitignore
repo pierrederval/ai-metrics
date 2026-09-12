@@ -10,3 +10,4 @@ coverage/
 
 # Local visual exploration sessions
 .superpowers/
+.vercel
