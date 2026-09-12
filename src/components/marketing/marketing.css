@@ -1,0 +1,428 @@
+/* The public landing page.
+ *
+ * Marketing owns no tokens. Every colour here is a semantic token from
+ * @fieldnote/design-system — a marketing piece that wants a new colour is a
+ * signal to add a semantic token, not to write a local hex.
+ *
+ * Everything meant to be read is visible at rest. No section is parked at
+ * opacity: 0 waiting on a scroll observer, so the page works with JavaScript
+ * disabled and reads correctly to anything that does not run it.
+ */
+
+.mk-page {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse at 12% 12%, var(--fn-color-wash-cool) 0%, transparent 55%),
+    radial-gradient(ellipse at 95% 40%, var(--fn-color-wash-warm) 0%, transparent 48%),
+    var(--fn-color-wash-base);
+}
+
+/* One place sets the side gutter, so it can never fall below 16px at any
+   width. Vertical padding is set with padding-block so it cannot zero the
+   sides by accident. */
+.mk-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: max(16px, var(--fn-space-5));
+}
+
+/* The package styles a bare <section> as a glass card, which is right
+   everywhere in the product and wrong for a page whose sections are just
+   sections. Every marketing section carries .mk-hero or .mk-section, so the
+   chrome is stripped on those two classes rather than through a blanket
+   `section:not(...)` reset — which would have to out-specify nothing at all
+   (app rules already beat fn.components by layer order) while quietly
+   out-specifying this file's own padding rules.
+   Stripping the chrome rather than reaching for <div> keeps the landmarks a
+   screen reader needs, and .fn-surface opts back in, which is how the stage
+   cards and the evidence card keep theirs. */
+.mk-hero,
+.mk-section {
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  margin: 0;
+  /* padding-inline, never the `padding` shorthand: each section sets its own
+     padding-block below, and a shorthand here would silently zero it. The
+     side padding has to go, though — the shell already owns the gutter, and
+     leaving the package's 24px on top of it costs 48px of width at exactly
+     the viewport that can least afford it. */
+  padding-inline: 0;
+}
+
+/* ---- Nav -------------------------------------------------------------- */
+.mk-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--fn-space-5);
+  flex-wrap: wrap;
+  padding-block: var(--fn-space-5);
+}
+.mk-nav .brand {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+}
+.mk-nav .brand-mark {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 0;
+}
+.mk-nav .brand-name {
+  font-size: 26px;
+}
+.mk-nav-links {
+  display: flex;
+  gap: var(--fn-space-5);
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.mk-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fn-space-4);
+  margin-left: auto;
+}
+.mk-nav-signin {
+  font-size: 13px;
+}
+/* The nav CTA is an anchor, so it needs the inline-block treatment a <button>
+   gets for free. */
+.mk-nav-actions .fn-button,
+.mk-cta .fn-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+.mk-nav-actions .fn-button:hover,
+.mk-cta .fn-button:hover {
+  color: var(--fn-color-ink-inverse);
+}
+
+/* ---- Hero ------------------------------------------------------------- */
+.mk-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: var(--fn-space-8);
+  align-items: center;
+  padding-block: var(--fn-space-7) var(--fn-space-8);
+}
+.mk-hero h1 {
+  margin: var(--fn-space-3) 0 var(--fn-space-5);
+  max-width: 12ch;
+}
+.mk-lede {
+  max-width: 58ch;
+  font-size: 15px;
+  color: var(--fn-color-ink-muted);
+}
+.mk-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fn-space-3);
+  margin: var(--fn-space-6) 0 var(--fn-space-7);
+}
+.mk-proof {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--fn-space-4);
+  margin: 0;
+  border-top: 1px solid var(--fn-color-hairline);
+  padding-top: var(--fn-space-5);
+}
+.mk-proof dt {
+  font: 400 var(--fn-text-figure) var(--fn-font-display);
+  letter-spacing: -1px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.mk-proof dd {
+  margin: var(--fn-space-1) 0 0;
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+  line-height: 1.4;
+}
+.mk-hero-card {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.mk-hero-card .grade-card {
+  max-width: 330px;
+}
+
+/* The tilt. Transform only, so it cannot reflow anything around it. */
+.mk-tilt {
+  transition: transform 220ms ease-out;
+  will-change: transform;
+}
+
+/* The sheen crossing the foil. Applied to the hero card only — the product's
+   cards stay still.
+ *
+ * It animates `transform`, never `background-position`. The foil underneath is
+ * a repeating-linear-gradient over a second gradient; animating the background
+ * of a band sitting on top of that repaints the whole stack every frame, while
+ * a translated layer is composited and costs nothing per frame. On a card that
+ * is on screen from the moment the page loads, that is worth getting right. */
+.mk-hero-card .grade-card-inner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    var(--fn-color-row-hover) 38%,
+    var(--fn-white-a60) 50%,
+    var(--fn-color-row-hover) 62%,
+    transparent
+  );
+  animation: mk-sheen 5.5s ease-in-out infinite;
+}
+@keyframes mk-sheen {
+  0%,
+  18% {
+    transform: translateX(-160%);
+  }
+  60%,
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+/* ---- Sections --------------------------------------------------------- */
+.mk-section {
+  padding-block: var(--fn-space-8);
+  border-top: 1px solid var(--fn-color-hairline);
+}
+.mk-section > h2 {
+  margin-top: var(--fn-space-2);
+  max-width: 20ch;
+}
+
+/* ---- Ladder ----------------------------------------------------------- */
+.mk-ladder {
+  list-style: none;
+  margin: var(--fn-space-6) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--fn-space-2);
+}
+.mk-rung {
+  display: grid;
+  grid-template-columns: 4ch 12ch 11ch auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--fn-space-4);
+  padding: var(--fn-space-4);
+  border-radius: var(--fn-radius-md);
+  background: var(--fn-color-surface-raised);
+  border: 1px solid var(--fn-color-hairline);
+}
+.mk-rung-score {
+  font: 400 var(--fn-text-subtitle) var(--fn-font-display);
+  font-variant-numeric: lining-nums tabular-nums;
+  text-align: right;
+}
+.mk-rung-name {
+  font-weight: 700;
+  font-size: 13px;
+}
+.mk-rung-rating {
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+}
+.mk-rung-symbols {
+  display: flex;
+  gap: 2px;
+}
+.mk-rung-flavour {
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+  line-height: 1.5;
+}
+
+/* ---- Rubric, guarantees ----------------------------------------------- */
+.mk-rubric,
+.mk-guarantees {
+  list-style: none;
+  margin: var(--fn-space-6) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--fn-space-4);
+}
+.mk-rubric .v,
+.mk-guarantees .v {
+  font-size: 19px;
+}
+
+/* ---- Stages, evidence -------------------------------------------------- */
+.mk-stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--fn-space-4);
+  margin: var(--fn-space-6) 0;
+}
+.mk-stage {
+  margin: 0;
+}
+.mk-stage-top {
+  display: flex;
+  align-items: center;
+  gap: var(--fn-space-3);
+  flex-wrap: wrap;
+}
+.mk-stage h3 {
+  margin: 0;
+  font-size: 21px;
+}
+.mk-stage p {
+  font-size: 13px;
+  color: var(--fn-color-ink-muted);
+}
+.mk-evidence {
+  margin: 0;
+}
+.mk-sequence {
+  list-style: none;
+  margin: var(--fn-space-4) 0;
+  padding: 0;
+  display: grid;
+  gap: var(--fn-space-3);
+  font-size: var(--fn-text-body);
+}
+.mk-step {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: var(--fn-space-2);
+  border-radius: 50%;
+  background: var(--fn-color-badge-surface);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.mk-verdict {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--fn-space-4);
+  margin: var(--fn-space-5) 0;
+  padding-block: var(--fn-space-4);
+  border-block: 1px solid var(--fn-color-hairline);
+}
+.mk-verdict dt {
+  font-size: var(--fn-text-label);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--fn-color-ink-muted);
+  font-weight: 700;
+}
+.mk-verdict dd {
+  margin: var(--fn-space-2) 0 0;
+  font: 400 var(--fn-text-subtitle) var(--fn-font-display);
+}
+
+/* ---- Signup, footer ---------------------------------------------------- */
+.mk-signup h2 {
+  max-width: 16ch;
+}
+.mk-footnote {
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+  max-width: 70ch;
+}
+.mk-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fn-space-3) var(--fn-space-5);
+  padding-block: var(--fn-space-6) var(--fn-space-7);
+  border-top: 1px solid var(--fn-color-hairline);
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+}
+.mk-footer-line {
+  margin: 0;
+  font-size: var(--fn-text-detail);
+}
+.mk-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fn-space-4);
+  margin-left: auto;
+}
+
+/* ---- Responsive -------------------------------------------------------- */
+@media (max-width: 900px) {
+  .mk-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--fn-space-6);
+    padding-block: var(--fn-space-6);
+  }
+  .mk-hero h1 {
+    max-width: none;
+  }
+  .mk-hero-card {
+    order: -1;
+  }
+  .mk-rung {
+    grid-template-columns: 4ch minmax(0, 1fr) auto;
+    row-gap: var(--fn-space-2);
+  }
+  .mk-rung-rating {
+    grid-column: 2;
+  }
+  .mk-rung-flavour {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .mk-nav {
+    gap: var(--fn-space-4);
+  }
+  .mk-nav-links {
+    order: 3;
+    flex-basis: 100%;
+    gap: var(--fn-space-4);
+  }
+  /* The auto margin has nothing useful to push against once the row wraps, and
+     leaves the two actions stranded against the right edge. */
+  .mk-nav-actions {
+    margin-left: 0;
+    order: 2;
+  }
+  .mk-proof {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mk-section {
+    padding-block: var(--fn-space-7);
+  }
+  .mk-cta .fn-button {
+    flex: 1 1 100%;
+  }
+  .mk-footer-links {
+    margin-left: 0;
+  }
+}
+
+/* ---- Motion opt-out ---------------------------------------------------- *
+ * The sheen and the tilt are both decoration. Under prefers-reduced-motion
+ * they stop entirely rather than slowing down — the card reads exactly the
+ * same standing still, which is how you know they were decoration.           */
+@media (prefers-reduced-motion: reduce) {
+  .mk-hero-card .grade-card-inner::after {
+    animation: none;
+    background: none;
+  }
+  .mk-tilt {
+    transition: none;
+    transform: none !important;
+  }
+}
