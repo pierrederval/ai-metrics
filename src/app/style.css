@@ -100,9 +100,15 @@ main {
   min-width: 0;
   padding: 34px clamp(24px, 4vw, 64px) 64px;
   background:
-    linear-gradient(90deg, #e6ece7 0%, rgba(230, 236, 231, 0.94) 7%, rgba(230, 236, 231, 0) 48%),
-    radial-gradient(ellipse at 12% 38%, #c8ddce 0%, transparent 62%),
-    radial-gradient(ellipse at 100% 78%, #ecd3c3 0%, transparent 57%), #f0f5ef;
+    linear-gradient(
+      90deg,
+      var(--fn-color-wash-edge) 0%,
+      var(--fn-color-wash-edge-fade) 7%,
+      var(--fn-color-wash-edge-clear) 48%
+    ),
+    radial-gradient(ellipse at 12% 38%, var(--fn-color-wash-cool) 0%, transparent 62%),
+    radial-gradient(ellipse at 100% 78%, var(--fn-color-wash-warm) 0%, transparent 57%),
+    var(--fn-color-wash-base);
 }
 .page-topline {
   display: flex;
@@ -110,7 +116,7 @@ main {
   gap: 16px;
   padding-bottom: 26px;
   margin-bottom: 30px;
-  border-bottom: 1px solid #203f3615;
+  border-bottom: 1px solid var(--fn-color-hairline);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.3px;
@@ -127,11 +133,11 @@ section {
   border-radius: 12px;
   padding: 24px;
   margin: 16px 0;
-  box-shadow: 0 6px 20px #203f3610;
+  box-shadow: var(--fn-elevation-card);
 }
 @supports (backdrop-filter: blur(16px)) {
   section {
-    background: rgba(244, 248, 240, 0.43);
+    background: var(--fn-color-surface-glass-blurred);
     backdrop-filter: blur(16px);
   }
 }
@@ -172,7 +178,7 @@ section {
   background: var(--glass);
   border-radius: 12px;
   padding: 18px 20px 20px;
-  box-shadow: 0 6px 20px #203f3610;
+  box-shadow: var(--fn-elevation-card);
   display: flex;
   flex-direction: column;
   gap: 11px;
@@ -237,8 +243,8 @@ section {
 }
 .notice {
   padding: 16px 20px;
-  background: #f3e8ca;
-  border-left: 3px solid #986817;
+  background: var(--fn-color-caution-surface);
+  border-left: 3px solid var(--fn-color-caution);
   border-radius: 0 8px 8px 0;
 }
 .timeline {
@@ -246,7 +252,7 @@ section {
 }
 button {
   background: var(--accent);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   border: 0;
   padding: 11px 16px;
   border-radius: 6px;
@@ -255,7 +261,7 @@ button {
   line-height: 1.5;
 }
 button:hover {
-  background: #a6381a;
+  background: var(--fn-color-accent-hover);
 }
 .quiet-button {
   background: transparent;
@@ -383,7 +389,7 @@ label {
 @media (prefers-reduced-transparency: reduce) {
   section {
     backdrop-filter: none;
-    background: #f0f4ed;
+    background: var(--fn-color-surface-opaque);
   }
 }
 
@@ -497,24 +503,25 @@ label {
 
 /* Basic dashboards use the approved Fieldnote paper and local metric semantics. */
 .metrics-page {
-  --paper: #f4f2e9;
-  --panel: #fffef9;
-  --ink: #253e34;
-  --muted: #68736a;
-  --line: #dce0d4;
-  --metric-green: #416951;
-  --metric-amber: #c49a48;
-  --metric-rust: #995735;
   /* This route is a nested theme: it re-points the palette for its own subtree
-     rather than adding a second set of classes. The element defaults in
-     @fieldnote/design-system's base layer read the semantic tier, so the
-     scoped palette has to re-point that too — without these four, a <small>,
-     a <th> or a link inside this scope would keep the global ink while
-     everything around it moved to the warm metrics paper. */
-  --fn-color-ink: var(--ink);
-  --fn-color-ink-muted: var(--muted);
-  --fn-color-border: var(--line);
-  --fn-color-surface: var(--paper);
+     rather than adding a second set of classes. It re-points the semantic tier
+     itself, because the element defaults in @fieldnote/design-system's base
+     layer read that tier — without these, a <small>, a <th> or a link inside
+     this scope would keep the global ink while everything around it moved to
+     the warm metrics paper. The short names below are then aliases onto the
+     scoped semantic tier, exactly as they are at :root. */
+  --fn-color-ink: var(--fn-pine-800);
+  --fn-color-ink-muted: var(--fn-pine-500);
+  --fn-color-border: var(--fn-sand-200);
+  --fn-color-surface: var(--fn-sand-50);
+  --paper: var(--fn-color-surface);
+  --panel: var(--fn-color-panel);
+  --ink: var(--fn-color-ink);
+  --muted: var(--fn-color-ink-muted);
+  --line: var(--fn-color-border);
+  --metric-green: var(--fn-color-chart-positive);
+  --metric-amber: var(--fn-color-chart-caution);
+  --metric-rust: var(--fn-color-chart-critical);
   color: var(--ink);
   background: var(--paper);
   border-radius: 16px;
@@ -688,10 +695,10 @@ label {
   border-radius: 12px;
   background: var(--paper);
   color: var(--ink);
-  box-shadow: 0 20px 80px #203f3633;
+  box-shadow: var(--fn-elevation-dialog);
 }
 .history-dialog::backdrop {
-  background: #102a2266;
+  background: var(--fn-color-scrim);
 }
 .metric-coverage .history-dialog p {
   font-size: 14px;
@@ -801,7 +808,7 @@ label {
 }
 .metrics-page .day-position:hover,
 .metrics-page .day-position[aria-pressed='true'] {
-  background: #253e3410;
+  background: var(--fn-color-chart-hover);
 }
 .day-position:focus-visible {
   z-index: 1;
@@ -967,8 +974,9 @@ label {
   justify-content: center;
   padding: 64px 24px;
   background:
-    radial-gradient(ellipse at 15% 40%, #c8ddce, transparent 62%),
-    radial-gradient(ellipse at 100% 80%, #ecd3c3, transparent 57%), #f0f5ef;
+    radial-gradient(ellipse at 15% 40%, var(--fn-color-wash-cool), transparent 62%),
+    radial-gradient(ellipse at 100% 80%, var(--fn-color-wash-warm), transparent 57%),
+    var(--fn-color-wash-base);
 }
 .signin-panel {
   width: 100%;
@@ -976,8 +984,8 @@ label {
   padding: 44px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f4f7f3c9;
-  box-shadow: 0 20px 60px #203f3608;
+  background: var(--fn-color-surface-raised);
+  box-shadow: var(--fn-elevation-panel);
 }
 .signin-panel .brand {
   justify-content: center;
@@ -1006,13 +1014,13 @@ label {
   margin: 28px 0 20px;
   border-radius: 5px;
   background: var(--ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   text-decoration: none;
   font-size: 14px;
 }
 .signin-github:hover {
-  color: white;
-  background: #315b4d;
+  color: var(--fn-color-ink-inverse);
+  background: var(--fn-color-ink-hover);
 }
 .signin-panel hr,
 .shell-menu hr {
@@ -1059,8 +1067,8 @@ label {
 }
 .shell-menu > button:hover,
 .shell-menu > button[aria-expanded='true'] {
-  background: #f8faf6;
-  border-color: #8da99b;
+  background: var(--fn-color-surface-hover);
+  border-color: var(--fn-color-border-strong);
 }
 .workspace-name {
   overflow: hidden;
@@ -1073,8 +1081,8 @@ label {
   width: 25px;
   height: 25px;
   flex-shrink: 0;
-  background: #d4e2d6;
-  border: 1px solid #b5c9bb;
+  background: var(--fn-color-badge-surface);
+  border: 1px solid var(--fn-color-badge-border);
   border-radius: 5px;
   font-size: 11px;
   font-weight: bold;
@@ -1097,7 +1105,7 @@ label {
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--paper);
-  box-shadow: 0 12px 28px #203f361c;
+  box-shadow: var(--fn-elevation-menu);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -1119,7 +1127,7 @@ label {
 }
 .shell-menu-options button:hover,
 .shell-menu-options a:hover {
-  background: #e1e9df;
+  background: var(--fn-color-surface-sunken);
 }
 .account-menu {
   flex-shrink: 0;
@@ -1137,7 +1145,7 @@ label {
   height: 32px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #c8ddce;
+  background: var(--fn-color-avatar-surface);
   font-size: 11px;
   color: var(--ink);
 }
@@ -1168,7 +1176,7 @@ label {
 }
 .owner-badge {
   background: var(--accent);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   font-weight: 600;
 }
 .member-badge {
@@ -1190,7 +1198,7 @@ label {
 }
 .settings-tabs a[aria-current='page'] {
   background: var(--ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
 }
 .settings-tabs > span {
   margin-left: auto;
@@ -1204,9 +1212,9 @@ label {
 .settings-panel {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f4f7f3c9;
+  background: var(--fn-color-surface-raised);
   padding: 28px;
-  box-shadow: 0 8px 24px #203f3608;
+  box-shadow: var(--fn-elevation-panel-soft);
   margin: 0 0 24px;
 }
 .settings-panel h2 {
@@ -1231,7 +1239,7 @@ label {
   border: 1px solid var(--line);
   border-radius: 4px;
   color: var(--ink);
-  background: #ffffff99;
+  background: var(--fn-color-field-surface);
   min-width: 0;
 }
 .settings-form button {
@@ -1245,7 +1253,7 @@ label {
 }
 .settings-form button:hover {
   background: var(--ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
 }
 .settings-form button:disabled {
   opacity: 0.6;
@@ -1253,7 +1261,7 @@ label {
 }
 .form-error {
   width: 100%;
-  color: #a1361c;
+  color: var(--fn-color-danger);
   font-size: 12px;
   margin: 4px 0;
 }
@@ -1314,7 +1322,7 @@ label {
 }
 .status-failed,
 .status-expired {
-  color: #a1361c;
+  color: var(--fn-color-danger);
 }
 .settings-link {
   display: inline-block;
@@ -1415,19 +1423,19 @@ label {
   background: currentColor;
 }
 .ai-pill.ran {
-  background: #2f6b5218;
+  background: var(--fn-color-positive-surface);
   color: var(--ran);
-  box-shadow: inset 0 0 0 1px #2f6b5240;
+  box-shadow: inset 0 0 0 1px var(--fn-color-positive-ring);
 }
 .ai-pill.setup {
-  background: #98681718;
+  background: var(--fn-color-caution-tint);
   color: var(--setup);
-  box-shadow: inset 0 0 0 1px #98681740;
+  box-shadow: inset 0 0 0 1px var(--fn-color-caution-ring);
 }
 .ai-pill.none {
-  background: #526b6014;
+  background: var(--fn-color-neutral-tint);
   color: var(--muted);
-  box-shadow: inset 0 0 0 1px #526b6033;
+  box-shadow: inset 0 0 0 1px var(--fn-color-neutral-ring);
 }
 .ai-evidence > * + * {
   margin-top: 12px;

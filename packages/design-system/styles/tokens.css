@@ -121,6 +121,7 @@
   /* Ink */
   --fn-color-ink: var(--fn-pine-900);
   --fn-color-ink-muted: var(--fn-pine-600);
+  --fn-color-ink-hover: var(--fn-pine-700);
   --fn-color-ink-inverse: #fff;
 
   /* Ground and surfaces */
@@ -132,6 +133,15 @@
   --fn-color-surface-opaque: var(--fn-paper-150);
   --fn-color-surface-hover: var(--fn-paper-25);
   --fn-color-surface-sunken: var(--fn-mist-240);
+  /* The flat panel a nested theme puts its content on, where the glass
+     treatment would fight the theme's own paper. */
+  --fn-color-panel: var(--fn-paper-0);
+  /* Small tinted plates: the workspace initial, the account avatar. Distinct
+     roles that happen to sit a step apart on the mist ramp, so distinct
+     tokens — collapsing them would be tidier and wrong. */
+  --fn-color-badge-surface: var(--fn-mist-260);
+  --fn-color-badge-border: var(--fn-mist-350);
+  --fn-color-avatar-surface: var(--fn-mist-280);
 
   /* The page wash under `main`, and the public entry panel. Three stops plus a
      base, which is why these are four tokens rather than one. */
@@ -172,6 +182,14 @@
   /* Fields */
   --fn-color-field-surface: var(--fn-white-a60);
 
+  /* Charts. The three outcome colours the daily charts, the legend and the KPI
+     lines all read — named for what they mean, not for the hue, so "recovered"
+     stays amber whatever amber becomes. */
+  --fn-color-chart-positive: var(--fn-moss-600);
+  --fn-color-chart-caution: var(--fn-amber-500);
+  --fn-color-chart-critical: var(--fn-clay-600);
+  --fn-color-chart-hover: var(--fn-pine-800-a06);
+
   /* Overlay */
   --fn-color-scrim: var(--fn-pine-ink-deep-a40);
 
@@ -205,6 +223,11 @@
   --fn-radius-card: 16px;
   --fn-radius-pill: 999px;
 
-  /* ---- Elevation ---- */
+  /* ---- Elevation. Each is a different distance off the page, so each is its
+     own token rather than one shadow reused at four sizes. ---- */
   --fn-elevation-card: 0 6px 20px var(--fn-pine-900-a06);
+  --fn-elevation-menu: 0 12px 28px var(--fn-pine-900-a11);
+  --fn-elevation-panel-soft: 0 8px 24px var(--fn-pine-900-a03);
+  --fn-elevation-panel: 0 20px 60px var(--fn-pine-900-a03);
+  --fn-elevation-dialog: 0 20px 80px var(--fn-pine-900-a20);
 }
