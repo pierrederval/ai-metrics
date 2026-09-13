@@ -60,6 +60,18 @@ describe('Button', () => {
     expect(html).toContain('href="/repo"');
   });
 
+  test('a disabled button looks inert, not just non-functional', () => {
+    const css = readFileSync(
+      new URL('../styles/components.css', import.meta.url),
+      'utf8',
+    );
+    const button = css.slice(css.indexOf('.fn-button'));
+    // The gradient and elevation are what say "pressable" — a disabled
+    // action must shed both, or a click that does nothing looks identical
+    // to one that works.
+    expect(button).toMatch(/\.fn-button:disabled/);
+  });
+
   test('every variant takes its finish from tokens, never a literal', () => {
     const css = readFileSync(
       new URL('../styles/components.css', import.meta.url),

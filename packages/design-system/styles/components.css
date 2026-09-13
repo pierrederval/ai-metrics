@@ -134,6 +134,14 @@
 .fn-button--quiet:hover {
   color: var(--fn-color-accent);
 }
+/* A disabled action must look inert. The gradient and elevation are what say
+   "pressable", so both come off. */
+.fn-button:disabled,
+.fn-button[aria-disabled='true'] {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+}
 @media (prefers-reduced-motion: reduce) {
   .fn-button {
     transition: none;
