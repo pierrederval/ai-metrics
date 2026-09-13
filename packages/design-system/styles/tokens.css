@@ -28,6 +28,56 @@
   --fn-color-glass-base: rgba(244, 248, 240, 0.62);
   --fn-color-ink-shadow: #203f3610;
 
+  /* Task 2 amendment 2026-09-13: more reference-tier swatches, needed to empty
+     src/app/style.css of its remaining colour literals. --fn-mist-050 through
+     --fn-mist-450 are paler/darker steps of the existing mist family that
+     style.css already used but the reference tier didn't have yet; --fn-pine-700
+     and --fn-rust-700 are genuinely new hues (a signed-in-button hover shade and
+     a form/status danger red) that don't match anything already in the palette. */
+  --fn-mist-050: #f8faf6;
+  --fn-mist-090: #f0f4ed;
+  --fn-mist-220: #e1e9df;
+  --fn-mist-250: #d4e2d6;
+  --fn-mist-350: #b5c9bb;
+  --fn-mist-450: #8da99b;
+  --fn-pine-700: #315b4d;
+  --fn-rust-700: #a1361c;
+
+  /* The basic dashboard's own local palette. `.metrics-page` in style.css
+     defines local custom properties reusing the --paper/--ink/--muted/--line
+     names at different values (its own comment: "Basic dashboards use the
+     approved Fieldnote paper and local metric semantics") — a second,
+     self-contained palette, not a restatement of the shared one above. Named
+     here so that local block can point at the reference tier instead of a
+     literal, same as everything else. */
+  --fn-metrics-paper: #f4f2e9;
+  --fn-metrics-panel: #fffef9;
+  --fn-metrics-ink: #253e34;
+  --fn-metrics-muted: #68736a;
+  --fn-metrics-line: #dce0d4;
+  --fn-metrics-positive: #416951;
+  --fn-metrics-caution: #c49a48;
+  --fn-metrics-negative: #995735;
+
+  /* More exact translucent literals used verbatim in style.css, named here per
+     the glass-base/ink-shadow precedent above: each is the precise alpha value
+     a rule already used, so the semantic tokens below can reference the
+     reference tier instead of holding a literal themselves. */
+  --fn-color-hairline-faint-base: #203f3615;
+  --fn-color-panel-shadow-base: #203f3608;
+  --fn-color-dropdown-shadow-base: #203f361c;
+  --fn-color-modal-shadow-base: #203f3633;
+  --fn-color-positive-tint-base: #2f6b5218;
+  --fn-color-positive-outline-base: #2f6b5240;
+  --fn-color-caution-tint-base: #98681718;
+  --fn-color-caution-outline-base: #98681740;
+  --fn-color-muted-tint-base: #526b6014;
+  --fn-color-muted-outline-base: #526b6033;
+  --fn-color-surface-veil-base: #f4f7f3c9;
+  --fn-color-input-surface-base: #ffffff99;
+  --fn-color-backdrop-base: #102a2266;
+  --fn-metrics-hover-base: #253e3410;
+
   /* Finish tier — one colour per grade band, lifted from gradePresentation()
      in src/domain/grading/presentation.ts. */
   --fn-grade-common: #b54740;
@@ -52,10 +102,37 @@
   --fn-color-caution: var(--fn-amber-700);
   --fn-color-caution-surface: var(--fn-amber-100);
 
-  /* The main background wash. style.css builds `main`'s background from
-     four stops (#e6ece7, #c8ddce, #ecd3c3, #f0f5ef); these name each one so
-     a later task can reference tokens instead of the literals. `main`
-     itself is untouched by this task. */
+  /* Task 2 amendment 2026-09-13: semantic tokens for the roles named just
+     above in the reference tier. Each is a distinct role (a hover state, a
+     tint fill, a ring, a shadow, a dashboard's own palette) even where two
+     share a source hue, so none of these collapse onto an existing token. */
+  --fn-color-surface-hover: var(--fn-mist-050);
+  --fn-color-surface-opaque: var(--fn-mist-090);
+  --fn-color-row-hover: var(--fn-mist-220);
+  --fn-color-icon-surface: var(--fn-mist-250);
+  --fn-color-icon-border: var(--fn-mist-350);
+  --fn-color-border-hover: var(--fn-mist-450);
+  --fn-color-ink-hover: var(--fn-pine-700);
+  --fn-color-danger: var(--fn-rust-700);
+  --fn-color-avatar-surface: var(--fn-color-atmosphere-cool);
+  --fn-color-hairline-faint: var(--fn-color-hairline-faint-base);
+  --fn-color-panel-shadow: var(--fn-color-panel-shadow-base);
+  --fn-color-dropdown-shadow: var(--fn-color-dropdown-shadow-base);
+  --fn-color-modal-shadow: var(--fn-color-modal-shadow-base);
+  --fn-color-positive-tint: var(--fn-color-positive-tint-base);
+  --fn-color-positive-outline: var(--fn-color-positive-outline-base);
+  --fn-color-caution-tint: var(--fn-color-caution-tint-base);
+  --fn-color-caution-outline: var(--fn-color-caution-outline-base);
+  --fn-color-muted-tint: var(--fn-color-muted-tint-base);
+  --fn-color-muted-outline: var(--fn-color-muted-outline-base);
+  --fn-color-surface-veil: var(--fn-color-surface-veil-base);
+  --fn-color-input-surface: var(--fn-color-input-surface-base);
+  --fn-color-backdrop: var(--fn-color-backdrop-base);
+  --fn-color-metrics-hover: var(--fn-metrics-hover-base);
+
+  /* The main background wash. style.css builds `main`'s (and `.public-entry`'s)
+     background from four stops (#e6ece7, #c8ddce, #ecd3c3, #f0f5ef); these name
+     each one so those rules can reference tokens instead of the literals. */
   --fn-color-wash-edge: var(--fn-mist-200);
   --fn-color-wash-cool: var(--fn-color-atmosphere-cool);
   --fn-color-wash-warm: var(--fn-color-atmosphere-warm);

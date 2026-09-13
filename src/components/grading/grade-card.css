@@ -371,16 +371,16 @@
 .grading-report {
   min-width: 0;
   padding: 28px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--fn-color-border);
   border-radius: 10px;
-  background: var(--glass);
+  background: var(--fn-color-surface-glass);
 }
 .grading-report h2 {
   margin-top: 8px;
 }
 .grading-check {
   padding: 18px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--fn-color-border);
 }
 .grading-check h3 {
   display: flex;
@@ -433,7 +433,7 @@
 }
 .grading-ungraded {
   padding: 28px;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--fn-color-border);
   border-radius: 10px;
 }
 .grading-report-meta code {
