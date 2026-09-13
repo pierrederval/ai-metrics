@@ -1,8 +1,20 @@
+/* App-shell rules. The palette, the reset and the element defaults now live in
+   @fieldnote/design-system (imported in layout.tsx, before this file), so the
+   only colours named here are the aliases below.
+   The short names stay for now as aliases onto the semantic tier, so the
+   remaining `var(--ink)` call sites — this file's nested metrics theme, and
+   src/components/grading/report.css — keep working while the migration happens
+   one rule at a time rather than all at once. */
 :root {
-  color: var(--fn-color-ink);
-  background: var(--fn-color-ground);
-  font-family: Arial, Helvetica, sans-serif;
-  font-synthesis: none;
+  --paper: var(--fn-color-surface);
+  --sidebar: var(--fn-color-ground);
+  --ink: var(--fn-color-ink);
+  --muted: var(--fn-color-ink-muted);
+  --accent: var(--fn-color-accent);
+  --line: var(--fn-color-border);
+  --glass: var(--fn-color-surface-glass);
+  --ran: var(--fn-color-positive);
+  --setup: var(--fn-color-caution);
 }
 .app-shell {
   min-height: 100vh;
@@ -63,8 +75,8 @@
     /* The removed first layer painted the sidebar's colour 48% of the way
        across this column. It was most of the gutter, and no amount of padding
        removal would have fixed it. */
-    radial-gradient(ellipse at 8% 30%, var(--fn-color-atmosphere-cool) 0%, transparent 58%),
-    radial-gradient(ellipse at 100% 78%, var(--fn-color-atmosphere-warm) 0%, transparent 57%),
+    radial-gradient(ellipse at 8% 30%, var(--fn-color-wash-cool) 0%, transparent 58%),
+    radial-gradient(ellipse at 100% 78%, var(--fn-color-wash-warm) 0%, transparent 57%),
     var(--fn-color-ground);
 }
 .page-body {
@@ -108,34 +120,6 @@
    being copied a second time. agent-share.css itself is deleted (Task 7):
    once .v/.s moved here it held nothing but a comment pointing back to
    this block, and no rules of its own. */
-.bigcard {
-  background: var(--fn-color-surface-glass);
-  border-radius: 12px;
-  padding: 18px 20px 20px;
-  box-shadow: var(--fn-elevation-card);
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-}
-.bigcard .t {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--fn-color-ink-muted);
-  font-weight: 700;
-}
-.bigcard .v {
-  font:
-    400 30px Georgia,
-    serif;
-  letter-spacing: -0.8px;
-  line-height: 1.05;
-}
-.bigcard .s {
-  font-size: 12.5px;
-  color: var(--fn-color-ink-muted);
-  line-height: 1.5;
-}
 .summary-strip {
   display: flex;
   flex-wrap: wrap;
@@ -371,14 +355,25 @@
 
 /* Basic dashboards use the approved Fieldnote paper and local metric semantics. */
 .metrics-page {
-  --paper: var(--fn-metrics-paper);
-  --panel: var(--fn-metrics-panel);
-  --ink: var(--fn-metrics-ink);
-  --muted: var(--fn-metrics-muted);
-  --line: var(--fn-metrics-line);
-  --metric-green: var(--fn-metrics-positive);
-  --metric-amber: var(--fn-metrics-caution);
-  --metric-rust: var(--fn-metrics-negative);
+  /* This route is a nested theme: it re-points the palette for its own subtree
+     rather than adding a second set of classes. It re-points the semantic tier
+     itself, because the element defaults in @fieldnote/design-system's base
+     layer read that tier — without these, a <small>, a <th> or a link inside
+     this scope would keep the global ink while everything around it moved to
+     the warm metrics paper. The short names below are then aliases onto the
+     scoped semantic tier, exactly as they are at :root. */
+  --fn-color-ink: var(--fn-pine-800);
+  --fn-color-ink-muted: var(--fn-pine-500);
+  --fn-color-border: var(--fn-sand-200);
+  --fn-color-surface: var(--fn-sand-50);
+  --paper: var(--fn-color-surface);
+  --panel: var(--fn-color-panel);
+  --ink: var(--fn-color-ink);
+  --muted: var(--fn-color-ink-muted);
+  --line: var(--fn-color-border);
+  --metric-green: var(--fn-color-chart-positive);
+  --metric-amber: var(--fn-color-chart-caution);
+  --metric-rust: var(--fn-color-chart-critical);
   color: var(--ink);
   background: var(--paper);
   border-radius: 16px;
@@ -548,10 +543,10 @@
   border-radius: 12px;
   background: var(--paper);
   color: var(--ink);
-  box-shadow: 0 20px 80px var(--fn-color-modal-shadow);
+  box-shadow: var(--fn-elevation-dialog);
 }
 .history-dialog::backdrop {
-  background: var(--fn-color-backdrop);
+  background: var(--fn-color-scrim);
 }
 .metric-coverage .history-dialog p {
   font-size: 14px;
@@ -661,7 +656,7 @@
 }
 .metrics-page .day-position:hover,
 .metrics-page .day-position[aria-pressed='true'] {
-  background: var(--fn-color-metrics-hover);
+  background: var(--fn-color-chart-hover);
 }
 .day-position:focus-visible {
   z-index: 1;
@@ -837,18 +832,18 @@
   padding: 44px;
   border: 1px solid var(--fn-color-border);
   border-radius: 10px;
-  background: var(--fn-color-surface-veil);
-  box-shadow: 0 20px 60px var(--fn-color-panel-shadow);
+  background: var(--fn-color-surface-raised);
+  box-shadow: var(--fn-elevation-panel);
 }
-.signin-panel .fn-brand {
+.signin-panel .brand {
   justify-content: center;
   margin-bottom: 28px;
 }
-.signin-panel .fn-brand__mark {
+.signin-panel .brand-mark {
   width: 56px;
   height: 56px;
 }
-.signin-panel .fn-brand__word {
+.signin-panel .brand-name {
   font-size: 42px;
 }
 .signin-panel h1 {
@@ -867,12 +862,12 @@
   margin: 28px 0 20px;
   border-radius: 5px;
   background: var(--fn-color-ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   text-decoration: none;
   font-size: 14px;
 }
 .signin-github:hover {
-  color: white;
+  color: var(--fn-color-ink-inverse);
   background: var(--fn-color-ink-hover);
 }
 .signin-panel hr,
@@ -922,7 +917,7 @@
 .shell-menu > button:hover,
 .shell-menu > button[aria-expanded='true'] {
   background: var(--fn-color-surface-hover);
-  border-color: var(--fn-color-border-hover);
+  border-color: var(--fn-color-border-strong);
 }
 .workspace-name {
   overflow: hidden;
@@ -935,8 +930,8 @@
   width: 25px;
   height: 25px;
   flex-shrink: 0;
-  background: var(--fn-color-icon-surface);
-  border: 1px solid var(--fn-color-icon-border);
+  background: var(--fn-color-badge-surface);
+  border: 1px solid var(--fn-color-badge-border);
   border-radius: 5px;
   font-size: 11px;
   font-weight: bold;
@@ -959,7 +954,7 @@
   border: 1px solid var(--fn-color-border);
   border-radius: 7px;
   background: var(--fn-color-surface);
-  box-shadow: 0 12px 28px var(--fn-color-dropdown-shadow);
+  box-shadow: var(--fn-elevation-menu);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -981,7 +976,7 @@
 }
 .shell-menu-options button:hover,
 .shell-menu-options a:hover {
-  background: var(--fn-color-row-hover);
+  background: var(--fn-color-surface-sunken);
 }
 .account-menu {
   flex-shrink: 0;
@@ -1030,7 +1025,7 @@
 }
 .owner-badge {
   background: var(--fn-color-accent);
-  color: white;
+  color: var(--fn-color-ink-inverse);
   font-weight: 600;
 }
 .member-badge {
@@ -1052,7 +1047,7 @@
 }
 .settings-tabs a[aria-current='page'] {
   background: var(--fn-color-ink);
-  color: white;
+  color: var(--fn-color-ink-inverse);
 }
 .settings-tabs > span {
   margin-left: auto;
@@ -1066,9 +1061,9 @@
 .settings-panel {
   border: 1px solid var(--fn-color-border);
   border-radius: 10px;
-  background: var(--fn-color-surface-veil);
+  background: var(--fn-color-surface-raised);
   padding: 28px;
-  box-shadow: 0 8px 24px var(--fn-color-panel-shadow);
+  box-shadow: var(--fn-elevation-panel-soft);
   margin: 0 0 24px;
 }
 .settings-panel h2 {
@@ -1093,7 +1088,7 @@
   border: 1px solid var(--fn-color-border);
   border-radius: 4px;
   color: var(--fn-color-ink);
-  background: var(--fn-color-input-surface);
+  background: var(--fn-color-field-surface);
   min-width: 0;
 }
 .form-error {
@@ -1242,40 +1237,6 @@
   letter-spacing: 0.9px;
   text-transform: uppercase;
   color: var(--fn-color-ink-muted);
-}
-.ai-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.ai-pill::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.ai-pill.ran {
-  background: var(--fn-color-positive-tint);
-  color: var(--fn-color-positive);
-  box-shadow: inset 0 0 0 1px var(--fn-color-positive-outline);
-}
-.ai-pill.setup {
-  background: var(--fn-color-caution-tint);
-  color: var(--fn-color-caution);
-  box-shadow: inset 0 0 0 1px var(--fn-color-caution-outline);
-}
-.ai-pill.none {
-  background: var(--fn-color-muted-tint);
-  color: var(--fn-color-ink-muted);
-  box-shadow: inset 0 0 0 1px var(--fn-color-muted-outline);
 }
 .ai-evidence > * + * {
   margin-top: 12px;

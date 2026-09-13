@@ -1,72 +1,97 @@
-import { expect, test } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 
-// The package is framework-agnostic and self-contained by design: it must
-// not reach into the app it is extracted from, and it must not reach into
-// Next.js, since a design system consumed by more than one app cannot
-// assume any particular framework.
-const SRC_DIR = fileURLToPath(new URL('./src', import.meta.url));
+// The package is presentational. It fetches nothing, reads no session, knows
+// nothing about a pull request, and — the part this file exists to hold — it
+// imports nothing from the app. That is what makes "shared with the website"
+// survive the website moving: a package that reaches back into src/ is a
+// directory with extra steps.
+//
+// These guards run against the files on disk rather than against the module
+// graph on purpose. A type-only import from src/ disappears at runtime and
+// would pass any import-time check while still coupling the two.
 
-function collectSourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) return collectSourceFiles(path);
-    return /\.(ts|tsx)$/.test(entry) ? [path] : [];
-  });
-}
+const here = import.meta.dirname;
 
-function importSpecifiers(source: string): string[] {
-  const specifiers: string[] = [];
-  const patterns = [
-    /(?:import|export)\s[^;'"]*?from\s*['"]([^'"]+)['"]/g,
-    /import\s*['"]([^'"]+)['"]/g,
-    /import\(\s*['"]([^'"]+)['"]\s*\)/g,
-  ];
-  for (const pattern of patterns) {
-    for (const match of source.matchAll(pattern)) specifiers.push(match[1]);
+function filesUnder(dir: string, extensions: string[]): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...filesUnder(path, extensions));
+    else if (extensions.some((extension) => entry.name.endsWith(extension))) found.push(path);
   }
-  return specifiers;
+  return found;
 }
 
-test('the design system imports nothing from the app or from Next.js', () => {
-  const files = collectSourceFiles(SRC_DIR);
-  const offenders = files.flatMap((file) =>
-    importSpecifiers(readFileSync(file, 'utf8'))
-      .filter(
-        (specifier) =>
-          specifier.startsWith('../../') ||
-          specifier.includes('src/') ||
-          specifier.startsWith('next/'),
-      )
-      .map((specifier) => `${file}: ${specifier}`),
-  );
-  expect(offenders).toEqual([]);
-});
+const IMPORT_SPECIFIER = /(?:from|import)\s*['"]([^'"]+)['"]/g;
 
-// Colour lives in exactly one place: tokens.css. Every other stylesheet in
-// the package — components.css (Task 3's eight primitives plus Task 4's
-// TopBar/Breadcrumb), base.css, reset.css, index.css, and whatever is added
-// later — must hold no hex literal of its own, same idiom, same regex, as
-// src/app/style.test.ts's guard over the app's own stylesheet. The
-// directory is read at test time (not a hardcoded file list) so a new
-// stylesheet is covered automatically. This does not special-case the
-// `.fn-button` control-finish rules' `rgb(90 26 10 / 0.28)` text-shadow:
-// that is an rgb() function, not a hex literal, so the hex-only regex below
-// correctly leaves it alone without an exemption.
-const STYLES_DIR = 'packages/design-system/styles';
-
-function styleFilesExceptTokens(): string[] {
-  return readdirSync(STYLES_DIR)
-    .filter((entry) => entry.endsWith('.css') && entry !== 'tokens.css')
-    .map((entry) => join(STYLES_DIR, entry));
+function specifiersIn(source: string): string[] {
+  return [...source.matchAll(IMPORT_SPECIFIER)].map((match) => match[1]);
 }
 
-test('no stylesheet outside tokens.css holds a colour literal', () => {
-  const offenders = styleFilesExceptTokens().flatMap((file) => {
-    const css = readFileSync(file, 'utf8');
-    return (css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).map((hex) => `${file}: ${hex}`);
+describe('@fieldnote/design-system', () => {
+  const sources = filesUnder(join(here, 'src'), ['.ts', '.tsx']);
+
+  it('has source files to check, so a passing run means something', () => {
+    expect(sources.length).toBeGreaterThan(0);
   });
-  expect(offenders).toEqual([]);
+
+  it.each(sources)('%s imports nothing from the app', (path) => {
+    const offending = specifiersIn(readFileSync(path, 'utf8')).filter(
+      (specifier) => specifier.startsWith('../../') || /(^|\/)src\//.test(specifier),
+    );
+    expect(offending).toEqual([]);
+  });
+
+  it.each(sources)('%s imports no framework the package has no business knowing', (path) => {
+    const banned = ['next/', 'next', 'next/link', 'next/navigation'];
+    const offending = specifiersIn(readFileSync(path, 'utf8')).filter((specifier) =>
+      banned.includes(specifier),
+    );
+    expect(offending).toEqual([]);
+  });
+
+  // Colour lives in exactly one place. The documented exception is
+  // grade-card.css, whose six foils are eight-to-nine stop gradients that only
+  // mean anything whole — naming twenty-odd stops as tokens would be
+  // bookkeeping, not a system. Every other stylesheet references a token.
+  const FOIL_EXCEPTION = 'grade-card.css';
+
+  const stylesheets = [
+    ...filesUnder(join(here, 'styles'), ['.css']),
+    ...filesUnder(join(here, 'src'), ['.css']),
+  ].filter((path) => !path.endsWith(FOIL_EXCEPTION));
+
+  it.each(stylesheets)('%s holds no colour literal outside the token tier', (path) => {
+    const css = readFileSync(path, 'utf8');
+    const literals = path.endsWith('tokens.css') ? [] : (css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []);
+    expect(literals).toEqual([]);
+  });
+
+  // The same rule stated again over `styles/` alone, and stated by reading the
+  // directory rather than by naming files. The list above is assembled once at
+  // module load from two trees; this one re-enumerates the style tier itself,
+  // so a stylesheet added to `styles/` is covered the day it lands and cannot
+  // be missed by a filter written for `src/`. tokens.css is the only tier
+  // allowed a literal, and it is excluded by name.
+  it('holds no colour literal in styles/ outside tokens.css', () => {
+    const dir = join(here, 'styles');
+    const sheets = readdirSync(dir).filter(
+      (entry) => entry.endsWith('.css') && entry !== 'tokens.css',
+    );
+    expect(sheets.length).toBeGreaterThan(0);
+    const offenders = sheets.flatMap((entry) => {
+      const css = readFileSync(join(dir, entry), 'utf8');
+      return (css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).map((hex) => `${entry}: ${hex}`);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it('declares its cascade layers in exactly one file', () => {
+    const declaring = [...filesUnder(join(here, 'styles'), ['.css'])].filter((path) =>
+      /@layer\s+[^;{]+;/.test(readFileSync(path, 'utf8')),
+    );
+    expect(declaring.map((path) => path.split('/').at(-1))).toEqual(['index.css']);
+  });
 });

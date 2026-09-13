@@ -1,45 +1,46 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref } from 'react';
 
-export type ButtonVariant = 'accent' | 'secondary' | 'quiet';
+const VARIANT = {
+  accent: '',
+  secondary: 'fn-button-secondary',
+  quiet: 'fn-button-quiet',
+} as const;
+
+export type ButtonVariant = keyof typeof VARIANT;
 export type ButtonSize = 'md' | 'lg';
 
-type ButtonShared = { variant?: ButtonVariant; size?: ButtonSize };
+type Shared = { variant?: ButtonVariant; size?: ButtonSize };
 
 /**
- * `as="a"` is what makes a genuine link — the repository header's
- * "GitHub ↗" — renderable without becoming a `<button>`. `href` (and the
- * rest of `AnchorHTMLAttributes`) is only assignable when `as="a"`; the
- * `ButtonHTMLAttributes` branch has no `href` to accept it.
+ * `accent` is the default rust fill, `secondary` the ink fill the sign-in
+ * button uses, `quiet` an underlined run of text that happens to be a button.
+ *
+ * `type` is forwarded rather than defaulted: a button inside a form without an
+ * explicit type submits it, and several callers rely on exactly that.
+ *
+ * `as="a"` is what makes a genuine link — the repository header's "GitHub ↗" —
+ * renderable without becoming a `<button>`. The union below is discriminated
+ * on `as`, so `href` (and the rest of `AnchorHTMLAttributes`) is assignable
+ * only on the `as="a"` branch; the `<button>` branch has no `href` to accept
+ * it.
  *
  * `ref` is declared explicitly (React 19's "ref as a prop": no `forwardRef`
- * needed) rather than left for `ButtonHTMLAttributes`/`AnchorHTMLAttributes`
- * to supply — neither carries it — because a real call site
- * (history-interest.tsx's dialog trigger and retry button) holds a ref to
- * the rendered element for focus management, exactly as it did as a plain
- * `<button>`. `rest` below is spread onto the host element unchanged, so
- * `ref` reaches the DOM node the same way any other native prop does.
+ * needed) rather than left to `ButtonHTMLAttributes`/`AnchorHTMLAttributes`,
+ * neither of which carries it — a real call site (the dashboard's history
+ * dialog trigger) holds a ref to the rendered element for focus management.
+ * It is spread onto the host element with everything else, so it reaches the
+ * DOM node the way any other native prop does.
  */
 export type ButtonProps =
-  | ({ as?: 'button'; ref?: Ref<HTMLButtonElement> } & ButtonShared &
+  | ({ as?: 'button'; ref?: Ref<HTMLButtonElement> } & Shared &
       ButtonHTMLAttributes<HTMLButtonElement>)
-  | ({ as: 'a'; ref?: Ref<HTMLAnchorElement> } & ButtonShared &
-      AnchorHTMLAttributes<HTMLAnchorElement>);
-
-function buttonClassName(variant: ButtonVariant, size: ButtonSize, className?: string): string {
-  return [
-    'fn-button',
-    variant === 'secondary' && 'fn-button--secondary',
-    variant === 'quiet' && 'fn-button--quiet',
-    size === 'lg' && 'fn-button--lg',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
-}
+  | ({ as: 'a'; ref?: Ref<HTMLAnchorElement> } & Shared & AnchorHTMLAttributes<HTMLAnchorElement>);
 
 export function Button(props: ButtonProps) {
   const { variant = 'accent', size = 'md', className, as, ...rest } = props;
-  const classes = buttonClassName(variant, size, className);
+  const classes = ['fn-button', VARIANT[variant], size === 'lg' ? 'fn-button-lg' : '', className]
+    .filter(Boolean)
+    .join(' ');
   if (as === 'a') {
     return <a className={classes} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)} />;
   }

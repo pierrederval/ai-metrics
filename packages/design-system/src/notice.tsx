@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 
 /**
- * The caution callout. `'caution'` is the only tone today — the prop exists
- * so a future tone does not require a signature change.
+ * An amber-bordered aside. One tone today; the prop exists so that adding a
+ * second does not mean revisiting every call site.
  */
-export function Notice({ children }: { tone?: 'caution'; children: ReactNode }) {
-  return <div className="notice">{children}</div>;
+export function Notice({ tone = 'caution', children }: { tone?: 'caution'; children: ReactNode }) {
+  return <p className={`fn-notice fn-notice-${tone}`}>{children}</p>;
 }

@@ -1,3 +1,8 @@
+/* The single entry point for the design system's styles, and the only file in
+   the package permitted to declare layer order. Consumers import this once —
+   `src/app/layout.tsx` does it before `./style.css`, so app rules written
+   outside any layer always win over package rules without having to escalate
+   specificity to do it. */
 @layer fn.reset, fn.tokens, fn.base, fn.components;
 
 @import './reset.css' layer(fn.reset);

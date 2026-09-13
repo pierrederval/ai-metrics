@@ -1,103 +1,104 @@
-/* Task 3: the eight presentational primitives (Brand, Button, Badge, Surface,
-   StatCard, Notice, Field, DataTable). GradeCard is Task 4 and lands here
-   too, later.
+/* The primitives' classes, moved out of src/app/style.css.
+ *
+ * Admission test for anything here: the app renders it AND the landing page
+ * renders it. That test is what keeps charts, the PR table, the repository
+ * picker, import progress and the sidebar out — those are product surfaces,
+ * not system parts.
+ *
+ * Several rules keep the bare element selector they had in style.css
+ * (`section`, `button`, `input`, `label`) alongside an `.fn-` class. The
+ * element selector is what the app's existing markup relies on; the class is
+ * what a caller writes when it wants the treatment deliberately. Dropping the
+ * element selector would mean touching hundreds of lines of app markup for no
+ * behavioural gain, which is not what this task is for.
+ *
+ * Every rule references the semantic tier. No literal appears here — the
+ * boundary test in ../boundary.test.ts enforces it.
+ */
 
-   Where a primitive's class already had a real caller in the app (`.notice`,
-   `.scroll`) the rule below is that same selector, moved verbatim out of
-   src/app/style.css — nothing in the app needed to change. Where the app's
-   existing bare-element or class rule is protected from deletion this task
-   (`button`/`.quiet-button`, bare `section`, bare `input`/`label`, `.bigcard`)
-   the primitive gets its own `fn-*` rule here instead: the old rule stays in
-   style.css, unrenamed, styling markup this task does not migrate. A later
-   task deletes the old rule and migrates its call sites in the same commit. */
-
-/* Brand — the seal + wordmark link. Moved from style.css's `.brand`,
-   `.brand:hover`, `.brand-mark` and `.brand-name` (renamed to the
-   fn-brand/__mark/__word names Brand renders; `.brand-caption` was never
-   rendered by the component and is dropped rather than carried forward
-   unused). `.fn-brand--compact`, the one-row sidebar lockup, is defined
-   below the responsive block. */
-.fn-brand {
+/* ---- Brand ------------------------------------------------------------ */
+.brand {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   text-decoration: none;
-  margin-bottom: 48px;
+  margin-bottom: var(--fn-space-7);
   color: var(--fn-color-ink);
 }
-.fn-brand:hover {
+.brand:hover {
   color: var(--fn-color-ink);
 }
-.fn-brand__mark {
-  width: 48px;
-  height: 48px;
+.brand-mark {
+  width: var(--fn-space-7);
+  height: var(--fn-space-7);
   color: var(--fn-color-accent);
-  margin-bottom: 12px;
+  margin-bottom: var(--fn-space-3);
 }
-.fn-brand__word {
+.brand-name {
   font: 34px var(--fn-font-display);
   letter-spacing: -1.3px;
 }
-@media (max-width: 650px) {
-  .fn-brand:not(.fn-brand--compact) {
-    display: grid;
-    grid-template-columns: 40px auto;
-    column-gap: 10px;
-    margin-bottom: 18px;
-  }
-  .fn-brand:not(.fn-brand--compact) .fn-brand__mark {
-    grid-row: span 2;
-    width: 38px;
-    height: 38px;
-    margin: 0;
-  }
-  .fn-brand:not(.fn-brand--compact) .fn-brand__word {
-    font-size: 28px;
-  }
+.brand-caption {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: var(--fn-space-2);
 }
-
-/* The stacked lockup is a marketing lockup: correct for the landing page nav,
-   and 94px of vertical space in a sidebar that has two navigation items. */
-.fn-brand--compact {
+/* The stacked lockup above is a marketing lockup: right for the landing page
+   nav, and 94px of vertical space in a sidebar that has two navigation items.
+   `.brand-compact` is the one-row product lockup the app shell wears — one
+   row at every width, which is why the phone-width block at the foot of this
+   file is scoped off it rather than applying to every `.brand`. */
+.brand-compact {
   flex-direction: row;
   align-items: center;
   gap: var(--fn-space-2);
   margin-bottom: var(--fn-space-4);
   padding: var(--fn-space-1) var(--fn-space-2);
 }
-.fn-brand--compact .fn-brand__mark {
+.brand-compact .brand-mark {
   width: 26px;
   height: 26px;
   margin-bottom: 0;
 }
-.fn-brand--compact .fn-brand__word {
+.brand-compact .brand-name {
   font-size: 21px;
   line-height: 1;
   letter-spacing: -0.7px;
 }
 
-/* Button — accent (default), secondary and quiet, built to the gradient
-   treatment (Amendment 2026-09-13, application-shell-density plan): one hue
-   lit from above, no glow, no saturation shift across the stops. The press
-   state inverts the highlight into an inset shadow. Every value below is a
-   token; none of this rule set holds a hex literal. `size="lg"` is plumbed
-   through as `.fn-button--lg` with no rule of its own yet — no later task has
-   asked for a large button, so there is nothing to size against. */
+/* ---- Button ----------------------------------------------------------- */
+button,
+.fn-button {
+  background: var(--fn-color-accent);
+  color: var(--fn-color-ink-inverse);
+  border: 0;
+  padding: 11px var(--fn-space-4);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.5;
+}
+button:hover,
+.fn-button:hover {
+  background: var(--fn-color-accent-hover);
+}
+/* The control finish (application-shell density pass). It lands on `.fn-button`
+   alone and not on the bare `button` above: the app's remaining bare buttons
+   are menu triggers and chart columns that carry their own surface, and giving
+   them a lit gradient would be a redesign rather than a merge. `as="a"` is why
+   the display/decoration declarations are here — a Button rendered as an
+   anchor has to stop looking like a link. */
 .fn-button {
   display: inline-flex;
   align-items: center;
   gap: var(--fn-space-2);
-  padding: 8px var(--fn-space-4);
   border: 1px solid var(--fn-color-accent-edge);
   border-radius: var(--fn-radius-md);
   background: var(--fn-gradient-accent);
   box-shadow: var(--fn-elevation-control);
-  color: var(--fn-color-on-accent);
-  font: var(--fn-text-detail) var(--fn-font-ui);
-  line-height: 1.4;
   text-decoration: none;
-  text-shadow: 0 1px 0 rgb(90 26 10 / 0.28);
-  cursor: pointer;
+  text-shadow: var(--fn-shadow-accent-text);
   transition:
     box-shadow 0.14s ease,
     translate 0.14s ease;
@@ -110,33 +111,8 @@
   box-shadow: var(--fn-elevation-control-press);
   translate: 0 1px;
 }
-.fn-button--secondary {
-  background: var(--fn-gradient-quiet);
-  border-color: var(--fn-color-quiet-edge);
-  box-shadow: var(--fn-elevation-control-quiet);
-  color: var(--fn-color-ink);
-  text-shadow: none;
-}
-.fn-button--secondary:hover {
-  border-color: var(--fn-color-accent);
-  color: var(--fn-color-accent);
-}
-/* A text action does not gain a surface. */
-.fn-button--quiet {
-  background: none;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
-  color: var(--fn-color-ink-muted);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-shadow: none;
-}
-.fn-button--quiet:hover {
-  color: var(--fn-color-accent);
-}
-/* A disabled action must look inert. The gradient and elevation are what say
-   "pressable", so both come off. */
+/* A disabled action must look inert. The gradient and the elevation are what
+   say "pressable", so the elevation comes off and the whole control fades. */
 .fn-button:disabled,
 .fn-button[aria-disabled='true'] {
   opacity: 0.55;
@@ -152,45 +128,84 @@
   }
 }
 
-/* Badge — a small tone-coloured pill. New to the package: no app class
-   carries this shape today. The shape (pill radius, bold small caps-height
-   label, tight padding) is lifted from grade-banner.css's
-   `.grade-banner-rating`; the tone colours reuse the same
-   tint/foreground/outline token triples style.css's own `.ai-pill` variants
-   already use, so a positive/caution/neutral badge looks exactly like the
-   existing "ran"/"setup"/"none" pills without duplicating a fourth palette. */
+/* The landing page's calls to action, which need to carry across a hero. The
+   product has no use for this size yet; the ladder and the signup block do. */
+.fn-button-lg {
+  padding: var(--fn-space-4) var(--fn-space-5);
+  font-size: var(--fn-text-body);
+  border-radius: var(--fn-radius-md);
+}
+.fn-button-secondary {
+  background: var(--fn-color-ink);
+  color: var(--fn-color-ink-inverse);
+  border-color: var(--fn-color-ink);
+  box-shadow: var(--fn-elevation-control-quiet);
+  text-shadow: none;
+}
+.fn-button-secondary:hover {
+  background: var(--fn-color-ink-hover);
+  border-color: var(--fn-color-ink-hover);
+}
+/* A text action does not gain a surface, so it sheds the finish entirely. */
+.quiet-button,
+.fn-button-quiet {
+  background: transparent;
+  color: var(--fn-color-ink-muted);
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-shadow: none;
+}
+.quiet-button:hover,
+.fn-button-quiet:hover {
+  background: transparent;
+  color: var(--fn-color-accent);
+}
+
+/* ---- Badge ------------------------------------------------------------ *
+ * Was `.ai-pill` with `.ran` / `.setup` / `.none`. The tones are named for
+ * what they mean to a reader rather than for what the AI-involvement route
+ * happened to call them, because the landing page uses the same three to say
+ * shipped / scoring shipped / designed.                                     */
 .fn-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 9px;
-  border-radius: var(--fn-radius-pill);
-  font-size: 11px;
+  gap: 5px;
+  font-size: var(--fn-text-label);
   font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--fn-radius-pill);
   white-space: nowrap;
 }
-.fn-badge--positive {
-  background: var(--fn-color-positive-tint);
-  color: var(--fn-color-positive);
-  box-shadow: inset 0 0 0 1px var(--fn-color-positive-outline);
+.fn-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
 }
-.fn-badge--caution {
+.fn-badge-positive {
+  background: var(--fn-color-positive-surface);
+  color: var(--fn-color-positive);
+  box-shadow: inset 0 0 0 1px var(--fn-color-positive-ring);
+}
+.fn-badge-caution {
   background: var(--fn-color-caution-tint);
   color: var(--fn-color-caution);
-  box-shadow: inset 0 0 0 1px var(--fn-color-caution-outline);
+  box-shadow: inset 0 0 0 1px var(--fn-color-caution-ring);
 }
-.fn-badge--neutral {
-  background: var(--fn-color-muted-tint);
+.fn-badge-neutral {
+  background: var(--fn-color-neutral-tint);
   color: var(--fn-color-ink-muted);
-  box-shadow: inset 0 0 0 1px var(--fn-color-muted-outline);
+  box-shadow: inset 0 0 0 1px var(--fn-color-neutral-ring);
 }
 
-/* Surface — the glass card chrome. Task 7 deletes the app's bare `section`
-   selector in src/app/style.css (guard-caught layout on a bare element) and
-   migrates every call site onto <Surface>, so this rule is now the one and
-   only place the look lives. Values match the deleted card exactly,
-   including the backdrop-filter blur enhancement and its reduced-
-   transparency fallback, both moved verbatim; the enhancement's rgba alpha
-   is now --fn-color-surface-glass-blur (tokens.css) instead of a literal. */
+/* ---- Surface ---------------------------------------------------------- */
+section,
 .fn-surface {
   background: var(--fn-color-surface-glass);
   border: 0;
@@ -200,24 +215,24 @@
   box-shadow: var(--fn-elevation-card);
 }
 @supports (backdrop-filter: blur(16px)) {
+  section,
   .fn-surface {
-    background: var(--fn-color-surface-glass-blur);
+    background: var(--fn-color-surface-glass-blurred);
     backdrop-filter: blur(16px);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
+  section,
   .fn-surface {
     backdrop-filter: none;
     background: var(--fn-color-surface-opaque);
   }
 }
 
-/* StatCard — label/value/detail. `.bigcard` (and its `.t`/`.v`/`.s` children)
-   in src/app/style.css carries three real call sites today
-   (agent-share.tsx, agents-involved.tsx, cohort-comparison.tsx) that this
-   task does not migrate, so it stays put; this is StatCard's own rule,
-   named for what it actually renders instead of reusing those single-letter
-   classes. */
+/* ---- StatCard --------------------------------------------------------- *
+ * Was `.bigcard`. The legacy `.t` / `.v` / `.s` children keep their names:
+ * six call sites in the app render them, and renaming buys nothing here.    */
+.bigcard,
 .fn-stat-card {
   background: var(--fn-color-surface-glass);
   border-radius: var(--fn-radius-lg);
@@ -227,81 +242,71 @@
   flex-direction: column;
   gap: 11px;
 }
-.fn-stat-card__label {
-  font-size: 10px;
+.bigcard .t,
+.fn-stat-card .t {
+  font-size: var(--fn-text-label);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--fn-color-ink-muted);
   font-weight: 700;
 }
-.fn-stat-card__value {
+.bigcard .v,
+.fn-stat-card .v {
   font: 400 var(--fn-text-figure) var(--fn-font-display);
   letter-spacing: -0.8px;
   line-height: 1.05;
 }
-.fn-stat-card__detail {
-  font-size: 12.5px;
+.bigcard .s,
+.fn-stat-card .s {
+  font-size: var(--fn-text-detail);
   color: var(--fn-color-ink-muted);
   line-height: 1.5;
 }
 
-/* Notice — the caution callout. Moved verbatim from src/app/style.css:
-   `.notice` has one real caller today (src/app/prs/[prId]/page.tsx) and
-   nothing else in the app targets it, so the class name is unchanged and
-   this is the only definition left after the move. */
-.notice {
-  padding: var(--fn-space-4) var(--fn-space-5);
+/* ---- Notice ----------------------------------------------------------- */
+.notice,
+.fn-notice {
+  padding: var(--fn-space-4) 20px;
   background: var(--fn-color-caution-surface);
   border-left: 3px solid var(--fn-color-caution);
   border-radius: 0 var(--fn-radius-md) var(--fn-radius-md) 0;
 }
 
-/* Field — a labelled input. Bare `input`/`label` in src/app/style.css stay
-   (Amendment A4), so Field gets its own rule rather than reusing them;
-   values match the existing form control exactly. */
-.fn-field {
-  display: block;
-  margin: 12px 0;
-}
-.fn-field__label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.fn-field__input {
+/* ---- Field ------------------------------------------------------------ */
+input,
+.fn-field input {
   padding: 9px;
   border: 1px solid var(--fn-color-border);
   border-radius: var(--fn-radius-sm);
   background: var(--fn-color-surface);
   accent-color: var(--fn-color-accent);
-  font: inherit;
+}
+label,
+.fn-field label {
+  display: block;
+  margin: var(--fn-space-3) 0;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-/* DataTable — the horizontal-scroll wrapper. Moved verbatim from
-   src/app/style.css: `.scroll` has real callers today (pr-table.tsx,
-   cohort-comparison.tsx, and the delivery/ai-involvement route tables) and
-   nothing else in the app targets it, so the class name is unchanged. Table
-   element chrome itself (`table`/`td`/`th`) already lives in this package's
-   base.css from an earlier task; DataTable needs nothing more. */
-.scroll {
+/* ---- DataTable -------------------------------------------------------- *
+ * The wrapper only. The table chrome itself is an element default and lives
+ * in base.css, because a bare <table> in the app already gets it.           */
+.scroll,
+.fn-data-table {
   overflow-x: auto;
   border-radius: 10px;
-  margin: 16px 0;
+  margin: var(--fn-space-4) 0;
 }
 
-/* TopBar and Breadcrumb — Task 4's replacement for `.page-topline`. The
-   brief names `styles/components/top-bar.css`, but no `styles/components/`
-   subdirectory exists: all eight Task 3 primitives above live flat in this
-   file, and `styles/index.css` declares its four layer imports once. These
-   rules land here instead, and no new `@import` is added.
-
-   TopBar has three named slots (Context/Utility/Identity) rather than a
-   `justify-content: space-between` row, so a control added later becomes a
-   child of a named slot instead of an append that lands wherever it lands.
-   Utility is reserved for search and then notifications — it renders no
-   control yet — so the divider before Identity is conditional on Utility
-   actually holding something (`:not(:empty)`), rather than always drawn. */
+/* ---- TopBar and Breadcrumb -------------------------------------------- *
+ * The application shell's replacement for `.page-topline`. TopBar has three
+ * named slots (Context / Utility / Identity) rather than a
+ * `justify-content: space-between` row, so a control added later becomes a
+ * child of a named slot instead of an append that lands wherever it lands.
+ * Utility is reserved for search and then notifications — it renders no
+ * control yet — so the divider before Identity is conditional on Utility
+ * actually holding something (`:not(:empty)`) rather than always drawn.       */
 .fn-topbar {
   position: sticky;
   top: 0;
@@ -355,4 +360,31 @@
 .fn-crumb [aria-current='page'] {
   color: var(--fn-color-ink);
   font-weight: 700;
+}
+
+/* ---- Responsive ------------------------------------------------------- */
+@media (max-width: 650px) {
+  /* Every rule here is scoped off `.brand-compact`. A bare `.brand` selector
+     restacks the sidebar's one-row lockup onto a phone-width grid, which is
+     the bug the compact variant exists to fix — and the compact lockup must
+     stay one row at every width. */
+  .brand:not(.brand-compact) {
+    display: grid;
+    grid-template-columns: 40px auto;
+    column-gap: 10px;
+    margin-bottom: 18px;
+  }
+  .brand:not(.brand-compact) .brand-mark {
+    grid-row: span 2;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+  }
+  .brand:not(.brand-compact) .brand-name {
+    font-size: 28px;
+  }
+  .brand:not(.brand-compact) .brand-caption {
+    margin-top: 3px;
+    font-size: 7px;
+  }
 }

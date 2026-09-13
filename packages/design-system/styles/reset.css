@@ -1,5 +1,6 @@
-/* Box model, form-control font inheritance, and the focus ring. Moved
-   verbatim from the first ~40 lines of src/app/style.css. */
+/* What src/app/style.css did in its first forty lines: the handful of browser
+   defaults fieldnote overrides everywhere, and nothing else. Anything with an
+   opinion about how an element should look belongs in base.css. */
 * {
   box-sizing: border-box;
 }

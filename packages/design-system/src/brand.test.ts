@@ -8,12 +8,12 @@ const render = (props: Parameters<typeof Brand>[0]) =>
   renderToStaticMarkup(createElement(Brand, props));
 
 test('the sidebar lockup is one row and the marketing lockup is not', () => {
-  expect(render({ size: 'compact' })).toContain('fn-brand fn-brand--compact');
-  expect(render({ size: 'display' })).not.toContain('fn-brand--compact');
+  expect(render({ size: 'compact' })).toContain('brand brand-compact');
+  expect(render({ size: 'display' })).not.toContain('brand-compact');
 });
 
 test('display is the default, so the landing page nav needs no prop', () => {
-  expect(render({})).not.toContain('fn-brand--compact');
+  expect(render({})).not.toContain('brand-compact');
 });
 
 test('both sizes keep the accessible name and the seal', () => {
@@ -34,14 +34,14 @@ test('the phone-width lockup rules do not restack the compact sidebar variant', 
   expect(media).not.toBeNull();
   const block = media![0];
 
-  // None of the three phone-width rules may open with a bare `.fn-brand`
-  // selector (one not preceded by a compound `:not(...)` scope) — a bare
-  // selector restacks the compact sidebar lockup too, which is the bug this
-  // test guards against.
-  expect(block).not.toMatch(/^\s*\.fn-brand(?:__mark|__word)?\s*\{/m);
+  // None of the phone-width rules may open with a bare `.brand` selector (one
+  // not followed by a compound `:not(...)` scope) — a bare selector restacks
+  // the compact sidebar lockup too, which is the bug this test guards against.
+  expect(block).not.toMatch(/^\s*\.brand(?:-mark|-name|-caption)?\s*[,{]/m);
 
   // Every phone-width rule must instead be scoped off the compact variant.
-  expect(block).toContain('.fn-brand:not(.fn-brand--compact) {');
-  expect(block).toContain('.fn-brand:not(.fn-brand--compact) .fn-brand__mark {');
-  expect(block).toContain('.fn-brand:not(.fn-brand--compact) .fn-brand__word {');
+  expect(block).toContain('.brand:not(.brand-compact) {');
+  expect(block).toContain('.brand:not(.brand-compact) .brand-mark {');
+  expect(block).toContain('.brand:not(.brand-compact) .brand-name {');
+  expect(block).toContain('.brand:not(.brand-compact) .brand-caption {');
 });

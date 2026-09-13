@@ -4,7 +4,8 @@ import { Surface } from '@fieldnote/design-system';
 import { requireRepository } from '../../../../workspaces/access';
 import { getGrade, gradeHistory, gradeSummaries } from '../../../../db/queries/grade-runs';
 import { readinessRubric } from '../../../../domain/grading/readiness-v01';
-import { GradeCard } from '../../../../components/grading/grade-card';
+import { GradeCard } from '@fieldnote/design-system';
+import { gradeCardProps } from '../../../../components/grading/grade-presentation';
 import { GradeControls, GradeReport } from '../../../../components/grading/report';
 import { pageRouteId } from '../../../../lib/page-route-id';
 import { actEnabled } from '../../../../db/queries/act-settings';
@@ -85,11 +86,13 @@ export default async function Grading({
         <div>
           {grade?.score !== null && grade?.score !== undefined ? (
             <GradeCard
-              score={grade.score}
-              repositoryName={`${repo.owner} / ${repo.name}`}
-              sha={grade.sha}
-              rubricVersion={grade.rubricVersion}
-              checks={grade.checks}
+              {...gradeCardProps({
+                score: grade.score,
+                repositoryName: `${repo.owner} / ${repo.name}`,
+                sha: grade.sha,
+                rubricVersion: grade.rubricVersion,
+                checks: grade.checks,
+              })}
             />
           ) : (
             <Surface className="grading-ungraded">

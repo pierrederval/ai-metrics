@@ -3,6 +3,7 @@ import { requireTrackedRepository } from '../../../../auth/access';
 import { loadDetections } from '../../../../db/queries/ai-involvement';
 import { catalogue } from '../../../../domain/ai-involvement/catalogue';
 import type { Detection, EvidenceRef } from '../../../../domain/ai-involvement/types';
+import { Badge } from '@fieldnote/design-system';
 import { AgentMark } from '../../../../components/ai-involvement/marks';
 import { pageRouteId } from '../../../../lib/page-route-id';
 
@@ -47,9 +48,9 @@ function DetectionRow({ detection }: { detection: Detection }) {
       </td>
       <td className="ai-evidence">
         <div>
-          <span className={`ai-pill ${ran ? 'ran' : setup ? 'setup' : 'none'}`}>
+          <Badge tone={ran ? 'positive' : setup ? 'caution' : 'neutral'}>
             {ran ? 'Ran' : setup ? 'Set up' : detection.signal}
-          </span>
+          </Badge>
           {detection.evidence.map((evidence, index) => (
             <ProofLine key={index} evidence={evidence} />
           ))}

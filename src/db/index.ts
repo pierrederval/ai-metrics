@@ -7,7 +7,10 @@ let database: ReturnType<typeof drizzle<typeof schema>> | undefined;
 export function db() {
   if (!database) {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL required');
-    connection = postgres(process.env.DATABASE_URL, { max: 10 });
+    // Serverless instances each hold their own pool, so this stays small.
+    // DATABASE_URL is expected to be a pooled endpoint (Neon's -pooler host),
+    // which multiplexes many short-lived clients onto few server connections.
+    connection = postgres(process.env.DATABASE_URL, { max: 2 });
     database = drizzle(connection, { schema });
   }
   return database;
@@ -21,7 +24,7 @@ export async function closeDb() {
 }
 
 // Separate bounded pool: lock holders never consume persistence pool slots while
-// awaiting the collector's nested evidence transactions. Up to3 coordinator +10 data connections.
+// awaiting the collector's nested evidence transactions. Up to 3 coordinator + 2 data connections.
 export async function withPullRequestLock<T>(
   repositoryId: string,
   number: number,

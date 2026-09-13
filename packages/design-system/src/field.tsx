@@ -1,21 +1,21 @@
 import type { InputHTMLAttributes } from 'react';
 
 /**
- * A labelled input. `id` is required and is what associates the `<label>`
- * with the `<input>` — no `useId` here, since the caller must already supply
- * a stable id to be a good citizen of forms in general.
+ * A label bound to an input by `id`. The binding is the whole point: a label
+ * that only sits next to its input reads fine and is useless to a screen
+ * reader, so `id` is required rather than optional.
  */
 export function Field({
   label,
   id,
+  className,
   ...rest
 }: { label: string; id: string } & InputHTMLAttributes<HTMLInputElement>) {
+  const classes = ['fn-field', className].filter(Boolean).join(' ');
   return (
-    <div className="fn-field">
-      <label className="fn-field__label" htmlFor={id}>
-        {label}
-      </label>
-      <input className="fn-field__input" id={id} {...rest} />
+    <div className={classes}>
+      <label htmlFor={id}>{label}</label>
+      <input id={id} {...rest} />
     </div>
   );
 }

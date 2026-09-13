@@ -1,102 +1,141 @@
+/* Every custom property fieldnote has, in three tiers.
+ *
+ *   reference → names the palette. The ONLY tier allowed a colour literal.
+ *   finish    → one colour per grade band, lifted from gradePresentation().
+ *   semantic  → what components actually reference.
+ *
+ * Components reference the semantic tier only. The one documented exception is
+ * the grade card, which reads `--grade` (set inline from the domain) and whose
+ * foil gradients stay in grade-card.css — an eight-to-nine stop gradient only
+ * means anything whole, and naming twenty-odd stops here would be bookkeeping
+ * rather than a system.
+ *
+ * Every value below is lifted unchanged from src/app/style.css or
+ * src/domain/grading/presentation.ts. Colour and type are pixel-identical to
+ * the approved baseline in docs/design/fieldnote/README.md; nothing here is a
+ * redesign. Alpha variants keep their own reference entry rather than being
+ * rebuilt with color-mix(), so the computed colour is byte-for-byte what it
+ * was before extraction.
+ */
 :root {
-  /* Reference tier — the palette. Every other tier below points back to
-     these; nothing outside this tier holds a literal colour, other than the
-     one documented control-finish exception at the bottom of this file. */
+  /* ---------------------------------------------------------------- *
+   * Reference tier — the palette.                                     *
+   * ---------------------------------------------------------------- */
+
+  /* Pine: the ink greens. */
   --fn-pine-900: #203f36;
-  --fn-pine-600: #526b60;
-  --fn-mist-300: #bfcfc4;
-  --fn-mist-200: #e6ece7;
-  --fn-mist-100: #f0f5ef;
-  --fn-paper-50: #f4f7f3;
-  --fn-ember-600: #be421f;
-  --fn-ember-700: #a6381a;
-  --fn-moss-700: #2f6b52;
-  --fn-amber-700: #986817;
-  --fn-amber-100: #f3e8ca;
-  /* Amendment 2026-09-13: lifted from `main`'s background wash in
-     src/app/style.css. Not new colours — the wash's existing atmosphere
-     tints, named here so the wash can reference the reference tier instead
-     of a literal once a later task moves it. */
-  --fn-color-atmosphere-cool: #c8ddce;
-  --fn-color-atmosphere-warm: #ecd3c3;
-  /* Two more reference-tier swatches, added on review: these are the exact
-     translucent values the old `--glass` custom property and the
-     `section`/`.bigcard` box-shadow used. Named here, rather than left as
-     literals on the semantic/elevation tokens below, so those tokens can
-     point at the reference tier like every other one instead of being a
-     second unauthorised exception alongside the control-finish tokens. */
-  --fn-color-glass-base: rgba(244, 248, 240, 0.62);
-  --fn-color-ink-shadow: #203f3610;
-  /* Task 7 amendment 2026-09-13: the exact translucent value the old bare
-     `section`'s `@supports (backdrop-filter: blur(16px))` enhancement used —
-     a lower alpha than --fn-color-glass-base because the blur itself is
-     what supplies the rest of the glass effect once backdrop-filter is
-     available. Named here, per the same precedent, so .fn-surface can
-     reference the reference tier instead of carrying the rgba() literal. */
-  --fn-color-glass-blur-base: rgba(244, 248, 240, 0.43);
-
-  /* Task 2 amendment 2026-09-13: more reference-tier swatches, needed to empty
-     src/app/style.css of its remaining colour literals. --fn-mist-050 through
-     --fn-mist-450 are paler/darker steps of the existing mist family that
-     style.css already used but the reference tier didn't have yet; --fn-pine-700
-     and --fn-rust-700 are genuinely new hues (a signed-in-button hover shade and
-     a form/status danger red) that don't match anything already in the palette. */
-  --fn-mist-050: #f8faf6;
-  --fn-mist-090: #f0f4ed;
-  --fn-mist-220: #e1e9df;
-  --fn-mist-250: #d4e2d6;
-  --fn-mist-350: #b5c9bb;
-  --fn-mist-450: #8da99b;
+  --fn-pine-800: #253e34;
   --fn-pine-700: #315b4d;
-  --fn-rust-700: #a1361c;
+  --fn-pine-600: #526b60;
+  --fn-pine-500: #68736a;
+  --fn-pine-400: #8da99b;
+  --fn-pine-ink-deep: #102a22;
 
-  /* The basic dashboard's own local palette. `.metrics-page` in style.css
-     defines local custom properties reusing the --paper/--ink/--muted/--line
-     names at different values (its own comment: "Basic dashboards use the
-     approved Fieldnote paper and local metric semantics") — a second,
-     self-contained palette, not a restatement of the shared one above. Named
-     here so that local block can point at the reference tier instead of a
-     literal, same as everything else. */
-  --fn-metrics-paper: #f4f2e9;
-  --fn-metrics-panel: #fffef9;
-  --fn-metrics-ink: #253e34;
-  --fn-metrics-muted: #68736a;
-  --fn-metrics-line: #dce0d4;
-  --fn-metrics-positive: #416951;
-  --fn-metrics-caution: #c49a48;
-  --fn-metrics-negative: #995735;
+  /* Mist: the pale greens, from border weight up to the sidebar wash. */
+  --fn-mist-350: #b5c9bb;
+  --fn-mist-300: #bfcfc4;
+  --fn-mist-250: #dbe5dc;
+  --fn-mist-280: #c8ddce;
+  --fn-mist-260: #d4e2d6;
+  --fn-mist-240: #e1e9df;
+  --fn-mist-200: #e6ece7;
 
-  /* More exact translucent literals used verbatim in style.css, named here per
-     the glass-base/ink-shadow precedent above: each is the precise alpha value
-     a rule already used, so the semantic tokens below can reference the
-     reference tier instead of holding a literal themselves. */
-  --fn-color-hairline-faint-base: #203f3615;
-  --fn-color-panel-shadow-base: #203f3608;
-  --fn-color-dropdown-shadow-base: #203f361c;
-  --fn-color-modal-shadow-base: #203f3633;
-  --fn-color-positive-tint-base: #2f6b5218;
-  --fn-color-positive-outline-base: #2f6b5240;
-  --fn-color-caution-tint-base: #98681718;
-  --fn-color-caution-outline-base: #98681740;
-  --fn-color-muted-tint-base: #526b6014;
-  --fn-color-muted-outline-base: #526b6033;
-  --fn-color-surface-veil-base: #f4f7f3c9;
-  --fn-color-input-surface-base: #ffffff99;
-  --fn-color-backdrop-base: #102a2266;
-  --fn-metrics-hover-base: #253e3410;
+  /* Paper: the near-whites. Higher number is darker. */
+  --fn-paper-0: #fffef9;
+  --fn-paper-25: #f8faf6;
+  --fn-paper-50: #f4f7f3;
+  --fn-paper-75: #f4f8f0;
+  --fn-paper-100: #f0f5ef;
+  --fn-paper-150: #f0f4ed;
 
-  /* Fix wave 2026-09-13: three more exact translucent literals, this time
-     from packages/design-system/styles/base.css's bare `table`/`th`/`tbody
-     tr:hover` rules (moved from style.css verbatim, alpha and all) — the
-     boundary guard was widened to scan every stylesheet but tokens.css, and
-     these three were the only literals it turned up. Same precedent as the
-     block above: named here so base.css can reference the reference tier. */
-  --fn-color-table-wash-base: #f4f8f06e;
-  --fn-color-table-head-base: #e6ece780;
-  --fn-color-table-row-hover-base: #ffffff35;
+  /* Sand: the warm paper the basic dashboards sit on. */
+  --fn-sand-50: #f4f2e9;
+  --fn-sand-200: #dce0d4;
 
-  /* Finish tier — one colour per grade band, lifted from gradePresentation()
-     in src/domain/grading/presentation.ts. */
+  /* Ember: the accent rust. The intermediate stops exist for the control
+     finish's gradients — one hue lit from above, not a second palette.
+     --fn-ember-600 stays the midpoint of the resting gradient, which is what
+     keeps a gradient button the same colour as the flat one it replaced. */
+  --fn-ember-450: #d4522c;
+  --fn-ember-500: #cb4a26;
+  --fn-ember-550: #c5471f;
+  --fn-ember-600: #be421f;
+  --fn-ember-620: #b83f1d;
+  --fn-ember-650: #b23d1a;
+  --fn-ember-680: #ad3a1a;
+  --fn-ember-700: #a6381a;
+  --fn-ember-800: #a1361c;
+  --fn-ember-900: #9e3518;
+  /* The near-black the ember darkens into: the pressed inset and the text
+     shadow that keeps a label legible on the lit gradient. */
+  --fn-ember-ink: #5a1a0a;
+
+  /* Clay: the warm wash and the metric rust. */
+  --fn-clay-300: #ecd3c3;
+  --fn-clay-600: #995735;
+
+  /* Moss: the "ran" / positive greens. */
+  --fn-moss-600: #416951;
+  --fn-moss-700: #2f6b52;
+
+  /* Amber: the "setup" / caution yellows. */
+  --fn-amber-100: #f3e8ca;
+  --fn-amber-500: #c49a48;
+  --fn-amber-700: #986817;
+
+  /* Alpha overlays. The suffix is the alpha as a percentage, so `a20` is the
+     same colour at 20% — kept as literals because the base-plus-alpha form is
+     what the approved baseline actually renders. */
+  --fn-pine-900-a03: #203f3608;
+  --fn-pine-900-a06: #203f3610;
+  --fn-pine-900-a08: #203f3615;
+  --fn-pine-900-a11: #203f361c;
+  --fn-pine-900-a13: #203f3620;
+  --fn-pine-900-a20: #203f3633;
+  --fn-pine-800-a06: #253e3410;
+  --fn-pine-ink-deep-a40: #102a2266;
+  --fn-pine-600-a08: #526b6014;
+  --fn-pine-600-a20: #526b6033;
+  --fn-moss-700-a09: #2f6b5218;
+  --fn-moss-700-a25: #2f6b5240;
+  --fn-amber-700-a09: #98681718;
+  --fn-amber-700-a25: #98681740;
+  --fn-mist-200-a50: #e6ece780;
+  --fn-paper-50-a79: #f4f7f3c9;
+  --fn-paper-75-a43: #f4f8f06e;
+  --fn-white-a21: #ffffff35;
+  --fn-white-a22: #ffffff38;
+  --fn-white-a30: #ffffff4d;
+  --fn-white-a60: #ffffff99;
+  --fn-white-a61: #ffffff9c;
+  --fn-white: #fff;
+  /* The control finish's own overlays: two more pine alphas between the ones
+     above, the ember's own glow, and the pressed/typeset darks. */
+  --fn-pine-900-a07: #203f3612;
+  --fn-pine-900-a14: #203f3624;
+  --fn-ember-600-a22: #be421f38;
+  --fn-ember-ink-a28: #5a1a0a47;
+  --fn-ember-ink-a40: #5a1a0a66;
+
+  /* A neutral grey, not on the pine/mist ramp. It is what the grade banner has
+     always sat on; it is recorded rather than corrected, because the approved
+     baseline is not up for redesign here. */
+  --fn-grey-100: #eee;
+
+  /* Two surface washes that are stated as rgba() in the baseline rather than
+     hex, and stay that way so the computed value does not move. */
+  --fn-glass-62: rgba(244, 248, 240, 0.62);
+  --fn-glass-43: rgba(244, 248, 240, 0.43);
+  --fn-mist-200-rgba-94: rgba(230, 236, 231, 0.94);
+  --fn-mist-200-rgba-0: rgba(230, 236, 231, 0);
+
+  /* ---------------------------------------------------------------- *
+   * Finish tier — one colour per grade band.                          *
+   * Lifted from gradePresentation(). The identifier `rainbow` is the   *
+   * domain's; `prismatic` is the name users read. Both appear here on  *
+   * purpose: the token follows the user-facing name, the data          *
+   * attribute follows the domain one.                                  *
+   * ---------------------------------------------------------------- */
   --fn-grade-common: #b54740;
   --fn-grade-shimmer: #548eae;
   --fn-grade-bronze: #895333;
@@ -104,66 +143,123 @@
   --fn-grade-gold: #a77a13;
   --fn-grade-prismatic: #7359a3;
 
-  /* Semantic tier — what components reference. Points at the reference tier
-     only; no literal colour here. */
+  /* ---------------------------------------------------------------- *
+   * Semantic tier — what components reference.                        *
+   * ---------------------------------------------------------------- */
+
+  /* Ink */
   --fn-color-ink: var(--fn-pine-900);
   --fn-color-ink-muted: var(--fn-pine-600);
+  --fn-color-ink-hover: var(--fn-pine-700);
+  --fn-color-ink-inverse: #fff;
+
+  /* Ground and surfaces */
   --fn-color-ground: var(--fn-mist-200);
   --fn-color-surface: var(--fn-paper-50);
-  --fn-color-surface-glass: var(--fn-color-glass-base);
-  --fn-color-surface-glass-blur: var(--fn-color-glass-blur-base);
+  --fn-color-surface-raised: var(--fn-paper-50-a79);
+  --fn-color-surface-glass: var(--fn-glass-62);
+  --fn-color-surface-glass-blurred: var(--fn-glass-43);
+  --fn-color-surface-opaque: var(--fn-paper-150);
+  --fn-color-surface-hover: var(--fn-paper-25);
+  --fn-color-surface-sunken: var(--fn-mist-240);
+  /* The flat panel a nested theme puts its content on, where the glass
+     treatment would fight the theme's own paper. */
+  --fn-color-panel: var(--fn-paper-0);
+  /* Small tinted plates: the workspace initial, the account avatar. Distinct
+     roles that happen to sit a step apart on the mist ramp, so distinct
+     tokens — collapsing them would be tidier and wrong. */
+  --fn-color-badge-surface: var(--fn-mist-260);
+  --fn-color-badge-border: var(--fn-mist-350);
+  --fn-color-avatar-surface: var(--fn-mist-280);
+
+  /* The page wash under `main`, and the public entry panel. Three stops plus a
+     base, which is why these are four tokens rather than one. */
+  --fn-color-wash-base: var(--fn-paper-100);
+  --fn-color-wash-edge: var(--fn-mist-200);
+  --fn-color-wash-edge-fade: var(--fn-mist-200-rgba-94);
+  --fn-color-wash-edge-clear: var(--fn-mist-200-rgba-0);
+  --fn-color-wash-cool: var(--fn-mist-280);
+  --fn-color-wash-warm: var(--fn-clay-300);
+
+  /* Lines */
   --fn-color-border: var(--fn-mist-300);
-  --fn-color-hairline: color-mix(in srgb, var(--fn-pine-900) 12.5%, transparent);
+  --fn-color-border-strong: var(--fn-pine-400);
+  --fn-color-hairline: var(--fn-pine-900-a08);
+  --fn-color-rule: var(--fn-pine-900-a13);
+
+  /* Accent */
   --fn-color-accent: var(--fn-ember-600);
   --fn-color-accent-hover: var(--fn-ember-700);
+  --fn-color-danger: var(--fn-ember-800);
+  /* The edge a lit control carries, a shade darker than the gradient's own
+     bottom stop so the button reads as a raised object rather than a patch. */
+  --fn-color-accent-edge: var(--fn-ember-900);
+
+  /* The surface a selected row sits on — the sidebar's current page. Its own
+     step on the mist ramp: it has to read as chosen against the rail's ground
+     without becoming a second accent. */
+  --fn-color-surface-selected: var(--fn-mist-250);
+
+  /* Control finish. Every stop is the approved ember lit from above — a
+     lighting cue, not a second hue. */
+  --fn-gradient-accent: linear-gradient(
+    180deg,
+    var(--fn-ember-500) 0%,
+    var(--fn-ember-600) 52%,
+    var(--fn-ember-680) 100%
+  );
+  --fn-gradient-accent-hover: linear-gradient(
+    180deg,
+    var(--fn-ember-450) 0%,
+    var(--fn-ember-550) 52%,
+    var(--fn-ember-650) 100%
+  );
+  --fn-gradient-accent-press: linear-gradient(
+    180deg,
+    var(--fn-ember-680) 0%,
+    var(--fn-ember-620) 100%
+  );
+
+  /* Status */
   --fn-color-positive: var(--fn-moss-700);
+  --fn-color-positive-surface: var(--fn-moss-700-a09);
+  --fn-color-positive-ring: var(--fn-moss-700-a25);
   --fn-color-caution: var(--fn-amber-700);
   --fn-color-caution-surface: var(--fn-amber-100);
+  --fn-color-caution-tint: var(--fn-amber-700-a09);
+  --fn-color-caution-ring: var(--fn-amber-700-a25);
+  --fn-color-neutral-tint: var(--fn-pine-600-a08);
+  --fn-color-neutral-ring: var(--fn-pine-600-a20);
 
-  /* Task 2 amendment 2026-09-13: semantic tokens for the roles named just
-     above in the reference tier. Each is a distinct role (a hover state, a
-     tint fill, a ring, a shadow, a dashboard's own palette) even where two
-     share a source hue, so none of these collapse onto an existing token. */
-  --fn-color-surface-hover: var(--fn-mist-050);
-  --fn-color-surface-opaque: var(--fn-mist-090);
-  --fn-color-row-hover: var(--fn-mist-220);
-  --fn-color-icon-surface: var(--fn-mist-250);
-  --fn-color-icon-border: var(--fn-mist-350);
-  --fn-color-border-hover: var(--fn-mist-450);
-  --fn-color-ink-hover: var(--fn-pine-700);
-  --fn-color-danger: var(--fn-rust-700);
-  --fn-color-avatar-surface: var(--fn-color-atmosphere-cool);
-  --fn-color-hairline-faint: var(--fn-color-hairline-faint-base);
-  --fn-color-panel-shadow: var(--fn-color-panel-shadow-base);
-  --fn-color-dropdown-shadow: var(--fn-color-dropdown-shadow-base);
-  --fn-color-modal-shadow: var(--fn-color-modal-shadow-base);
-  --fn-color-positive-tint: var(--fn-color-positive-tint-base);
-  --fn-color-positive-outline: var(--fn-color-positive-outline-base);
-  --fn-color-caution-tint: var(--fn-color-caution-tint-base);
-  --fn-color-caution-outline: var(--fn-color-caution-outline-base);
-  --fn-color-muted-tint: var(--fn-color-muted-tint-base);
-  --fn-color-muted-outline: var(--fn-color-muted-outline-base);
-  --fn-color-surface-veil: var(--fn-color-surface-veil-base);
-  --fn-color-input-surface: var(--fn-color-input-surface-base);
-  --fn-color-backdrop: var(--fn-color-backdrop-base);
-  --fn-color-metrics-hover: var(--fn-metrics-hover-base);
-  --fn-color-table-wash: var(--fn-color-table-wash-base);
-  --fn-color-table-head: var(--fn-color-table-head-base);
-  --fn-color-table-row-hover: var(--fn-color-table-row-hover-base);
+  /* Tables */
+  --fn-color-table-surface: var(--fn-paper-75-a43);
+  --fn-color-table-head: var(--fn-mist-200-a50);
+  --fn-color-row-hover: var(--fn-white-a21);
 
-  /* The main background wash. style.css builds `main`'s (and `.public-entry`'s)
-     background from four stops (#e6ece7, #c8ddce, #ecd3c3, #f0f5ef); these name
-     each one so those rules can reference tokens instead of the literals. */
-  --fn-color-wash-edge: var(--fn-mist-200);
-  --fn-color-wash-cool: var(--fn-color-atmosphere-cool);
-  --fn-color-wash-warm: var(--fn-color-atmosphere-warm);
-  --fn-color-wash-base: var(--fn-mist-100);
+  /* Fields */
+  --fn-color-field-surface: var(--fn-white-a60);
 
-  /* Type. Both approved faces, plus a mono role for the things fieldnote is
-     made of — SHAs, paths, check ids. */
+  /* Charts. The three outcome colours the daily charts, the legend and the KPI
+     lines all read — named for what they mean, not for the hue, so "recovered"
+     stays amber whatever amber becomes. */
+  --fn-color-chart-positive: var(--fn-moss-600);
+  --fn-color-chart-caution: var(--fn-amber-500);
+  --fn-color-chart-critical: var(--fn-clay-600);
+  --fn-color-chart-hover: var(--fn-pine-800-a06);
+
+  /* The grade banner, the phone-width stand-in for the card. Its own two
+     surfaces, because it sits on neither the glass nor the paper. */
+  --fn-color-banner-surface: var(--fn-grey-100);
+  --fn-color-banner-pill: var(--fn-white-a61);
+
+  /* Overlay */
+  --fn-color-scrim: var(--fn-pine-ink-deep-a40);
+
+  /* ---- Type ---- */
   --fn-font-display: Georgia, 'Times New Roman', serif;
   --fn-font-ui: Arial, Helvetica, sans-serif;
-  --fn-font-mono: ui-monospace, monospace;
+  --fn-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
   --fn-text-display: clamp(32px, 3.3vw, 48px);
   --fn-text-title: 27px;
   --fn-text-subtitle: 22px;
@@ -172,7 +268,7 @@
   --fn-text-detail: 12.5px;
   --fn-text-label: 10px;
 
-  /* Space. Fourteen ad-hoc values collapsed to an eight-step scale. */
+  /* ---- Space: fourteen ad-hoc values collapsed onto eight steps. ---- */
   --fn-space-1: 4px;
   --fn-space-2: 8px;
   --fn-space-3: 12px;
@@ -182,31 +278,33 @@
   --fn-space-7: 48px;
   --fn-space-8: 64px;
 
-  /* Radii carry role, not decoration. */
+  /* ---- Radii, by role rather than by size. ---- */
   --fn-radius-sm: 5px;
   --fn-radius-md: 8px;
   --fn-radius-lg: 12px;
   --fn-radius-card: 16px;
   --fn-radius-pill: 999px;
 
-  /* One elevation, lifted verbatim from `section`/`.bigcard` in style.css. */
-  --fn-elevation-card: 0 6px 20px var(--fn-color-ink-shadow);
+  /* ---- Elevation. Each is a different distance off the page, so each is its
+     own token rather than one shadow reused at four sizes. ---- */
+  --fn-elevation-card: 0 6px 20px var(--fn-pine-900-a06);
+  --fn-elevation-menu: 0 12px 28px var(--fn-pine-900-a11);
+  --fn-elevation-panel-soft: 0 8px 24px var(--fn-pine-900-a03);
+  --fn-elevation-panel: 0 20px 60px var(--fn-pine-900-a03);
+  --fn-elevation-dialog: 0 20px 80px var(--fn-pine-900-a20);
 
-  /* Control finish. Every stop is the approved ember lit from above — a lighting
-     cue, not a second hue. #be421f remains the midpoint of the resting gradient,
-     which is what keeps the amended buttons the same colour as the old flat ones. */
-  --fn-color-surface-selected: #dbe5dc;
-  --fn-color-accent-edge: #9e3518;
-  --fn-color-quiet-edge: #b9cabe;
-  --fn-color-on-accent: #fff;
+  /* Controls are a different kind of raised from cards: a highlight along the
+     top edge, a contact shadow, and the accent's own glow. The press state
+     inverts the highlight into an inset rather than moving the shadow. */
   --fn-elevation-control:
-    inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 1px rgb(32 63 54 / 0.14),
-    0 2px 7px rgb(190 66 31 / 0.22);
-  --fn-elevation-control-press: inset 0 1px 2px rgb(90 26 10 / 0.4), 0 1px 0 rgb(255 255 255 / 0.3);
+    inset 0 1px 0 var(--fn-white-a22), 0 1px 1px var(--fn-pine-900-a14),
+    0 2px 7px var(--fn-ember-600-a22);
+  --fn-elevation-control-press:
+    inset 0 1px 2px var(--fn-ember-ink-a40), 0 1px 0 var(--fn-white-a30);
   --fn-elevation-control-quiet:
-    inset 0 1px 0 #fff, 0 1px 1px rgb(32 63 54 / 0.07), 0 2px 5px rgb(32 63 54 / 0.06);
-  --fn-gradient-accent: linear-gradient(180deg, #cb4a26 0%, #be421f 52%, #ad3a1a 100%);
-  --fn-gradient-accent-hover: linear-gradient(180deg, #d4522c 0%, #c5471f 52%, #b23d1a 100%);
-  --fn-gradient-accent-press: linear-gradient(180deg, #ad3a1a 0%, #b83f1d 100%);
-  --fn-gradient-quiet: linear-gradient(180deg, #fdfefc 0%, #eef3ec 100%);
+    inset 0 1px 0 var(--fn-white), 0 1px 1px var(--fn-pine-900-a07),
+    0 2px 5px var(--fn-pine-900-a06);
+  /* Not an elevation: the one-pixel darkening under a label sitting on the lit
+     gradient, which is what keeps it legible against the bright top stop. */
+  --fn-shadow-accent-text: 0 1px 0 var(--fn-ember-ink-a28);
 }

@@ -2,7 +2,19 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, test } from 'vitest';
 import { gradePresentation } from '../../domain/grading/presentation';
-import { GradeBanner } from './grade-banner';
+import { GradeBanner } from '@fieldnote/design-system';
+import { gradeBannerProps, gradeCardProps } from './grade-presentation';
+
+const bannerProps = (score: number) =>
+  gradeBannerProps(
+    gradeCardProps({
+      score,
+      repositoryName: 'demo/repo',
+      sha: 'a'.repeat(40),
+      rubricVersion: '0.1.0',
+      checks: [],
+    }),
+  );
 
 // gradePresentation is the single source of truth for tier label, colour and
 // symbol shape/count (presentation.test.ts exercises that function itself).
@@ -14,7 +26,7 @@ test.each([0, 49, 50, 69, 70, 79, 80, 89, 90, 99, 100])(
   'score %s: banner shows the score, gradePresentation label and symbol count',
   (score) => {
     const expected = gradePresentation(score);
-    const html = renderToStaticMarkup(createElement(GradeBanner, { score }));
+    const html = renderToStaticMarkup(createElement(GradeBanner, bannerProps(score)));
 
     expect(html).toContain(`>${score}<`);
     expect(html).toContain(`>${expected.label}<`);
@@ -27,13 +39,16 @@ test.each([0, 49, 50, 69, 70, 79, 80, 89, 90, 99, 100])(
 );
 
 test('banner carries no next-tier block, flavour line or scale — those stay on the full card', () => {
-  const html = renderToStaticMarkup(createElement(GradeBanner, { score: 60 }));
+  const html = renderToStaticMarkup(createElement(GradeBanner, bannerProps(60)));
   expect(html).not.toContain('grade-card-scale');
   expect(html).not.toContain('grade-card-move');
   expect(html).not.toContain('Next tier');
   expect(html).not.toContain('Rubric');
 });
 
-test('untrusted score input cannot inject markup', () => {
-  expect(() => renderToStaticMarkup(createElement(GradeBanner, { score: Number.NaN }))).toThrow();
+test('untrusted score input is rejected at the seam', () => {
+  // The banner is presentational now and would render whatever it is handed.
+  // The seam is what refuses a score the rubric cannot produce, so that is
+  // where this check belongs.
+  expect(() => bannerProps(Number.NaN)).toThrow();
 });
