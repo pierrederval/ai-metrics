@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireRepository } from '../../../../workspaces/access';
 import { getGrade, gradeHistory, gradeSummaries } from '../../../../db/queries/grade-runs';
 import { AGENT_READINESS } from '../../../../domain/grading/graders/agent-readiness';
-import { getGrader } from '../../../../domain/grading/registry';
+import { getGrader, graderCheckTitles } from '../../../../domain/grading/registry';
 import { GradeCard } from '../../../../components/grading/grade-card';
 import { GradeControls, GradeReport } from '../../../../components/grading/report';
 import { pageRouteId } from '../../../../lib/page-route-id';
@@ -25,6 +25,7 @@ export default async function Grading({
   // single-grader assumption is visible. What this page shows when a
   // repository has four grades is slice 2's decision.
   const readinessGrader = getGrader(AGENT_READINESS);
+  const checkTitles = graderCheckTitles(AGENT_READINESS);
   const repoId = pageRouteId((await params).repoId);
   const repo = await requireRepository(repoId);
   const { run } = await searchParams;
@@ -94,6 +95,8 @@ export default async function Grading({
               sha={grade.sha}
               rubricVersion={grade.rubricVersion}
               checks={grade.checks}
+              tagline={readinessGrader.card.tagline}
+              checkTitles={checkTitles}
             />
           ) : (
             <section className="grading-ungraded">
@@ -128,6 +131,7 @@ export default async function Grading({
             grade={grade}
             owner={repo.owner}
             name={repo.name}
+            checkTitles={checkTitles}
             outdated={
               grade.rubricVersion !== readinessGrader.version ||
               grade.evaluatorVersion !== readinessGrader.evaluatorVersion

@@ -1,7 +1,6 @@
 import { useId, type CSSProperties } from 'react';
 import { gradePresentation } from '../../domain/grading/presentation';
 import { finishNames } from '../../domain/grading/finish-names';
-import { flavourLine } from '../../domain/grading/flavour';
 import { nextTier } from '../../domain/grading/next-tier';
 import type { CheckResult } from '../../domain/grading/types';
 import './grade-card.css';
@@ -11,16 +10,22 @@ export function GradeCard({
   sha,
   rubricVersion,
   checks,
+  tagline,
+  checkTitles,
 }: {
   score: number;
   repositoryName: string;
   sha: string;
   rubricVersion: string;
   checks: CheckResult[];
+  // The grader's own sentence and its own check titles. fieldnote holds
+  // neither: the card renders what the manifest says.
+  tagline: string;
+  checkTitles: Record<string, string>;
 }) {
   const grade = gradePresentation(score);
   const gradient = useId();
-  const next = nextTier(score, checks);
+  const next = nextTier(score, checks, checkTitles);
   return (
     <section
       className="grade-card"
@@ -89,7 +94,7 @@ export function GradeCard({
           ))}
         </div>
         <p className="grade-card-finish">{finishNames[grade.finish]}</p>
-        <p className="grade-card-flavour">{flavourLine(score)}</p>
+        <p className="grade-card-flavour">{tagline}</p>
         {next ? (
           <div className="grade-card-move">
             <div className="grade-card-move-top">

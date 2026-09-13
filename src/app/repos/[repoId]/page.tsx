@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireTrackedRepository } from '../../../auth/access';
 import { latestGrade } from '../../../db/queries/grade-runs';
 import { AGENT_READINESS } from '../../../domain/grading/graders/agent-readiness';
+import { getGrader, graderCheckTitles } from '../../../domain/grading/registry';
 import { loadDetections } from '../../../db/queries/ai-involvement';
 import { loadCohorts } from '../../../db/queries/cohorts';
 import { GradeCard } from '../../../components/grading/grade-card';
@@ -76,6 +77,8 @@ export default async function Repository({
               sha={grade.sha}
               rubricVersion={grade.rubricVersion}
               checks={grade.checks}
+              tagline={getGrader(AGENT_READINESS).card.tagline}
+              checkTitles={graderCheckTitles(AGENT_READINESS)}
             />
             <GradeBanner score={grade.score} />
           </>

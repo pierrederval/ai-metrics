@@ -7,6 +7,10 @@ vi.stubGlobal('React', React);
 vi.mock('../../app/repos/[repoId]/grading/actions', () => ({ runGrade: vi.fn() }));
 import { GradeCard } from './grade-card';
 import { GradeReport } from './report';
+import { agentReadinessManifest } from '../../domain/grading/graders/agent-readiness';
+import { graderCheckTitles } from '../../domain/grading/registry';
+const titles = graderCheckTitles(agentReadinessManifest.id);
+const tagline = agentReadinessManifest.card.tagline;
 const sha = 'a'.repeat(40);
 const grade: CompletedGrade = {
   id: 'run',
@@ -31,7 +35,13 @@ const grade: CompletedGrade = {
 };
 test('untrusted explanation and path are escaped, links are pinned and encoded', () => {
   const html = renderToStaticMarkup(
-    createElement(GradeReport, { grade, owner: 'owner', name: 'repo', outdated: false }),
+    createElement(GradeReport, {
+      grade,
+      owner: 'owner',
+      name: 'repo',
+      outdated: false,
+      checkTitles: titles,
+    }),
   );
   expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
   expect(html).not.toContain('<script>');
@@ -49,6 +59,7 @@ test('historical report displays its stored version and outdated notice', () => 
       owner: 'owner',
       name: 'repo',
       outdated: true,
+      checkTitles: titles,
     }),
   );
   expect(html).toContain('Historical rubric');
@@ -64,6 +75,8 @@ test.each([0, 49, 50, 69, 70, 79, 80, 89, 90, 99, 100])(
         sha,
         rubricVersion: '0.1.0',
         checks: grade.checks,
+        tagline,
+        checkTitles: titles,
       }),
     );
     expect(html).toContain(`${score} out of 100`);
@@ -103,42 +116,45 @@ const failingCheck: CheckResult = {
   explanation: '',
 };
 test.each([
-  [0, 'common', 'An agent will guess'],
-  [50, 'shimmer', 'can start, but will stop'],
-  [70, 'bronze', 'Enough context to work from'],
-  [80, 'silver', 'Readable, testable, navigable'],
-  [90, 'gold', 'land a change unaided'],
-  [100, 'prismatic', 'Nothing the rubric asks for is missing'],
-] as const)(
-  'score %s renders the %s finish with its flavour line',
-  (score, finish, flavourSnippet) => {
-    const html = renderToStaticMarkup(
-      createElement(GradeCard, {
-        score,
-        repositoryName: 'demo/repo',
-        sha,
-        rubricVersion: '0.1.0',
-        checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
-      }),
-    );
-    expect(html).toContain(`data-finish="${finish}"`);
-    expect(html).toContain(flavourSnippet);
-    if (score === 100) {
-      expect(html).toContain('No higher tier.');
-      expect(html).not.toContain('Next tier');
-    }
-  },
-);
+  [0, 'common'],
+  [50, 'shimmer'],
+  [70, 'bronze'],
+  [80, 'silver'],
+  [90, 'gold'],
+  [100, 'prismatic'],
+] as const)('score %s renders the %s finish with the grader tagline', (score, finish) => {
+  const html = renderToStaticMarkup(
+    createElement(GradeCard, {
+      score,
+      repositoryName: 'demo/repo',
+      sha,
+      rubricVersion: '0.1.0',
+      checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
+      tagline,
+      checkTitles: titles,
+    }),
+  );
+  expect(html).toContain(`data-finish="${finish}"`);
+  // One tagline per grader, at every finish. The six per-finish flavour lines
+  // are a deliberate loss: under the contract a grader supplies one sentence,
+  // and a special case for the built-in would make the contract a fiction.
+  expect(html).toContain('Can an agent work in this repository at all?');
+  if (score === 100) {
+    expect(html).toContain('No higher tier.');
+    expect(html).not.toContain('Next tier');
+  }
+});
 
-test('actual evaluator checks have readable report headings', async () => {
-  const { evaluateReadiness } = await import('../../domain/grading/readiness-v01');
-  const evaluated = evaluateReadiness({ sha, complete: true, documents: [] });
+test('actual grader checks have readable report headings', async () => {
+  const { runDeclarative } = await import('../../domain/grading/declarative');
+  const evaluated = runDeclarative(agentReadinessManifest, { sha, complete: true, documents: [] });
   const html = renderToStaticMarkup(
     createElement(GradeReport, {
       grade: { ...grade, ...evaluated },
       owner: 'owner',
       name: 'repo',
       outdated: false,
+      checkTitles: titles,
     }),
   );
   for (const label of [
