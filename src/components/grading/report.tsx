@@ -3,7 +3,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CompletedGrade } from '../../db/queries/grade-runs';
 import { runGrade } from '../../app/repos/[repoId]/grading/actions';
-import './grade-card.css';
+import './report.css';
 type Status = { id: string; state: 'queued' | 'running' | 'complete' | 'failed' };
 export function GradeControls({
   repositoryId,

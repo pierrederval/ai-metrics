@@ -5,12 +5,15 @@ import type { CompletedGrade } from '../../db/queries/grade-runs';
 import type { CheckResult } from '../../domain/grading/types';
 vi.stubGlobal('React', React);
 vi.mock('../../app/repos/[repoId]/grading/actions', () => ({ runGrade: vi.fn() }));
-import { GradeCard } from './grade-card';
+import { GradeCard } from '@fieldnote/design-system';
+import { gradeCardProps } from './grade-presentation';
 import { GradeReport } from './report';
-import { agentReadinessManifest } from '../../domain/grading/graders/agent-readiness';
+import {
+  AGENT_READINESS,
+  agentReadinessManifest,
+} from '../../domain/grading/graders/agent-readiness';
 import { graderCheckTitles } from '../../domain/grading/registry';
 const titles = graderCheckTitles(agentReadinessManifest.id);
-const tagline = agentReadinessManifest.card.tagline;
 const sha = 'a'.repeat(40);
 const grade: CompletedGrade = {
   id: 'run',
@@ -69,15 +72,17 @@ test.each([0, 49, 50, 69, 70, 79, 80, 89, 90, 99, 100])(
   'card %s uses accessible SVG markers and real-position thresholds',
   (score) => {
     const html = renderToStaticMarkup(
-      createElement(GradeCard, {
-        score,
-        repositoryName: '<script>repo</script>',
-        sha,
-        rubricVersion: '0.1.0',
-        checks: grade.checks,
-        tagline,
-        checkTitles: titles,
-      }),
+      createElement(
+        GradeCard,
+        gradeCardProps({
+          score,
+          repositoryName: '<script>repo</script>',
+          sha,
+          rubricVersion: '0.1.0',
+          checks: grade.checks,
+          graderId: AGENT_READINESS,
+        }),
+      ),
     );
     expect(html).toContain(`${score} out of 100`);
     expect(html).not.toContain('<script>');
@@ -124,20 +129,24 @@ test.each([
   [100, 'prismatic'],
 ] as const)('score %s renders the %s finish with the grader tagline', (score, finish) => {
   const html = renderToStaticMarkup(
-    createElement(GradeCard, {
-      score,
-      repositoryName: 'demo/repo',
-      sha,
-      rubricVersion: '0.1.0',
-      checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
-      tagline,
-      checkTitles: titles,
-    }),
+    createElement(
+      GradeCard,
+      gradeCardProps({
+        score,
+        repositoryName: 'demo/repo',
+        sha,
+        rubricVersion: '0.1.0',
+        checks: score === 100 ? [passingCheck] : [passingCheck, failingCheck],
+        graderId: AGENT_READINESS,
+      }),
+    ),
   );
   expect(html).toContain(`data-finish="${finish}"`);
   // One tagline per grader, at every finish. The six per-finish flavour lines
   // are a deliberate loss: under the contract a grader supplies one sentence,
   // and a special case for the built-in would make the contract a fiction.
+  // The landing page's ladder keeps a line per band, as marketing copy of its
+  // own — see src/components/marketing/ladder-copy.ts.
   expect(html).toContain('Can an agent work in this repository at all?');
   if (score === 100) {
     expect(html).toContain('No higher tier.');

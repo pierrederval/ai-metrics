@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Brand } from './brand';
+import { Brand } from '@fieldnote/design-system';
 import { WorkspaceSwitcher } from './workspace-switcher';
 
 type Workspace = { id: string; name: string; role: 'owner' | 'member' };
@@ -35,7 +35,9 @@ function SidebarNavigation({
   const pathname = usePathname();
   return (
     <aside className="sidebar">
-      <Brand />
+      {/* `as={Link}` keeps the logo a client-side navigation. The package
+          cannot import next/link itself, so the app injects it. */}
+      <Brand as={Link} href="/dashboard" />
       <WorkspaceSwitcher active={active} workspaces={workspaces} demo={demo} />
       <nav aria-label="Main navigation">
         <Link

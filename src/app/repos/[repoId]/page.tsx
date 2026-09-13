@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { requireTrackedRepository } from '../../../auth/access';
 import { latestGrade } from '../../../db/queries/grade-runs';
 import { AGENT_READINESS } from '../../../domain/grading/graders/agent-readiness';
-import { getGrader, graderCheckTitles } from '../../../domain/grading/registry';
 import { loadDetections } from '../../../db/queries/ai-involvement';
 import { loadCohorts } from '../../../db/queries/cohorts';
-import { GradeCard } from '../../../components/grading/grade-card';
-import { GradeBanner } from '../../../components/grading/grade-banner';
+import { GradeCard, GradeBanner } from '@fieldnote/design-system';
+import {
+  gradeBannerProps,
+  gradeCardProps,
+} from '../../../components/grading/grade-presentation';
 import { AgentsInvolved } from '../../../components/agents/agents-involved';
 import { AgentShare } from '../../../components/agents/agent-share';
 import { CohortComparison } from '../../../components/cohorts/cohort-comparison';
@@ -67,21 +69,28 @@ export default async function Repository({
       </p>
       <div className="agents-view">
         {grade?.score !== null && grade?.score !== undefined ? (
-          <>
-            {/* Both render; src/app/style.css shows exactly one per
-                viewport width — the full card above phone width, the
-                banner below it. See the .agents-view rules there. */}
-            <GradeCard
-              score={grade.score}
-              repositoryName={`${repo.owner} / ${repo.name}`}
-              sha={grade.sha}
-              rubricVersion={grade.rubricVersion}
-              checks={grade.checks}
-              tagline={getGrader(AGENT_READINESS).card.tagline}
-              checkTitles={graderCheckTitles(AGENT_READINESS)}
-            />
-            <GradeBanner score={grade.score} />
-          </>
+          (() => {
+            // Resolved once and shared. The banner derives its tier from the
+            // card's props rather than from the score a second time, so the
+            // two cannot disagree about what this score means.
+            const card = gradeCardProps({
+              score: grade.score,
+              repositoryName: `${repo.owner} / ${repo.name}`,
+              sha: grade.sha,
+              rubricVersion: grade.rubricVersion,
+              checks: grade.checks,
+              graderId: AGENT_READINESS,
+            });
+            return (
+              <>
+                {/* Both render; src/app/style.css shows exactly one per
+                    viewport width — the full card above phone width, the
+                    banner below it. See the .agents-view rules there. */}
+                <GradeCard {...card} />
+                <GradeBanner {...gradeBannerProps(card)} />
+              </>
+            );
+          })()
         ) : (
           <section className="grading-ungraded">
             <h2>Not graded yet.</h2>

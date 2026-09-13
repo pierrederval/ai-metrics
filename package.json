@@ -30,6 +30,7 @@
     "smoke:webhook": "tsx scripts/smoke-webhook.ts"
   },
   "dependencies": {
+    "@fieldnote/design-system": "workspace:*",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "inngest": "^4.20.0",

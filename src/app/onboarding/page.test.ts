@@ -1,12 +1,15 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, expect, test, vi } from 'vitest';
 const deps = vi.hoisted(() => ({
   available: vi.fn(),
+  github: vi.fn(),
   tracked: vi.fn(),
   get: vi.fn(),
   latest: vi.fn(),
 }));
 vi.mock('../../auth/access', () => ({
   accessibleRepositories: deps.available,
+  githubAccessibleRepositories: deps.github,
   requireTrackedRepository: deps.tracked,
 }));
 vi.mock('../../lib/env', () => ({
@@ -16,7 +19,10 @@ vi.mock('../../db/queries/repository-imports', () => ({
   getImport: deps.get,
   latestImport: deps.latest,
 }));
-vi.mock('../../components/onboarding/repository-picker', () => ({ RepositoryPicker: () => null }));
+vi.mock('../../components/onboarding/repository-picker', () => ({
+  RepositoryPicker: ({ repositories }: { repositories: Array<{ owner: string; name: string }> }) =>
+    repositories.map((repo) => `${repo.owner}/${repo.name}`).join(','),
+}));
 vi.mock('../../components/onboarding/import-progress', () => ({ ImportProgress: () => null }));
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -34,6 +40,7 @@ const repo = {
 beforeEach(() => {
   vi.clearAllMocks();
   deps.available.mockResolvedValue([repo]);
+  deps.github.mockResolvedValue([repo]);
   deps.tracked.mockResolvedValue(repo);
 });
 test('resume authorizes repo before exposing persisted run and rejects foreign runs', async () => {
@@ -59,4 +66,16 @@ test('listing errors propagate to the error boundary', async () => {
   await expect(Onboarding({ searchParams: Promise.resolve({}) })).rejects.toThrow(
     'GitHub unavailable',
   );
+});
+
+// A first repository can only ever be connected from this page, so the choices
+// must come from the GitHub grant lookup. Sourcing them from the workspace
+// listing instead is circular: nothing is linked until a choice is started, and
+// no choice is offered until something is linked.
+test('offers a GitHub-accessible repository the workspace has not connected yet', async () => {
+  const candidate = { id: 'fresh', owner: 'org', name: 'unconnected', trackingStartedAt: null };
+  deps.available.mockResolvedValue([]);
+  deps.github.mockResolvedValue([{ ...candidate, canAdmin: true }]);
+  const html = renderToStaticMarkup(await Onboarding({ searchParams: Promise.resolve({}) }));
+  expect(html).toContain('org/unconnected');
 });

@@ -4,7 +4,8 @@ import { requireRepository } from '../../../../workspaces/access';
 import { getGrade, gradeHistory, gradeSummaries } from '../../../../db/queries/grade-runs';
 import { AGENT_READINESS } from '../../../../domain/grading/graders/agent-readiness';
 import { getGrader, graderCheckTitles } from '../../../../domain/grading/registry';
-import { GradeCard } from '../../../../components/grading/grade-card';
+import { GradeCard } from '@fieldnote/design-system';
+import { gradeCardProps } from '../../../../components/grading/grade-presentation';
 import { GradeControls, GradeReport } from '../../../../components/grading/report';
 import { pageRouteId } from '../../../../lib/page-route-id';
 import { actEnabled } from '../../../../db/queries/act-settings';
@@ -90,13 +91,14 @@ export default async function Grading({
         <div>
           {grade?.score !== null && grade?.score !== undefined ? (
             <GradeCard
-              score={grade.score}
-              repositoryName={`${repo.owner} / ${repo.name}`}
-              sha={grade.sha}
-              rubricVersion={grade.rubricVersion}
-              checks={grade.checks}
-              tagline={readinessGrader.card.tagline}
-              checkTitles={checkTitles}
+              {...gradeCardProps({
+                score: grade.score,
+                repositoryName: `${repo.owner} / ${repo.name}`,
+                sha: grade.sha,
+                rubricVersion: grade.rubricVersion,
+                checks: grade.checks,
+                graderId: AGENT_READINESS,
+              })}
             />
           ) : (
             <section className="grading-ungraded">

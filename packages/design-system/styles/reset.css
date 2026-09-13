@@ -1,0 +1,19 @@
+/* What src/app/style.css did in its first forty lines: the handful of browser
+   defaults fieldnote overrides everywhere, and nothing else. Anything with an
+   opinion about how an element should look belongs in base.css. */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--fn-color-accent);
+  outline-offset: 4px;
+}
