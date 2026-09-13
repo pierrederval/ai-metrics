@@ -19,7 +19,8 @@ export function registerGrader(input: unknown): GraderManifest {
 
 export function getGrader(graderId: string): GraderManifest {
   const manifest = graders.get(graderId);
-  if (!manifest) throw new ManifestError('unknown_grader', `No grader '${graderId}' is registered.`);
+  if (!manifest)
+    throw new ManifestError('unknown_grader', `No grader '${graderId}' is registered.`);
   return manifest;
 }
 

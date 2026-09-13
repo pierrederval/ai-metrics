@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireTrackedRepository } from '../../../auth/access';
 import { latestGrade } from '../../../db/queries/grade-runs';
+import { AGENT_READINESS } from '../../../domain/grading/graders/agent-readiness';
 import { loadDetections } from '../../../db/queries/ai-involvement';
 import { loadCohorts } from '../../../db/queries/cohorts';
 import { GradeCard } from '../../../components/grading/grade-card';
@@ -49,7 +50,7 @@ export default async function Repository({
     );
   }
   const [grade, involvement, table] = await Promise.all([
-    latestGrade(repo.id),
+    latestGrade(repo.id, AGENT_READINESS),
     loadDetections(repo.id),
     loadCohorts(repo.id, range),
   ]);

@@ -20,7 +20,9 @@ function firstNonblankLine(document: SourceDocument): EvidenceLineRange | undefi
 function presence(document: SourceDocument, nonempty: boolean): EvidenceLineRange | undefined {
   const range = firstNonblankLine(document);
   if (range) return range;
-  return nonempty ? undefined : { path: document.path, blobSha: document.blobSha, start: 1, end: 1 };
+  return nonempty
+    ? undefined
+    : { path: document.path, blobSha: document.blobSha, start: 1, end: 1 };
 }
 
 function result(

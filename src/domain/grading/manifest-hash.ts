@@ -17,5 +17,7 @@ function canonical(value: unknown): unknown {
  * the same manifest through a JSONB round-trip must hash the same.
  */
 export function manifestHash(manifest: unknown): string {
-  return createHash('sha256').update(JSON.stringify(canonical(manifest))).digest('hex');
+  return createHash('sha256')
+    .update(JSON.stringify(canonical(manifest)))
+    .digest('hex');
 }
