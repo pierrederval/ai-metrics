@@ -62,7 +62,7 @@ td,
 th {
   padding: 15px;
   text-align: left;
-  border-bottom: 1px solid #203f3620;
+  border-bottom: 1px solid var(--fn-color-hairline);
   line-height: 1.5;
 }
 th {

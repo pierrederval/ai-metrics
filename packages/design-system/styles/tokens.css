@@ -19,6 +19,14 @@
      of a literal once a later task moves it. */
   --fn-color-atmosphere-cool: #c8ddce;
   --fn-color-atmosphere-warm: #ecd3c3;
+  /* Two more reference-tier swatches, added on review: these are the exact
+     translucent values the old `--glass` custom property and the
+     `section`/`.bigcard` box-shadow used. Named here, rather than left as
+     literals on the semantic/elevation tokens below, so those tokens can
+     point at the reference tier like every other one instead of being a
+     second unauthorised exception alongside the control-finish tokens. */
+  --fn-color-glass-base: rgba(244, 248, 240, 0.62);
+  --fn-color-ink-shadow: #203f3610;
 
   /* Finish tier — one colour per grade band, lifted from gradePresentation()
      in src/domain/grading/presentation.ts. */
@@ -30,14 +38,12 @@
   --fn-grade-prismatic: #7359a3;
 
   /* Semantic tier — what components reference. Points at the reference tier
-     only; --fn-color-surface-glass is the sole literal here, because its
-     alpha-blended value does not correspond to any single reference-tier
-     swatch (see the note below). */
+     only; no literal colour here. */
   --fn-color-ink: var(--fn-pine-900);
   --fn-color-ink-muted: var(--fn-pine-600);
   --fn-color-ground: var(--fn-mist-200);
   --fn-color-surface: var(--fn-paper-50);
-  --fn-color-surface-glass: rgba(244, 248, 240, 0.62);
+  --fn-color-surface-glass: var(--fn-color-glass-base);
   --fn-color-border: var(--fn-mist-300);
   --fn-color-hairline: color-mix(in srgb, var(--fn-pine-900) 12.5%, transparent);
   --fn-color-accent: var(--fn-ember-600);
@@ -86,7 +92,7 @@
   --fn-radius-pill: 999px;
 
   /* One elevation, lifted verbatim from `section`/`.bigcard` in style.css. */
-  --fn-elevation-card: 0 6px 20px #203f3610;
+  --fn-elevation-card: 0 6px 20px var(--fn-color-ink-shadow);
 
   /* Control finish. Every stop is the approved ember lit from above — a lighting
      cue, not a second hue. #be421f remains the midpoint of the resting gradient,
