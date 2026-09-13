@@ -199,30 +199,6 @@ section {
 .timeline {
   border-left: 3px solid var(--fn-color-accent);
 }
-button {
-  background: var(--fn-color-accent);
-  color: white;
-  border: 0;
-  padding: 11px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1.5;
-}
-button:hover {
-  background: var(--fn-color-accent-hover);
-}
-.quiet-button {
-  background: transparent;
-  color: var(--fn-color-ink-muted);
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-.quiet-button:hover {
-  background: transparent;
-  color: var(--fn-color-accent);
-}
 input {
   padding: 9px;
   border: 1px solid var(--fn-color-border);
@@ -464,10 +440,6 @@ label {
 }
 .metrics-page a {
   color: var(--ink);
-}
-.metrics-page button {
-  background: var(--ink);
-  color: var(--paper);
 }
 .metrics-page :focus-visible {
   outline: 2px solid var(--metric-rust);
@@ -1162,23 +1134,6 @@ label {
   background: var(--fn-color-input-surface);
   min-width: 0;
 }
-.settings-form button {
-  min-height: 40px;
-  border: 1px solid var(--fn-color-border);
-  border-radius: 5px;
-  padding: 10px 15px;
-  background: var(--fn-color-surface);
-  color: var(--fn-color-ink);
-  cursor: pointer;
-}
-.settings-form button:hover {
-  background: var(--fn-color-ink);
-  color: white;
-}
-.settings-form button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
 .form-error {
   width: 100%;
   color: var(--fn-color-danger);
@@ -1223,10 +1178,6 @@ label {
 .member-controls select {
   flex: 1;
   width: auto;
-}
-.member-controls button {
-  font-size: 11px;
-  padding: 10px;
 }
 .invitation-row strong {
   font-size: 12px;

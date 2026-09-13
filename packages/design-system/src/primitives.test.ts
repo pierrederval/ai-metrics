@@ -1,4 +1,5 @@
 import { createElement, type ComponentType } from 'react';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, test } from 'vitest';
 import { Badge } from './badge';
@@ -57,6 +58,27 @@ describe('Button', () => {
     const html = render(Button, { as: 'a', href: '/repo', children: 'GitHub ↗' });
     expect(html).toMatch(/^<a\s/);
     expect(html).toContain('href="/repo"');
+  });
+
+  test('every variant takes its finish from tokens, never a literal', () => {
+    const css = readFileSync(
+      new URL('../styles/components.css', import.meta.url),
+      'utf8',
+    );
+    const button = css.slice(css.indexOf('.fn-button'));
+    // A hex in a component rule is how ten button definitions happened the
+    // first time. The finish lives in tokens.css or it drifts.
+    expect(button).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(button).toContain('var(--fn-gradient-accent)');
+    expect(button).toContain('var(--fn-elevation-control)');
+  });
+
+  test('the press state is not animated for readers who asked for stillness', () => {
+    const css = readFileSync(
+      new URL('../styles/components.css', import.meta.url),
+      'utf8',
+    );
+    expect(css).toContain('prefers-reduced-motion: reduce');
   });
 });
 

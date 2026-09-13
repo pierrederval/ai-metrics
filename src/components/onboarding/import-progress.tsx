@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { Button } from '@fieldnote/design-system';
 import { useActionState, useEffect, useRef } from 'react';
 import type { ImportSnapshot, StartResult } from '../../domain/import/types';
 import { retryAnalysis } from '../../app/onboarding/actions';
@@ -167,13 +168,13 @@ function ProgressContent({
           connection !== 'unavailable' &&
           connection !== 'signed-out' && (
             <form action={retry}>
-              <button disabled={pending}>
+              <Button disabled={pending}>
                 {pending
                   ? 'Requesting retry…'
                   : run.state === 'partial'
                     ? 'Retry failed PRs'
                     : 'Retry import'}
-              </button>
+              </Button>
             </form>
           )}
       </div>
