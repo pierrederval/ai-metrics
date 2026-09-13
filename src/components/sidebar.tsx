@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Brand } from './brand';
+import { Brand } from '@fieldnote/design-system';
 import { WorkspaceSwitcher } from './workspace-switcher';
 
 type Workspace = { id: string; name: string; role: 'owner' | 'member' };

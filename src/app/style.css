@@ -19,36 +19,6 @@
   top: 0;
   height: 100dvh;
 }
-.brand {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-decoration: none;
-  margin-bottom: 48px;
-  color: var(--fn-color-ink);
-}
-.brand:hover {
-  color: var(--fn-color-ink);
-}
-.brand-mark {
-  width: 48px;
-  height: 48px;
-  color: var(--fn-color-accent);
-  margin-bottom: 12px;
-}
-.brand-name {
-  font:
-    34px Georgia,
-    'Times New Roman',
-    serif;
-  letter-spacing: -1.3px;
-}
-.brand-caption {
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-top: 8px;
-}
 nav {
   display: grid;
   gap: 10px;
@@ -224,17 +194,6 @@ section {
   font-size: 24px;
   color: var(--fn-color-accent);
 }
-.scroll {
-  overflow-x: auto;
-  border-radius: 10px;
-  margin: 16px 0;
-}
-.notice {
-  padding: 16px 20px;
-  background: var(--fn-color-caution-surface);
-  border-left: 3px solid var(--fn-color-caution);
-  border-radius: 0 8px 8px 0;
-}
 .timeline {
   border-left: 3px solid var(--fn-color-accent);
 }
@@ -312,25 +271,6 @@ label {
     padding: 18px 20px;
     border-right: 0;
     border-bottom: 1px solid var(--fn-color-border);
-  }
-  .brand {
-    display: grid;
-    grid-template-columns: 40px auto;
-    column-gap: 10px;
-    margin-bottom: 18px;
-  }
-  .brand-mark {
-    grid-row: span 2;
-    width: 38px;
-    height: 38px;
-    margin: 0;
-  }
-  .brand-name {
-    font-size: 28px;
-  }
-  .brand-caption {
-    margin-top: 3px;
-    font-size: 7px;
   }
   nav {
     display: flex;
@@ -964,15 +904,15 @@ label {
   background: var(--fn-color-surface-veil);
   box-shadow: 0 20px 60px var(--fn-color-panel-shadow);
 }
-.signin-panel .brand {
+.signin-panel .fn-brand {
   justify-content: center;
   margin-bottom: 28px;
 }
-.signin-panel .brand-mark {
+.signin-panel .fn-brand__mark {
   width: 56px;
   height: 56px;
 }
-.signin-panel .brand-name {
+.signin-panel .fn-brand__word {
   font-size: 42px;
 }
 .signin-panel h1 {

@@ -1,3 +1,256 @@
-/* Task 3 fills this layer with the nine presentational primitives (Brand,
-   Button, Badge, Surface, StatCard, Notice, Field, DataTable, GradeCard).
-   Empty until then. */
+/* Task 3: the eight presentational primitives (Brand, Button, Badge, Surface,
+   StatCard, Notice, Field, DataTable). GradeCard is Task 4 and lands here
+   too, later.
+
+   Where a primitive's class already had a real caller in the app (`.notice`,
+   `.scroll`) the rule below is that same selector, moved verbatim out of
+   src/app/style.css — nothing in the app needed to change. Where the app's
+   existing bare-element or class rule is protected from deletion this task
+   (`button`/`.quiet-button`, bare `section`, bare `input`/`label`, `.bigcard`)
+   the primitive gets its own `fn-*` rule here instead: the old rule stays in
+   style.css, unrenamed, styling markup this task does not migrate. A later
+   task deletes the old rule and migrates its call sites in the same commit. */
+
+/* Brand — the seal + wordmark link. Moved from style.css's `.brand`,
+   `.brand:hover`, `.brand-mark` and `.brand-name` (renamed to the
+   fn-brand/__mark/__word names Brand renders; `.brand-caption` was never
+   rendered by the component and is dropped rather than carried forward
+   unused). `.fn-brand--compact` is a later task's CSS — see
+   docs/superpowers/plans/2026-09-13-application-shell-density.md. */
+.fn-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-decoration: none;
+  margin-bottom: 48px;
+  color: var(--fn-color-ink);
+}
+.fn-brand:hover {
+  color: var(--fn-color-ink);
+}
+.fn-brand__mark {
+  width: 48px;
+  height: 48px;
+  color: var(--fn-color-accent);
+  margin-bottom: 12px;
+}
+.fn-brand__word {
+  font: 34px var(--fn-font-display);
+  letter-spacing: -1.3px;
+}
+@media (max-width: 650px) {
+  .fn-brand {
+    display: grid;
+    grid-template-columns: 40px auto;
+    column-gap: 10px;
+    margin-bottom: 18px;
+  }
+  .fn-brand__mark {
+    grid-row: span 2;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+  }
+  .fn-brand__word {
+    font-size: 28px;
+  }
+}
+
+/* Button — accent (default), secondary and quiet, built to the gradient
+   treatment (Amendment 2026-09-13, application-shell-density plan): one hue
+   lit from above, no glow, no saturation shift across the stops. The press
+   state inverts the highlight into an inset shadow. Every value below is a
+   token; none of this rule set holds a hex literal. `size="lg"` is plumbed
+   through as `.fn-button--lg` with no rule of its own yet — no later task has
+   asked for a large button, so there is nothing to size against. */
+.fn-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fn-space-2);
+  padding: 8px var(--fn-space-4);
+  border: 1px solid var(--fn-color-accent-edge);
+  border-radius: var(--fn-radius-md);
+  background: var(--fn-gradient-accent);
+  box-shadow: var(--fn-elevation-control);
+  color: var(--fn-color-on-accent);
+  font: var(--fn-text-detail) var(--fn-font-ui);
+  line-height: 1.4;
+  text-decoration: none;
+  text-shadow: 0 1px 0 rgb(90 26 10 / 0.28);
+  cursor: pointer;
+  transition:
+    box-shadow 0.14s ease,
+    translate 0.14s ease;
+}
+.fn-button:hover {
+  background: var(--fn-gradient-accent-hover);
+}
+.fn-button:active {
+  background: var(--fn-gradient-accent-press);
+  box-shadow: var(--fn-elevation-control-press);
+  translate: 0 1px;
+}
+.fn-button--secondary {
+  background: var(--fn-gradient-quiet);
+  border-color: var(--fn-color-quiet-edge);
+  box-shadow: var(--fn-elevation-control-quiet);
+  color: var(--fn-color-ink);
+  text-shadow: none;
+}
+.fn-button--secondary:hover {
+  border-color: var(--fn-color-accent);
+  color: var(--fn-color-accent);
+}
+/* A text action does not gain a surface. */
+.fn-button--quiet {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: var(--fn-color-ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-shadow: none;
+}
+.fn-button--quiet:hover {
+  color: var(--fn-color-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fn-button {
+    transition: none;
+  }
+  .fn-button:active {
+    translate: none;
+  }
+}
+
+/* Badge — a small tone-coloured pill. New to the package: no app class
+   carries this shape today. The shape (pill radius, bold small caps-height
+   label, tight padding) is lifted from grade-banner.css's
+   `.grade-banner-rating`; the tone colours reuse the same
+   tint/foreground/outline token triples style.css's own `.ai-pill` variants
+   already use, so a positive/caution/neutral badge looks exactly like the
+   existing "ran"/"setup"/"none" pills without duplicating a fourth palette. */
+.fn-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--fn-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.fn-badge--positive {
+  background: var(--fn-color-positive-tint);
+  color: var(--fn-color-positive);
+  box-shadow: inset 0 0 0 1px var(--fn-color-positive-outline);
+}
+.fn-badge--caution {
+  background: var(--fn-color-caution-tint);
+  color: var(--fn-color-caution);
+  box-shadow: inset 0 0 0 1px var(--fn-color-caution-outline);
+}
+.fn-badge--neutral {
+  background: var(--fn-color-muted-tint);
+  color: var(--fn-color-ink-muted);
+  box-shadow: inset 0 0 0 1px var(--fn-color-muted-outline);
+}
+
+/* Surface — the glass card chrome. The app's bare `section` selector in
+   src/app/style.css carries this look today and stays there untouched (no
+   <section> call site is migrated this task), so this is a fresh rule for
+   the new class the Surface primitive actually renders, not a move. Values
+   match the existing card exactly; the backdrop-filter blur enhancement on
+   `section` is not replicated here since it needs a literal alpha this
+   package does not have a token for. */
+.fn-surface {
+  background: var(--fn-color-surface-glass);
+  border: 0;
+  border-radius: var(--fn-radius-lg);
+  padding: var(--fn-space-5);
+  margin: var(--fn-space-4) 0;
+  box-shadow: var(--fn-elevation-card);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .fn-surface {
+    background: var(--fn-color-surface-opaque);
+  }
+}
+
+/* StatCard — label/value/detail. `.bigcard` (and its `.t`/`.v`/`.s` children)
+   in src/app/style.css carries three real call sites today
+   (agent-share.tsx, agents-involved.tsx, cohort-comparison.tsx) that this
+   task does not migrate, so it stays put; this is StatCard's own rule,
+   named for what it actually renders instead of reusing those single-letter
+   classes. */
+.fn-stat-card {
+  background: var(--fn-color-surface-glass);
+  border-radius: var(--fn-radius-lg);
+  padding: 18px 20px 20px;
+  box-shadow: var(--fn-elevation-card);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.fn-stat-card__label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--fn-color-ink-muted);
+  font-weight: 700;
+}
+.fn-stat-card__value {
+  font: 400 var(--fn-text-figure) var(--fn-font-display);
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+}
+.fn-stat-card__detail {
+  font-size: 12.5px;
+  color: var(--fn-color-ink-muted);
+  line-height: 1.5;
+}
+
+/* Notice — the caution callout. Moved verbatim from src/app/style.css:
+   `.notice` has one real caller today (src/app/prs/[prId]/page.tsx) and
+   nothing else in the app targets it, so the class name is unchanged and
+   this is the only definition left after the move. */
+.notice {
+  padding: var(--fn-space-4) var(--fn-space-5);
+  background: var(--fn-color-caution-surface);
+  border-left: 3px solid var(--fn-color-caution);
+  border-radius: 0 var(--fn-radius-md) var(--fn-radius-md) 0;
+}
+
+/* Field — a labelled input. Bare `input`/`label` in src/app/style.css stay
+   (Amendment A4), so Field gets its own rule rather than reusing them;
+   values match the existing form control exactly. */
+.fn-field {
+  display: block;
+  margin: 12px 0;
+}
+.fn-field__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.fn-field__input {
+  padding: 9px;
+  border: 1px solid var(--fn-color-border);
+  border-radius: var(--fn-radius-sm);
+  background: var(--fn-color-surface);
+  accent-color: var(--fn-color-accent);
+  font: inherit;
+}
+
+/* DataTable — the horizontal-scroll wrapper. Moved verbatim from
+   src/app/style.css: `.scroll` has real callers today (pr-table.tsx,
+   cohort-comparison.tsx, and the delivery/ai-involvement route tables) and
+   nothing else in the app targets it, so the class name is unchanged. Table
+   element chrome itself (`table`/`td`/`th`) already lives in this package's
+   base.css from an earlier task; DataTable needs nothing more. */
+.scroll {
+  overflow-x: auto;
+  border-radius: 10px;
+  margin: 16px 0;
+}

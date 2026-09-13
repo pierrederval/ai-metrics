@@ -1,4 +1,11 @@
-// The component barrel. Empty until Task 3, which adds the nine
-// presentational primitives (Brand, Button, Badge, Surface, StatCard, Notice,
-// Field, DataTable, GradeCard).
-export {};
+// The component barrel. GradeCard is Task 4's addition.
+export { Brand } from './brand';
+export { Button } from './button';
+export type { ButtonProps, ButtonVariant, ButtonSize } from './button';
+export { Badge } from './badge';
+export type { BadgeTone } from './badge';
+export { Surface } from './surface';
+export { StatCard } from './stat-card';
+export { Notice } from './notice';
+export { Field } from './field';
+export { DataTable } from './data-table';
