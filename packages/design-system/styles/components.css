@@ -39,19 +39,19 @@
   letter-spacing: -1.3px;
 }
 @media (max-width: 650px) {
-  .fn-brand {
+  .fn-brand:not(.fn-brand--compact) {
     display: grid;
     grid-template-columns: 40px auto;
     column-gap: 10px;
     margin-bottom: 18px;
   }
-  .fn-brand__mark {
+  .fn-brand:not(.fn-brand--compact) .fn-brand__mark {
     grid-row: span 2;
     width: 38px;
     height: 38px;
     margin: 0;
   }
-  .fn-brand__word {
+  .fn-brand:not(.fn-brand--compact) .fn-brand__word {
     font-size: 28px;
   }
 }

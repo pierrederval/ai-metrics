@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, test } from 'vitest';
@@ -22,4 +23,25 @@ test('both sizes keep the accessible name and the seal', () => {
     expect(html).toContain('fieldnote');
     expect(html).toContain('<svg');
   }
+});
+
+test('the phone-width lockup rules do not restack the compact sidebar variant', () => {
+  const css = readFileSync('packages/design-system/styles/components.css', 'utf8');
+
+  // Pull out the `@media (max-width: 650px)` block by its unindented closing
+  // brace, so we assert against exactly the rules that apply below 650px.
+  const media = css.match(/@media \(max-width: 650px\) \{[\s\S]*?\n\}/);
+  expect(media).not.toBeNull();
+  const block = media![0];
+
+  // None of the three phone-width rules may open with a bare `.fn-brand`
+  // selector (one not preceded by a compound `:not(...)` scope) — a bare
+  // selector restacks the compact sidebar lockup too, which is the bug this
+  // test guards against.
+  expect(block).not.toMatch(/^\s*\.fn-brand(?:__mark|__word)?\s*\{/m);
+
+  // Every phone-width rule must instead be scoped off the compact variant.
+  expect(block).toContain('.fn-brand:not(.fn-brand--compact) {');
+  expect(block).toContain('.fn-brand:not(.fn-brand--compact) .fn-brand__mark {');
+  expect(block).toContain('.fn-brand:not(.fn-brand--compact) .fn-brand__word {');
 });
