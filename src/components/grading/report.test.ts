@@ -108,7 +108,7 @@ test.each([
   [70, 'bronze', 'Enough context to work from'],
   [80, 'silver', 'Readable, testable, navigable'],
   [90, 'gold', 'land a change unaided'],
-  [100, 'rainbow', 'Nothing the rubric asks for is missing'],
+  [100, 'prismatic', 'Nothing the rubric asks for is missing'],
 ] as const)(
   'score %s renders the %s finish with its flavour line',
   (score, finish, flavourSnippet) => {

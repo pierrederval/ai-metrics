@@ -7,7 +7,7 @@ const flavourLines: Record<GradePresentation['finish'], string> = {
   silver:
     'Readable, testable, navigable. An agent can find its way around and verify its own work without asking a human first.',
   gold: 'An agent can land a change unaided. Documentation and verification both hold under pressure.',
-  rainbow: 'Nothing the rubric asks for is missing.',
+  prismatic: 'Nothing the rubric asks for is missing.',
 };
 export function flavourLine(score: number): string {
   return flavourLines[gradePresentation(score).finish];

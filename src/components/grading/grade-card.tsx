@@ -38,7 +38,7 @@ export function GradeCard({
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
-                fill={grade.finish === 'rainbow' ? `url(#${gradient})` : 'currentColor'}
+                fill={grade.finish === 'prismatic' ? `url(#${gradient})` : 'currentColor'}
               >
                 <defs>
                   <linearGradient id={i === 0 ? gradient : `${gradient}-${i}`}>
