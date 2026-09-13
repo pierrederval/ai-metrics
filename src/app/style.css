@@ -189,12 +189,13 @@
     grid-template-columns: 185px minmax(0, 1fr);
   }
   .sidebar {
-    /* Narrower column (185px) than the base 232px, so the rail wants less
-       horizontal padding than the base var(--fn-space-4) var(--fn-space-3)
-       (16px 12px), not more — vertical is unchanged since narrowing the
-       column doesn't change how much top/bottom breathing room the stack
-       needs. */
-    padding: var(--fn-space-4) var(--fn-space-2);
+    /* Narrower column (185px) than the base 232px, so the rail loses the
+       width the base padding was spending — but it keeps the base's own
+       horizontal step. Going below the desktop 12px would mean a narrower
+       viewport produced tighter chrome, which reads as cramped rather than
+       dense. Vertical is unchanged: narrowing the column does not change
+       how much top/bottom breathing room the stack needs. */
+    padding: var(--fn-space-4) var(--fn-space-3);
   }
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
