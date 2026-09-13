@@ -273,3 +273,70 @@
   border-radius: 10px;
   margin: 16px 0;
 }
+
+/* TopBar and Breadcrumb — Task 4's replacement for `.page-topline`. The
+   brief names `styles/components/top-bar.css`, but no `styles/components/`
+   subdirectory exists: all eight Task 3 primitives above live flat in this
+   file, and `styles/index.css` declares its four layer imports once. These
+   rules land here instead, and no new `@import` is added.
+
+   TopBar has three named slots (Context/Utility/Identity) rather than a
+   `justify-content: space-between` row, so a control added later becomes a
+   child of a named slot instead of an append that lands wherever it lands.
+   Utility is reserved for search and then notifications — it renders no
+   control yet — so the divider before Identity is conditional on Utility
+   actually holding something (`:not(:empty)`), rather than always drawn. */
+.fn-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: var(--fn-space-3);
+  padding: 0 var(--fn-space-4) 0 var(--fn-space-5);
+  background: var(--fn-color-surface-glass);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--fn-color-border);
+}
+.fn-topbar__context {
+  min-width: 0;
+  flex: 1;
+}
+/* Reserved for search, then notifications. Empty by design. */
+.fn-topbar__utility {
+  display: flex;
+  align-items: center;
+  gap: var(--fn-space-2);
+}
+.fn-topbar__identity {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.fn-topbar__utility:not(:empty) + .fn-topbar__identity {
+  border-left: 1px solid var(--fn-color-border);
+  margin-left: var(--fn-space-1);
+  padding-left: var(--fn-space-3);
+}
+.fn-crumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--fn-space-2);
+  font-size: var(--fn-text-detail);
+  color: var(--fn-color-ink-muted);
+}
+.fn-crumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fn-space-2);
+  min-width: 0;
+}
+.fn-crumb__sep {
+  opacity: 0.5;
+}
+.fn-crumb [aria-current='page'] {
+  color: var(--fn-color-ink);
+  font-weight: 700;
+}

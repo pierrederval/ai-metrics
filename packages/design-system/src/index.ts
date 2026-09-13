@@ -9,3 +9,5 @@ export { StatCard } from './stat-card';
 export { Notice } from './notice';
 export { Field } from './field';
 export { DataTable } from './data-table';
+export { TopBar } from './top-bar';
+export { Breadcrumb, type Crumb } from './breadcrumb';
