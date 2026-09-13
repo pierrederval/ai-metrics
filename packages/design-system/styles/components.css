@@ -15,8 +15,8 @@
    `.brand:hover`, `.brand-mark` and `.brand-name` (renamed to the
    fn-brand/__mark/__word names Brand renders; `.brand-caption` was never
    rendered by the component and is dropped rather than carried forward
-   unused). `.fn-brand--compact` is a later task's CSS — see
-   docs/superpowers/plans/2026-09-13-application-shell-density.md. */
+   unused). `.fn-brand--compact`, the one-row sidebar lockup, is defined
+   below the responsive block. */
 .fn-brand {
   display: flex;
   flex-direction: column;
@@ -54,6 +54,25 @@
   .fn-brand__word {
     font-size: 28px;
   }
+}
+
+/* The stacked lockup is a marketing lockup: correct for the landing page nav,
+   and 94px of vertical space in a sidebar that has two navigation items. */
+.fn-brand--compact {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--fn-space-2);
+  margin-bottom: var(--fn-space-4);
+  padding: var(--fn-space-1) var(--fn-space-2);
+}
+.fn-brand--compact .fn-brand__mark {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 0;
+}
+.fn-brand--compact .fn-brand__word {
+  font-size: 21px;
+  letter-spacing: -0.7px;
 }
 
 /* Button — accent (default), secondary and quiet, built to the gradient

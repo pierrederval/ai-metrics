@@ -7,8 +7,8 @@ import type { ReactNode } from 'react';
  *
  * `size` defaults to `'display'`, the stacked marketing lockup. `'compact'`
  * is the one-row sidebar lockup: it emits the extra `fn-brand--compact`
- * class, but this task does not write that class's CSS or wire it into
- * `Sidebar` — see docs/superpowers/plans/2026-09-13-application-shell-density.md.
+ * class, styled in components.css, and `Sidebar` renders `<Brand
+ * size="compact" />`.
  */
 export function Brand({
   href = '/dashboard',

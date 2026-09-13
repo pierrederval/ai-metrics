@@ -35,7 +35,7 @@ function SidebarNavigation({
   const pathname = usePathname();
   return (
     <aside className="sidebar">
-      <Brand />
+      <Brand size="compact" />
       <WorkspaceSwitcher active={active} workspaces={workspaces} demo={demo} />
       <nav aria-label="Main navigation">
         <Link
