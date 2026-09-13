@@ -1,11 +1,4 @@
-/* Persistent repository header: breadcrumb, identity, facts line, actions. */
-.crumb {
-  font-size: 12px;
-  color: var(--fn-color-ink-muted);
-}
-.crumb a {
-  color: var(--fn-color-ink-muted);
-}
+/* Persistent repository header: identity, facts line, actions. */
 .rhead {
   display: flex;
   flex-direction: column;
