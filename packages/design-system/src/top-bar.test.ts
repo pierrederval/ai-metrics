@@ -28,6 +28,13 @@ test('an empty utility slot renders no control', () => {
   expect(html).not.toContain('<input');
 });
 
-test('the bar is a banner landmark', () => {
-  expect(render()).toContain('role="banner"');
+test('the bar is a header element with no landmark role', () => {
+  // <header> nested inside <main> (as app-shell.tsx places it) is correctly
+  // generic and carries no implicit or explicit landmark role. An explicit
+  // role="banner" here would violate landmark structure (axe rule
+  // landmark-banner-is-top-level), since banner must be top-level.
+  const html = render();
+  const openTag = html.match(/^<header[^>]*>/);
+  expect(openTag).not.toBeNull();
+  expect(openTag![0]).not.toContain('role=');
 });

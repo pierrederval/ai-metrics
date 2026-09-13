@@ -85,6 +85,16 @@
   --fn-color-backdrop-base: #102a2266;
   --fn-metrics-hover-base: #253e3410;
 
+  /* Fix wave 2026-09-13: three more exact translucent literals, this time
+     from packages/design-system/styles/base.css's bare `table`/`th`/`tbody
+     tr:hover` rules (moved from style.css verbatim, alpha and all) — the
+     boundary guard was widened to scan every stylesheet but tokens.css, and
+     these three were the only literals it turned up. Same precedent as the
+     block above: named here so base.css can reference the reference tier. */
+  --fn-color-table-wash-base: #f4f8f06e;
+  --fn-color-table-head-base: #e6ece780;
+  --fn-color-table-row-hover-base: #ffffff35;
+
   /* Finish tier — one colour per grade band, lifted from gradePresentation()
      in src/domain/grading/presentation.ts. */
   --fn-grade-common: #b54740;
@@ -137,6 +147,9 @@
   --fn-color-input-surface: var(--fn-color-input-surface-base);
   --fn-color-backdrop: var(--fn-color-backdrop-base);
   --fn-color-metrics-hover: var(--fn-metrics-hover-base);
+  --fn-color-table-wash: var(--fn-color-table-wash-base);
+  --fn-color-table-head: var(--fn-color-table-head-base);
+  --fn-color-table-row-hover: var(--fn-color-table-row-hover-base);
 
   /* The main background wash. style.css builds `main`'s (and `.public-entry`'s)
      background from four stops (#e6ece7, #c8ddce, #ecd3c3, #f0f5ef); these name

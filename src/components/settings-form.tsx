@@ -17,7 +17,7 @@ export function SettingsForm({
   return (
     <form action={run} className="settings-form">
       {children}
-      <Button disabled={pending} type="submit">
+      <Button variant="secondary" disabled={pending} type="submit">
         {pending ? 'Saving…' : submitLabel}
       </Button>
       {state.error && (

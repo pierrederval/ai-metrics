@@ -12,11 +12,7 @@ function Identity({ children }: { children?: React.ReactNode }) {
 }
 
 export function TopBar({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="fn-topbar" role="banner">
-      {children}
-    </div>
-  );
+  return <header className="fn-topbar">{children}</header>;
 }
 TopBar.Context = Context;
 TopBar.Utility = Utility;

@@ -189,7 +189,12 @@
     grid-template-columns: 185px minmax(0, 1fr);
   }
   .sidebar {
-    padding: 28px 18px;
+    /* Narrower column (185px) than the base 232px, so the rail wants less
+       horizontal padding than the base var(--fn-space-4) var(--fn-space-3)
+       (16px 12px), not more — vertical is unchanged since narrowing the
+       column doesn't change how much top/bottom breathing room the stack
+       needs. */
+    padding: var(--fn-space-4) var(--fn-space-2);
   }
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -202,16 +207,28 @@
   .sidebar {
     position: static;
     height: auto;
-    padding: 18px 20px;
+    /* The sidebar is now a full-width horizontal strip, so its left/right
+       padding IS the page's side gutter at this breakpoint (nothing else
+       supplies one) — held at the var(--fn-space-4) (16px) floor. Top/bottom
+       is a thin bar's breathing room, not a vertical stack's, so it can sit
+       below the base's 16px. */
+    padding: var(--fn-space-3) var(--fn-space-4);
     border-right: 0;
     border-bottom: 1px solid var(--fn-color-border);
   }
   .sidebar nav {
     display: flex;
-    gap: 20px;
+    /* A flex row's gap is a different concern from the vertical stack's 4px
+       (var(--fn-space-1)) — it separates whole nav items along a single
+       line, not stacked rows, so it legitimately stays larger. Brought down
+       from the pre-density 20px to the next step on the scale. */
+    gap: var(--fn-space-4);
   }
   .sidebar nav a {
-    padding: 8px;
+    /* Stack-era uniform 8px; the base rail now uses 7px var(--fn-space-3)
+       (7px 12px), so this comes down to the space scale's smallest two
+       steps rather than staying a flat pre-density value. */
+    padding: var(--fn-space-1) var(--fn-space-2);
     font-size: 12px;
   }
   .sidebar-footer {
@@ -1122,6 +1139,13 @@
 .member-controls select {
   flex: 1;
   width: auto;
+}
+/* The button migration (3b86f87) dropped this compactness when it deleted
+   `.member-controls button { font-size: 11px; padding: 10px; }` — the Button
+   primitive has no size between md and lg for it, so it's restored here as a
+   local override on the rendered class, not a second button definition. */
+.member-controls .fn-button {
+  font-size: 11px;
 }
 .invitation-row strong {
   font-size: 12px;
