@@ -2,7 +2,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@fieldnote/design-system';
+import { Button, Surface } from '@fieldnote/design-system';
 import type { RepositoryChoice } from '../../domain/import/types';
 import { filterRepositoryChoices } from '../../domain/import/onboarding';
 import { startFirstAnalysis, refreshRepositoryAccess } from '../../app/onboarding/actions';
@@ -41,7 +41,7 @@ export function RepositoryPicker({
           focusOnMount
         />
       ) : (
-        <section className="onboarding-panel">
+        <Surface className="onboarding-panel">
           {allConnected ? (
             <p>
               View your engineering records or give the app access to another repository.{' '}
@@ -106,7 +106,7 @@ export function RepositoryPicker({
             )
           )}
           <RepositoryAccess installUrl={installUrl} />
-        </section>
+        </Surface>
       )}
     </div>
   );

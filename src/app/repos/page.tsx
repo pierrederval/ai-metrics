@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Surface } from '@fieldnote/design-system';
 import { accessibleRepositories } from '../../auth/access';
 import { env } from '../../lib/env';
 import { repositoryRecords } from '../../db/queries/repository-records';
@@ -42,7 +43,7 @@ export default async function Directory({ searchParams }: RangePageProps = {}) {
           <Link href="/onboarding">Add repository ↗</Link>
         </div>
         {repositories.map((repo) => (
-          <section className="directory-repository" key={repo.id}>
+          <Surface className="directory-repository" key={repo.id}>
             <div className="repository-heading">
               <h2>
                 <Link href={`/repos/${encodeURIComponent(repo.id)}${query}`}>
@@ -55,7 +56,7 @@ export default async function Directory({ searchParams }: RangePageProps = {}) {
               record={records.find((record) => record.repositoryId === repo.id)!}
               githubUrl={githubRepositoryUrl(repo)}
             />
-          </section>
+          </Surface>
         ))}
         {!repositories.length && (
           <p>

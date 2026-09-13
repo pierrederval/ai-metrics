@@ -183,13 +183,13 @@
   box-shadow: inset 0 0 0 1px var(--fn-color-muted-outline);
 }
 
-/* Surface — the glass card chrome. The app's bare `section` selector in
-   src/app/style.css carries this look today and stays there untouched (no
-   <section> call site is migrated this task), so this is a fresh rule for
-   the new class the Surface primitive actually renders, not a move. Values
-   match the existing card exactly; the backdrop-filter blur enhancement on
-   `section` is not replicated here since it needs a literal alpha this
-   package does not have a token for. */
+/* Surface — the glass card chrome. Task 7 deletes the app's bare `section`
+   selector in src/app/style.css (guard-caught layout on a bare element) and
+   migrates every call site onto <Surface>, so this rule is now the one and
+   only place the look lives. Values match the deleted card exactly,
+   including the backdrop-filter blur enhancement and its reduced-
+   transparency fallback, both moved verbatim; the enhancement's rgba alpha
+   is now --fn-color-surface-glass-blur (tokens.css) instead of a literal. */
 .fn-surface {
   background: var(--fn-color-surface-glass);
   border: 0;
@@ -198,8 +198,15 @@
   margin: var(--fn-space-4) 0;
   box-shadow: var(--fn-elevation-card);
 }
+@supports (backdrop-filter: blur(16px)) {
+  .fn-surface {
+    background: var(--fn-color-surface-glass-blur);
+    backdrop-filter: blur(16px);
+  }
+}
 @media (prefers-reduced-transparency: reduce) {
   .fn-surface {
+    backdrop-filter: none;
     background: var(--fn-color-surface-opaque);
   }
 }

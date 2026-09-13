@@ -1,4 +1,5 @@
 import { useId, type CSSProperties } from 'react';
+import { Surface } from '@fieldnote/design-system';
 import { gradePresentation } from '../../domain/grading/presentation';
 import { finishNames } from '../../domain/grading/finish-names';
 import { flavourLine } from '../../domain/grading/flavour';
@@ -22,7 +23,7 @@ export function GradeCard({
   const gradient = useId();
   const next = nextTier(score, checks);
   return (
-    <section
+    <Surface
       className="grade-card"
       data-finish={grade.finish}
       style={{ '--grade': grade.color } as CSSProperties}
@@ -116,6 +117,6 @@ export function GradeCard({
         </div>
         <p className="grade-card-commit">Commit {sha.slice(0, 7)}</p>
       </div>
-    </section>
+    </Surface>
   );
 }

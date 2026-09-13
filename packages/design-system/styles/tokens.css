@@ -27,6 +27,13 @@
      second unauthorised exception alongside the control-finish tokens. */
   --fn-color-glass-base: rgba(244, 248, 240, 0.62);
   --fn-color-ink-shadow: #203f3610;
+  /* Task 7 amendment 2026-09-13: the exact translucent value the old bare
+     `section`'s `@supports (backdrop-filter: blur(16px))` enhancement used —
+     a lower alpha than --fn-color-glass-base because the blur itself is
+     what supplies the rest of the glass effect once backdrop-filter is
+     available. Named here, per the same precedent, so .fn-surface can
+     reference the reference tier instead of carrying the rgba() literal. */
+  --fn-color-glass-blur-base: rgba(244, 248, 240, 0.43);
 
   /* Task 2 amendment 2026-09-13: more reference-tier swatches, needed to empty
      src/app/style.css of its remaining colour literals. --fn-mist-050 through
@@ -94,6 +101,7 @@
   --fn-color-ground: var(--fn-mist-200);
   --fn-color-surface: var(--fn-paper-50);
   --fn-color-surface-glass: var(--fn-color-glass-base);
+  --fn-color-surface-glass-blur: var(--fn-color-glass-blur-base);
   --fn-color-border: var(--fn-mist-300);
   --fn-color-hairline: color-mix(in srgb, var(--fn-pine-900) 12.5%, transparent);
   --fn-color-accent: var(--fn-ember-600);

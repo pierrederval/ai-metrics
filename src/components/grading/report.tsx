@@ -1,7 +1,7 @@
 'use client';
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@fieldnote/design-system';
+import { Button, Surface } from '@fieldnote/design-system';
 import type { CompletedGrade } from '../../db/queries/grade-runs';
 import { runGrade } from '../../app/repos/[repoId]/grading/actions';
 import { checkTitles } from '../../domain/grading/check-titles';
@@ -128,7 +128,7 @@ export function GradeReport({
 }) {
   const base = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/blob/${encodeURIComponent(grade.sha)}/`;
   return (
-    <section className="grading-report" aria-label="Readiness evidence">
+    <Surface className="grading-report" aria-label="Readiness evidence">
       <div className="eyebrow">Foundations / Evidence</div>
       <h2>A record you can inspect.</h2>
       {outdated && (
@@ -198,6 +198,6 @@ export function GradeReport({
           or certify semantic quality.
         </p>
       </div>
-    </section>
+    </Surface>
   );
 }

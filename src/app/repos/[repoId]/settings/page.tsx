@@ -1,4 +1,4 @@
-import { Button } from '@fieldnote/design-system';
+import { Button, Surface } from '@fieldnote/design-system';
 import { requireTrackedRepository } from '../../../../auth/access';
 import { currentPolicy, prRows } from '../../../../db/queries/dashboard';
 import { latestImport } from '../../../../db/queries/repository-imports';
@@ -104,9 +104,9 @@ export default async function Settings({ params }: { params: Promise<{ repoId: s
       )}
 
       <h2>Collection detail</h2>
-      <section>
+      <Surface>
         <RepositoryMetadata record={record} githubUrl={githubRepositoryUrl(repo)} />
-      </section>
+      </Surface>
 
       <h2>Data</h2>
       {latest ? (

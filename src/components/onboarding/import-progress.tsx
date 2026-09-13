@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Button } from '@fieldnote/design-system';
+import { Button, Surface } from '@fieldnote/design-system';
 import { useActionState, useEffect, useRef } from 'react';
 import type { ImportSnapshot, StartResult } from '../../domain/import/types';
 import { retryAnalysis } from '../../app/onboarding/actions';
@@ -92,7 +92,7 @@ function ProgressContent({
   const announcement =
     run.state === 'importing' ? `Importing pull requests. ${milestone} PRs imported.` : copy;
   return (
-    <section className="onboarding-panel import-panel" aria-label="Import progress">
+    <Surface className="onboarding-panel import-panel" aria-label="Import progress">
       <div className="eyebrow">First engineering record</div>
       <h2 ref={heading} tabIndex={-1}>
         {copy}
@@ -179,6 +179,6 @@ function ProgressContent({
           )}
       </div>
       {error && <p role="alert">{error}</p>}
-    </section>
+    </Surface>
   );
 }
