@@ -33,3 +33,16 @@ test('a one-item trail renders without a separator', () => {
   expect(html).not.toContain('aria-hidden="true"');
   expect(html).toContain('aria-current="page"');
 });
+
+test('a non-last crumb with no href is plain text, not the current page', () => {
+  // Only position (last vs. not) may decide aria-current — never whether an
+  // href happens to be present. A middle crumb without an href must not be
+  // mistaken for "where you are".
+  const html = renderToStaticMarkup(
+    createElement(Breadcrumb, {
+      trail: [{ label: 'Workspace' }, { label: 'All repositories', href: '/repos' }, { label: 'fieldnote' }],
+    }),
+  );
+  expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  expect(html).not.toContain('<a href="/repos">fieldnote</a>');
+});

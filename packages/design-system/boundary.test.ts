@@ -44,3 +44,16 @@ test('the design system imports nothing from the app or from Next.js', () => {
   );
   expect(offenders).toEqual([]);
 });
+
+// Colour lives in exactly one place: tokens.css. components.css is where
+// every other primitive's rules live (Task 3's eight, plus Task 4's
+// TopBar/Breadcrumb), so it is the one file in the package that must hold
+// no hex literal of its own — same idiom, same regex, as
+// src/app/style.test.ts's guard over the app's own stylesheet. This does
+// not special-case the `.fn-button` control-finish rules' `rgb(90 26 10 /
+// 0.28)` text-shadow: that is an rgb() function, not a hex literal, so the
+// hex-only regex below correctly leaves it alone without an exemption.
+test('components.css holds no colour literal outside the token tier', () => {
+  const css = readFileSync('packages/design-system/styles/components.css', 'utf8');
+  expect(css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).toEqual([]);
+});
