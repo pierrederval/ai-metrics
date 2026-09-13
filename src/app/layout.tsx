@@ -1,3 +1,4 @@
+import '@fieldnote/design-system/styles';
 import './style.css';
 export const metadata = {
   title: { default: 'Fieldnote — Engineering records', template: '%s · Fieldnote' },

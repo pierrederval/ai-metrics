@@ -1,0 +1,18 @@
+/* Box model, form-control font inheritance, and the focus ring. Moved
+   verbatim from the first ~40 lines of src/app/style.css. */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--fn-color-accent);
+  outline-offset: 4px;
+}

@@ -13,29 +13,6 @@
   font-family: Arial, Helvetica, sans-serif;
   font-synthesis: none;
 }
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-}
-a {
-  color: var(--ink);
-  text-underline-offset: 4px;
-}
-a:hover {
-  color: var(--accent);
-}
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -134,44 +111,6 @@ main {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.3px;
-  color: var(--muted);
-}
-h1,
-h2,
-h3 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 400;
-}
-h1 {
-  font-size: clamp(32px, 3.3vw, 48px);
-  letter-spacing: -1.4px;
-  margin: 12px 0;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-}
-h2 {
-  font-size: 27px;
-  letter-spacing: -0.5px;
-  margin: 34px 0 16px;
-}
-h3 {
-  font-size: 22px;
-}
-p,
-small {
-  line-height: 1.65;
-}
-p {
-  font-size: 14px;
-}
-small,
-.muted {
-  color: var(--muted);
-}
-.eyebrow {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
   color: var(--muted);
 }
 .page-intro {
@@ -288,29 +227,6 @@ section {
   font-size: 24px;
   color: var(--accent);
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  background: #f4f8f06e;
-}
-td,
-th {
-  padding: 15px;
-  text-align: left;
-  border-bottom: 1px solid #203f3620;
-  line-height: 1.5;
-}
-th {
-  font-size: 10px;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-  font-weight: 600;
-  background: #e6ece780;
-}
-tbody tr:hover {
-  background: #ffffff35;
-}
 .scroll {
   overflow-x: auto;
   border-radius: 10px;
@@ -361,10 +277,6 @@ label {
   margin: 12px 0;
   font-size: 13px;
   line-height: 1.6;
-}
-code {
-  overflow-wrap: anywhere;
-  font-size: 0.9em;
 }
 .skip-link {
   position: fixed;

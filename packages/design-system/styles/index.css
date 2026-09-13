@@ -1,0 +1,6 @@
+@layer fn.reset, fn.tokens, fn.base, fn.components;
+
+@import './reset.css' layer(fn.reset);
+@import './tokens.css' layer(fn.tokens);
+@import './base.css' layer(fn.base);
+@import './components.css' layer(fn.components);

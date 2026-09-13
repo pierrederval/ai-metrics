@@ -1,0 +1,108 @@
+:root {
+  /* Reference tier — the palette. Every other tier below points back to
+     these; nothing outside this tier holds a literal colour, other than the
+     one documented control-finish exception at the bottom of this file. */
+  --fn-pine-900: #203f36;
+  --fn-pine-600: #526b60;
+  --fn-mist-300: #bfcfc4;
+  --fn-mist-200: #e6ece7;
+  --fn-mist-100: #f0f5ef;
+  --fn-paper-50: #f4f7f3;
+  --fn-ember-600: #be421f;
+  --fn-ember-700: #a6381a;
+  --fn-moss-700: #2f6b52;
+  --fn-amber-700: #986817;
+  --fn-amber-100: #f3e8ca;
+  /* Amendment 2026-09-13: lifted from `main`'s background wash in
+     src/app/style.css. Not new colours — the wash's existing atmosphere
+     tints, named here so the wash can reference the reference tier instead
+     of a literal once a later task moves it. */
+  --fn-color-atmosphere-cool: #c8ddce;
+  --fn-color-atmosphere-warm: #ecd3c3;
+
+  /* Finish tier — one colour per grade band, lifted from gradePresentation()
+     in src/domain/grading/presentation.ts. */
+  --fn-grade-common: #b54740;
+  --fn-grade-shimmer: #548eae;
+  --fn-grade-bronze: #895333;
+  --fn-grade-silver: #697e8d;
+  --fn-grade-gold: #a77a13;
+  --fn-grade-prismatic: #7359a3;
+
+  /* Semantic tier — what components reference. Points at the reference tier
+     only; --fn-color-surface-glass is the sole literal here, because its
+     alpha-blended value does not correspond to any single reference-tier
+     swatch (see the note below). */
+  --fn-color-ink: var(--fn-pine-900);
+  --fn-color-ink-muted: var(--fn-pine-600);
+  --fn-color-ground: var(--fn-mist-200);
+  --fn-color-surface: var(--fn-paper-50);
+  --fn-color-surface-glass: rgba(244, 248, 240, 0.62);
+  --fn-color-border: var(--fn-mist-300);
+  --fn-color-hairline: color-mix(in srgb, var(--fn-pine-900) 12.5%, transparent);
+  --fn-color-accent: var(--fn-ember-600);
+  --fn-color-accent-hover: var(--fn-ember-700);
+  --fn-color-positive: var(--fn-moss-700);
+  --fn-color-caution: var(--fn-amber-700);
+  --fn-color-caution-surface: var(--fn-amber-100);
+
+  /* The main background wash. style.css builds `main`'s background from
+     four stops (#e6ece7, #c8ddce, #ecd3c3, #f0f5ef); these name each one so
+     a later task can reference tokens instead of the literals. `main`
+     itself is untouched by this task. */
+  --fn-color-wash-edge: var(--fn-mist-200);
+  --fn-color-wash-cool: var(--fn-color-atmosphere-cool);
+  --fn-color-wash-warm: var(--fn-color-atmosphere-warm);
+  --fn-color-wash-base: var(--fn-mist-100);
+
+  /* Type. Both approved faces, plus a mono role for the things fieldnote is
+     made of — SHAs, paths, check ids. */
+  --fn-font-display: Georgia, 'Times New Roman', serif;
+  --fn-font-ui: Arial, Helvetica, sans-serif;
+  --fn-font-mono: ui-monospace, monospace;
+  --fn-text-display: clamp(32px, 3.3vw, 48px);
+  --fn-text-title: 27px;
+  --fn-text-subtitle: 22px;
+  --fn-text-figure: 30px;
+  --fn-text-body: 14px;
+  --fn-text-detail: 12.5px;
+  --fn-text-label: 10px;
+
+  /* Space. Fourteen ad-hoc values collapsed to an eight-step scale. */
+  --fn-space-1: 4px;
+  --fn-space-2: 8px;
+  --fn-space-3: 12px;
+  --fn-space-4: 16px;
+  --fn-space-5: 24px;
+  --fn-space-6: 32px;
+  --fn-space-7: 48px;
+  --fn-space-8: 64px;
+
+  /* Radii carry role, not decoration. */
+  --fn-radius-sm: 5px;
+  --fn-radius-md: 8px;
+  --fn-radius-lg: 12px;
+  --fn-radius-card: 16px;
+  --fn-radius-pill: 999px;
+
+  /* One elevation, lifted verbatim from `section`/`.bigcard` in style.css. */
+  --fn-elevation-card: 0 6px 20px #203f3610;
+
+  /* Control finish. Every stop is the approved ember lit from above — a lighting
+     cue, not a second hue. #be421f remains the midpoint of the resting gradient,
+     which is what keeps the amended buttons the same colour as the old flat ones. */
+  --fn-color-surface-selected: #dbe5dc;
+  --fn-color-accent-edge: #9e3518;
+  --fn-color-quiet-edge: #b9cabe;
+  --fn-color-on-accent: #fff;
+  --fn-elevation-control:
+    inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 1px rgb(32 63 54 / 0.14),
+    0 2px 7px rgb(190 66 31 / 0.22);
+  --fn-elevation-control-press: inset 0 1px 2px rgb(90 26 10 / 0.4), 0 1px 0 rgb(255 255 255 / 0.3);
+  --fn-elevation-control-quiet:
+    inset 0 1px 0 #fff, 0 1px 1px rgb(32 63 54 / 0.07), 0 2px 5px rgb(32 63 54 / 0.06);
+  --fn-gradient-accent: linear-gradient(180deg, #cb4a26 0%, #be421f 52%, #ad3a1a 100%);
+  --fn-gradient-accent-hover: linear-gradient(180deg, #d4522c 0%, #c5471f 52%, #b23d1a 100%);
+  --fn-gradient-accent-press: linear-gradient(180deg, #ad3a1a 0%, #b83f1d 100%);
+  --fn-gradient-quiet: linear-gradient(180deg, #fdfefc 0%, #eef3ec 100%);
+}
