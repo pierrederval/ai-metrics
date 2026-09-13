@@ -56,38 +56,24 @@
 .sidebar-footer p {
   margin: 4px 0 16px;
 }
-main {
+.app-shell main {
   min-width: 0;
-  padding: 34px clamp(24px, 4vw, 64px) 64px;
+  padding: 0 0 var(--fn-space-7);
   background:
-    linear-gradient(
-      90deg,
-      var(--fn-color-wash-edge) 0%,
-      rgba(230, 236, 231, 0.94) 7%,
-      rgba(230, 236, 231, 0) 48%
-    ),
-    radial-gradient(ellipse at 12% 38%, var(--fn-color-wash-cool) 0%, transparent 62%),
-    radial-gradient(ellipse at 100% 78%, var(--fn-color-wash-warm) 0%, transparent 57%),
-    var(--fn-color-wash-base);
+    /* The removed first layer painted the sidebar's colour 48% of the way
+       across this column. It was most of the gutter, and no amount of padding
+       removal would have fixed it. */
+    radial-gradient(ellipse at 8% 30%, var(--fn-color-atmosphere-cool) 0%, transparent 58%),
+    radial-gradient(ellipse at 100% 78%, var(--fn-color-atmosphere-warm) 0%, transparent 57%),
+    var(--fn-color-ground);
+}
+.page-body {
+  padding: var(--fn-space-4) var(--fn-space-5) 0;
 }
 .page-intro {
   color: var(--fn-color-ink-muted);
   max-width: 640px;
   margin-bottom: 28px;
-}
-section {
-  background: var(--fn-color-surface-glass);
-  border: 0;
-  border-radius: 12px;
-  padding: 24px;
-  margin: 16px 0;
-  box-shadow: var(--fn-elevation-card);
-}
-@supports (backdrop-filter: blur(16px)) {
-  section {
-    background: rgba(244, 248, 240, 0.43);
-    backdrop-filter: blur(16px);
-  }
 }
 .cards {
   display: grid;
@@ -187,19 +173,6 @@ section {
 .timeline {
   border-left: 3px solid var(--fn-color-accent);
 }
-input {
-  padding: 9px;
-  border: 1px solid var(--fn-color-border);
-  border-radius: 5px;
-  background: var(--fn-color-surface);
-  accent-color: var(--fn-color-accent);
-}
-label {
-  display: block;
-  margin: 12px 0;
-  font-size: 13px;
-  line-height: 1.6;
-}
 .skip-link {
   position: fixed;
   top: -100px;
@@ -210,11 +183,6 @@ label {
 }
 .skip-link:focus {
   top: 16px;
-}
-@media (min-width: 1600px) {
-  main {
-    padding-right: max(64px, calc((100vw - 1350px) / 2));
-  }
 }
 @media (max-width: 1050px) {
   .app-shell {
@@ -256,8 +224,8 @@ label {
   .sidebar-footer p {
     display: none;
   }
-  main {
-    padding: 24px 20px 48px;
+  .page-body {
+    padding: var(--fn-space-4) var(--fn-space-4) var(--fn-space-7);
   }
   .cards {
     gap: 12px;
@@ -275,13 +243,6 @@ label {
     padding: 20px;
   }
 }
-@media (prefers-reduced-transparency: reduce) {
-  section {
-    backdrop-filter: none;
-    background: var(--fn-color-surface-opaque);
-  }
-}
-
 .onboarding-workspace {
   max-width: 760px;
   margin-top: 32px;

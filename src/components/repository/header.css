@@ -2,8 +2,8 @@
 .rhead {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 10px;
+  gap: var(--fn-space-3);
+  margin-top: var(--fn-space-1);
 }
 .rhead-top {
   display: flex;
@@ -19,11 +19,8 @@
   min-width: 0;
 }
 .rhead-id h1 {
-  font:
-    400 clamp(26px, 3vw, 36px) Georgia,
-    'Times New Roman',
-    serif;
-  letter-spacing: -1.1px;
+  font: 400 clamp(24px, 2.4vw, 30px) var(--fn-font-display);
+  letter-spacing: -0.9px;
   margin: 0;
   line-height: 1.1;
   overflow-wrap: anywhere;

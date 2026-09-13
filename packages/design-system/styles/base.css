@@ -75,3 +75,27 @@ th {
 tbody tr:hover {
   background: #ffffff35;
 }
+
+/* Task 7 (application-shell-density): input/label element defaults, moved
+   verbatim from src/app/style.css's bare `input`/`label` rules — the guard
+   over that stylesheet now forbids a bare element selector from carrying
+   layout, and fn.base is the sanctioned home for exactly this. Values are
+   unchanged; input's border-radius: 5px becomes var(--fn-radius-sm) (the
+   same 5px) since a token already existed for it. label keeps its margin,
+   font-size and line-height — dropping them would visibly change the
+   several bare `<label>` call sites (the required-gates checkboxes, the
+   Act opt-in checkbox) that carry no wrapping class of their own to
+   restate them, which this task does not touch. */
+input {
+  padding: 9px;
+  border: 1px solid var(--fn-color-border);
+  border-radius: var(--fn-radius-sm);
+  background: var(--fn-color-surface);
+  accent-color: var(--fn-color-accent);
+}
+label {
+  display: block;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
